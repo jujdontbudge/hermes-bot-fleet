@@ -1,0 +1,2539 @@
+{
+  "schema_version": "1.0",
+  "title": "Hermes Bot Fleet production acceptance requirements",
+  "canonical": true,
+  "semantics": {
+    "allowed_results": [
+      "PASS",
+      "FAIL",
+      "BLOCKED",
+      "SKIPPED"
+    ],
+    "release_pass": "Every mandatory requirement has current PASS evidence from its declared target and all evidence checks pass.",
+    "release_fail": "Any FAIL, BLOCKED, or SKIPPED mandatory requirement makes the binary release decision FAIL."
+  },
+  "defaults": {
+    "process_recovery_seconds_max": 120,
+    "vm_reboot_fleet_health_seconds_max": 600,
+    "scheduled_config_backup_age_hours_max": 24,
+    "scheduled_config_rpo_hours": 24,
+    "browser_consistent_snapshot_age_hours_max": 24,
+    "alert_delivery_seconds_max": 300,
+    "laptop_unavailable_seconds_max": 60,
+    "reconnect_reconciliation_seconds_max": 300,
+    "takeover_transition_seconds_max": 60,
+    "isolated_restore_rto_seconds_max": 14400,
+    "evidence_retention_days": 400,
+    "evidence_encrypted": true,
+    "evidence_contains_secrets": false
+  },
+  "target_environments": {
+    "clean-environment": "Fresh isolated target with no inherited fleet state; used for bootstrap, isolated restore, and creation runbooks.",
+    "live-production": "Provisioned fleet; only non-destructive inspection or explicitly safe end-to-end traffic.",
+    "disposable-fixture": "Bounded non-production data/account/resource fixture; destructive and failure injection is prohibited elsewhere."
+  },
+  "execution_order": [
+    "REP-001",
+    "REP-002",
+    "REP-003",
+    "REP-004",
+    "AZR-001",
+    "AZR-002",
+    "AZR-003",
+    "AZR-004",
+    "AZR-005",
+    "AZR-006",
+    "NET-001",
+    "NET-002",
+    "NET-003",
+    "NET-004",
+    "NET-005",
+    "SVC-001",
+    "SVC-002",
+    "SVC-003",
+    "SVC-004",
+    "SVC-005",
+    "SVC-006",
+    "GAT-001",
+    "GAT-002",
+    "GAT-003",
+    "GAT-004",
+    "TEL-001",
+    "TEL-002",
+    "TEL-003",
+    "TEL-004",
+    "BOT-001",
+    "BOT-002",
+    "BOT-003",
+    "BOT-004",
+    "BOT-005",
+    "BOT-006",
+    "BOT-007",
+    "BOT-008",
+    "DSK-001",
+    "DSK-002",
+    "DSK-003",
+    "DSK-004",
+    "RTN-001",
+    "RTN-002",
+    "RTN-003",
+    "BRW-001",
+    "BRW-002",
+    "BRW-003",
+    "BRW-004",
+    "BRW-005",
+    "BRW-006",
+    "BRW-007",
+    "BRW-008",
+    "BRW-009",
+    "BRW-010",
+    "LAP-001",
+    "LAP-002",
+    "LAP-003",
+    "LAP-004",
+    "LAP-005",
+    "LAP-006",
+    "LAP-007",
+    "LAP-008",
+    "LAP-009",
+    "BKP-001",
+    "BKP-002",
+    "BKP-003",
+    "BKP-004",
+    "BKP-005",
+    "BKP-006",
+    "MON-001",
+    "MON-002",
+    "MON-003",
+    "FIN-001",
+    "FIN-002",
+    "FIN-003",
+    "FIN-004",
+    "FIN-005",
+    "FIN-006",
+    "FIN-007",
+    "FIN-008",
+    "FIN-009",
+    "FIN-010",
+    "FIN-011",
+    "FIN-012",
+    "FIN-013",
+    "FIN-014",
+    "FIN-015",
+    "FIN-016",
+    "RUN-001",
+    "RUN-002",
+    "GAP-001",
+    "GAP-002",
+    "GAP-003",
+    "HLT-001",
+    "HLT-002"
+  ],
+  "requirements": [
+    {
+      "id": "REP-001",
+      "category": "repository",
+      "requirement": "Pin and record repository revision, deployment manifest digest, Hermes/Desktop versions, image digests, and test runner version.",
+      "prerequisites": [],
+      "target": {
+        "environment": "clean-environment",
+        "component": "release inputs"
+      },
+      "command_test_hook": "acceptance/hooks/run-requirement --id REP-001 --target clean-environment",
+      "evidence_artifacts": [
+        "evidence/{run_id}/inventory/release.json"
+      ],
+      "pass_criteria": [
+        "All revisions and digests are immutable, non-empty, mutually consistent, and map to reviewed artifacts."
+      ],
+      "failure_rollback_behavior": [
+        "Fail release; make no infrastructure change."
+      ],
+      "destructive": false,
+      "secret_risk": false,
+      "mandatory": true
+    },
+    {
+      "id": "REP-002",
+      "category": "repository",
+      "requirement": "Validate tracked repository, history, generated configuration, logs, and evidence for credentials, private keys, cookies, and credential-bearing URLs.",
+      "prerequisites": [
+        "REP-001"
+      ],
+      "target": {
+        "environment": "clean-environment",
+        "component": "repository and evidence"
+      },
+      "command_test_hook": "acceptance/hooks/run-requirement --id REP-002 --target clean-environment",
+      "evidence_artifacts": [
+        "evidence/{run_id}/scans/secret-scan.json"
+      ],
+      "pass_criteria": [
+        "All configured scanners report zero unresolved secret findings and evidence uses only opaque handles/digests."
+      ],
+      "failure_rollback_behavior": [
+        "Quarantine evidence, rotate any exposed credential outside agent context, remove the exposure, and rerun from REP-001."
+      ],
+      "destructive": false,
+      "secret_risk": true,
+      "mandatory": true
+    },
+    {
+      "id": "REP-003",
+      "category": "repository",
+      "requirement": "Prove implementation and operator documentation matches the three locked decisions and names every unsupported or unimplemented capability.",
+      "prerequisites": [
+        "REP-001"
+      ],
+      "target": {
+        "environment": "clean-environment",
+        "component": "documentation"
+      },
+      "command_test_hook": "acceptance/hooks/run-requirement --id REP-003 --target clean-environment",
+      "evidence_artifacts": [
+        "evidence/{run_id}/documentation/consistency.json"
+      ],
+      "pass_criteria": [
+        "No contradictory topology, policy, UX, port, identity, isolation, or authority statement; every gap has owner, tracking issue, impact, and blocked capability."
+      ],
+      "failure_rollback_behavior": [
+        "Fail release; correct docs or implementation without weakening locked decisions."
+      ],
+      "destructive": false,
+      "secret_risk": false,
+      "mandatory": true
+    },
+    {
+      "id": "REP-004",
+      "category": "repository",
+      "requirement": "Verify reproducible clean-environment bootstrap uses only committed manifests and documented human secret provisioning.",
+      "prerequisites": [
+        "REP-002",
+        "REP-003"
+      ],
+      "target": {
+        "environment": "clean-environment",
+        "component": "bootstrap"
+      },
+      "command_test_hook": "acceptance/hooks/run-requirement --id REP-004 --target clean-environment",
+      "evidence_artifacts": [
+        "evidence/{run_id}/clean/bootstrap.log",
+        "evidence/{run_id}/clean/inventory.json"
+      ],
+      "pass_criteria": [
+        "Fresh host reaches pre-service readiness with no undeclared manual step, inherited state, or agent-visible secret."
+      ],
+      "failure_rollback_behavior": [
+        "Destroy the clean fixture, repair automation/runbook, and repeat."
+      ],
+      "destructive": true,
+      "secret_risk": true,
+      "mandatory": true
+    },
+    {
+      "id": "AZR-001",
+      "category": "azure",
+      "requirement": "Record live Azure for Students subscription credit, quota, Central US and East US 2 SKU availability, and current prices before selection.",
+      "prerequisites": [
+        "REP-004"
+      ],
+      "target": {
+        "environment": "live-production",
+        "component": "Azure control plane"
+      },
+      "command_test_hook": "acceptance/hooks/run-requirement --id AZR-001 --target live-production",
+      "evidence_artifacts": [
+        "evidence/{run_id}/azure/feasibility.json",
+        "evidence/{run_id}/azure/cost-selection.json"
+      ],
+      "pass_criteria": [
+        "Selected region/SKU is available, Ubuntu-compatible, within quota and remaining credit, and is the cheaper feasible option; hourly/monthly estimates and observation time are recorded."
+      ],
+      "failure_rollback_behavior": [
+        "Fail before provisioning; select no assumed or unavailable SKU."
+      ],
+      "destructive": false,
+      "secret_risk": true,
+      "mandatory": true
+    },
+    {
+      "id": "AZR-002",
+      "category": "azure",
+      "requirement": "Inventory the exact resource group, VM, NIC, NSG, encrypted managed disks, private storage, snapshots, diagnostics, budget, and alert resources.",
+      "prerequisites": [
+        "AZR-001"
+      ],
+      "target": {
+        "environment": "live-production",
+        "component": "Azure resources"
+      },
+      "command_test_hook": "acceptance/hooks/run-requirement --id AZR-002 --target live-production",
+      "evidence_artifacts": [
+        "evidence/{run_id}/azure/resources.json"
+      ],
+      "pass_criteria": [
+        "Exactly the reviewed resources exist with expected ownership/tags/region and no orphaned fleet resource."
+      ],
+      "failure_rollback_behavior": [
+        "Fail release; reconcile only through reviewed manifest or remove orphan with approval."
+      ],
+      "destructive": false,
+      "secret_risk": false,
+      "mandatory": true
+    },
+    {
+      "id": "AZR-003",
+      "category": "azure",
+      "requirement": "Verify VM and every managed disk, snapshot, Blob account/container, and transport path meet encryption and private-access policy.",
+      "prerequisites": [
+        "AZR-002"
+      ],
+      "target": {
+        "environment": "live-production",
+        "component": "Azure storage"
+      },
+      "command_test_hook": "acceptance/hooks/run-requirement --id AZR-003 --target live-production",
+      "evidence_artifacts": [
+        "evidence/{run_id}/azure/encryption.json"
+      ],
+      "pass_criteria": [
+        "Encryption at rest is enabled everywhere; Blob public access is disabled; transport requires TLS; backup namespaces are Bot-scoped."
+      ],
+      "failure_rollback_behavior": [
+        "Disable affected service, deny backup/restore, revert exposure, and repair encryption before rerun."
+      ],
+      "destructive": false,
+      "secret_risk": true,
+      "mandatory": true
+    },
+    {
+      "id": "AZR-004",
+      "category": "azure",
+      "requirement": "Verify effective NSG rules contain no Internet inbound allow and no public IP or bootstrap ingress remains.",
+      "prerequisites": [
+        "AZR-002"
+      ],
+      "target": {
+        "environment": "live-production",
+        "component": "NIC and NSG"
+      },
+      "command_test_hook": "acceptance/hooks/run-requirement --id AZR-004 --target live-production",
+      "evidence_artifacts": [
+        "evidence/{run_id}/azure/effective-nsg.json",
+        "evidence/{run_id}/network/external-scan.json"
+      ],
+      "pass_criteria": [
+        "Effective Internet-to-VM probes fail for all TCP/UDP ports and Azure shows no public inbound path."
+      ],
+      "failure_rollback_behavior": [
+        "Immediately remove exposure using reviewed rollback; stop exposed services and fail release."
+      ],
+      "destructive": false,
+      "secret_risk": false,
+      "mandatory": true
+    },
+    {
+      "id": "AZR-005",
+      "category": "azure",
+      "requirement": "Verify boot diagnostics and Azure inventory contain metadata only and no prompt, credential, token, browser content, or message body.",
+      "prerequisites": [
+        "AZR-002",
+        "REP-002"
+      ],
+      "target": {
+        "environment": "live-production",
+        "component": "Azure diagnostics"
+      },
+      "command_test_hook": "acceptance/hooks/run-requirement --id AZR-005 --target live-production",
+      "evidence_artifacts": [
+        "evidence/{run_id}/azure/diagnostic-scan.json"
+      ],
+      "pass_criteria": [
+        "Zero prohibited values or payload classes are present."
+      ],
+      "failure_rollback_behavior": [
+        "Disable unsafe diagnostic sink, quarantine artifacts, rotate exposed credentials, and fail release."
+      ],
+      "destructive": false,
+      "secret_risk": true,
+      "mandatory": true
+    },
+    {
+      "id": "AZR-006",
+      "category": "azure",
+      "requirement": "Verify budget and remaining-credit thresholds are configured and current estimated monthly fleet cost remains within the approved student-credit envelope.",
+      "prerequisites": [
+        "AZR-001",
+        "AZR-002"
+      ],
+      "target": {
+        "environment": "live-production",
+        "component": "Azure cost controls"
+      },
+      "command_test_hook": "acceptance/hooks/run-requirement --id AZR-006 --target live-production",
+      "evidence_artifacts": [
+        "evidence/{run_id}/azure/budget.json"
+      ],
+      "pass_criteria": [
+        "Budget/credit alerts are enabled, recipients are correct, and estimate does not exceed approved available credit."
+      ],
+      "failure_rollback_behavior": [
+        "Fail release; stop optional resources and obtain explicit approval for any cost change."
+      ],
+      "destructive": false,
+      "secret_risk": false,
+      "mandatory": true
+    },
+    {
+      "id": "NET-001",
+      "category": "network",
+      "requirement": "Verify host listeners and publications match the locked port matrix.",
+      "prerequisites": [
+        "AZR-004"
+      ],
+      "target": {
+        "environment": "live-production",
+        "component": "fleet-server"
+      },
+      "command_test_hook": "acceptance/hooks/run-requirement --id NET-001 --target live-production",
+      "evidence_artifacts": [
+        "evidence/{run_id}/network/listeners.json"
+      ],
+      "pass_criteria": [
+        "Only SSH 22 and private proxy 443 bind the Tailscale address; 8701,8702,6081,6082 bind host loopback; 5900 and 9222 are browser-container loopback only; 9223 is Bot-private; 8642 and File Bridge are absent."
+      ],
+      "failure_rollback_behavior": [
+        "Stop the unexpected listener, restore reviewed bind configuration, and fail release."
+      ],
+      "destructive": false,
+      "secret_risk": false,
+      "mandatory": true
+    },
+    {
+      "id": "NET-002",
+      "category": "network",
+      "requirement": "Verify nftables inbound default drop and allowed traffic only on loopback, established flows, and approved tailscale0 paths.",
+      "prerequisites": [
+        "NET-001"
+      ],
+      "target": {
+        "environment": "live-production",
+        "component": "host firewall"
+      },
+      "command_test_hook": "acceptance/hooks/run-requirement --id NET-002 --target live-production",
+      "evidence_artifacts": [
+        "evidence/{run_id}/network/nftables.json"
+      ],
+      "pass_criteria": [
+        "Ruleset exactly implements locked policy and direct probes to all VM non-loopback addresses on backend/control ports fail."
+      ],
+      "failure_rollback_behavior": [
+        "Apply reviewed deny-first rules through private console; stop services if safe rollback cannot be proved."
+      ],
+      "destructive": false,
+      "secret_risk": false,
+      "mandatory": true
+    },
+    {
+      "id": "NET-003",
+      "category": "network",
+      "requirement": "Verify Tailscale default-deny identity/device policy and prohibited sharing features.",
+      "prerequisites": [
+        "NET-002"
+      ],
+      "target": {
+        "environment": "live-production",
+        "component": "tailnet"
+      },
+      "command_test_hook": "acceptance/hooks/run-requirement --id NET-003 --target live-production",
+      "evidence_artifacts": [
+        "evidence/{run_id}/network/tailscale-policy.json",
+        "evidence/{run_id}/network/tailscale-negative.json"
+      ],
+      "pass_criteria": [
+        "Johan approved device reaches only TCP 22/443; unauthorized principal reaches neither; Funnel, public Serve/share, Tailscale SSH, exit node, and subnet routing are disabled."
+      ],
+      "failure_rollback_behavior": [
+        "Revoke node/routes, disable proxy and SSH until policy is corrected, and fail release."
+      ],
+      "destructive": false,
+      "secret_risk": true,
+      "mandatory": true
+    },
+    {
+      "id": "NET-004",
+      "category": "network",
+      "requirement": "Verify authenticated private SSH and Desktop HTTP/WebSocket access through Tailscale and reject unauthenticated or cross-Bot routing.",
+      "prerequisites": [
+        "NET-003"
+      ],
+      "target": {
+        "environment": "live-production",
+        "component": "private admin plane"
+      },
+      "command_test_hook": "acceptance/hooks/run-requirement --id NET-004 --target live-production",
+      "evidence_artifacts": [
+        "evidence/{run_id}/network/private-access.json"
+      ],
+      "pass_criteria": [
+        "Approved device succeeds with application authentication; unauthenticated requests fail; each Bot origin maps only to its own loopback backend."
+      ],
+      "failure_rollback_behavior": [
+        "Disable incorrect route/auth configuration and restore last known-good proxy policy."
+      ],
+      "destructive": false,
+      "secret_risk": true,
+      "mandatory": true
+    },
+    {
+      "id": "NET-005",
+      "category": "network",
+      "requirement": "Verify loss of Tailscale removes administration and takeover without enabling fallback public access or interrupting safe outbound gateway work.",
+      "prerequisites": [
+        "NET-003"
+      ],
+      "target": {
+        "environment": "disposable-fixture",
+        "component": "network failure fixture"
+      },
+      "command_test_hook": "acceptance/hooks/run-requirement --id NET-005 --target disposable-fixture",
+      "evidence_artifacts": [
+        "evidence/{run_id}/failure/tailscale-loss.json"
+      ],
+      "pass_criteria": [
+        "SSH/Desktop/takeover become unavailable, public probes remain denied, and existing safe Telegram/routine processing behavior matches policy."
+      ],
+      "failure_rollback_behavior": [
+        "Restore tailnet path through provider console; never open public fallback; fail release on exposure."
+      ],
+      "destructive": true,
+      "secret_risk": false,
+      "mandatory": true
+    },
+    {
+      "id": "SVC-001",
+      "category": "services",
+      "requirement": "Verify systemd/launchd installation, identities, modes, command lines, immutable image pins, limits, and restart policies.",
+      "prerequisites": [
+        "NET-004"
+      ],
+      "target": {
+        "environment": "live-production",
+        "component": "all runtimes"
+      },
+      "command_test_hook": "acceptance/hooks/run-requirement --id SVC-001 --target live-production",
+      "evidence_artifacts": [
+        "evidence/{run_id}/services/unit-inventory.json"
+      ],
+      "pass_criteria": [
+        "Each server Bot has one non-root gateway and one serve --isolated; laptop-worker has one launchd gateway and one Desktop-managed isolated serve only while Desktop is open; no duplicate writer exists."
+      ],
+      "failure_rollback_behavior": [
+        "Stop duplicates, disable affected Bot, restore reviewed units, and fail release."
+      ],
+      "destructive": false,
+      "secret_risk": false,
+      "mandatory": true
+    },
+    {
+      "id": "SVC-002",
+      "category": "services",
+      "requirement": "Kill each server gateway process and measure supervised recovery.",
+      "prerequisites": [
+        "SVC-001"
+      ],
+      "target": {
+        "environment": "disposable-fixture",
+        "component": "server gateways"
+      },
+      "command_test_hook": "acceptance/hooks/run-requirement --id SVC-002 --target disposable-fixture",
+      "evidence_artifacts": [
+        "evidence/{run_id}/services/gateway-kill.json"
+      ],
+      "pass_criteria": [
+        "Each gateway returns healthy with one PID and resumes polling/scheduling in 120 seconds or less without duplicate turns."
+      ],
+      "failure_rollback_behavior": [
+        "Disable crash-looping unit, preserve state/evidence, and restore last known-good unit/image."
+      ],
+      "destructive": true,
+      "secret_risk": false,
+      "mandatory": true
+    },
+    {
+      "id": "SVC-003",
+      "category": "services",
+      "requirement": "Kill each server serve process and measure supervised recovery.",
+      "prerequisites": [
+        "SVC-001"
+      ],
+      "target": {
+        "environment": "disposable-fixture",
+        "component": "server Desktop backends"
+      },
+      "command_test_hook": "acceptance/hooks/run-requirement --id SVC-003 --target disposable-fixture",
+      "evidence_artifacts": [
+        "evidence/{run_id}/services/serve-kill.json"
+      ],
+      "pass_criteria": [
+        "Each serve returns authenticated and healthy with one PID in 120 seconds or less and profile integrity passes."
+      ],
+      "failure_rollback_behavior": [
+        "Disable affected Desktop route and restore last known-good unit/image."
+      ],
+      "destructive": true,
+      "secret_risk": false,
+      "mandatory": true
+    },
+    {
+      "id": "SVC-004",
+      "category": "services",
+      "requirement": "Kill browser, lease supervisor, proxy, and rootless runtime components independently.",
+      "prerequisites": [
+        "SVC-001"
+      ],
+      "target": {
+        "environment": "disposable-fixture",
+        "component": "server components"
+      },
+      "command_test_hook": "acceptance/hooks/run-requirement --id SVC-004 --target disposable-fixture",
+      "evidence_artifacts": [
+        "evidence/{run_id}/services/component-kill.json"
+      ],
+      "pass_criteria": [
+        "Affected component recovers in 120 seconds or less where safe; browser ownership enters RECOVERING; no cross-Bot restart or unsafe control occurs."
+      ],
+      "failure_rollback_behavior": [
+        "Keep browser control disabled, isolate failed Bot, and restore component from pinned artifact."
+      ],
+      "destructive": true,
+      "secret_risk": false,
+      "mandatory": true
+    },
+    {
+      "id": "SVC-005",
+      "category": "services",
+      "requirement": "Reboot the Azure VM and verify ordered fleet recovery.",
+      "prerequisites": [
+        "SVC-002",
+        "SVC-003",
+        "SVC-004"
+      ],
+      "target": {
+        "environment": "disposable-fixture",
+        "component": "fleet-server"
+      },
+      "command_test_hook": "acceptance/hooks/run-requirement --id SVC-005 --target disposable-fixture",
+      "evidence_artifacts": [
+        "evidence/{run_id}/services/vm-reboot.json"
+      ],
+      "pass_criteria": [
+        "Within 10 minutes of reboot all host and Bot health gates pass; gateway precedes serve; browser begins RECOVERING; no duplicate processes/listeners or lost durable state."
+      ],
+      "failure_rollback_behavior": [
+        "Keep unattended routines and Desktop disabled; diagnose boot ordering and restore last known-good host snapshot if required."
+      ],
+      "destructive": true,
+      "secret_risk": false,
+      "mandatory": true
+    },
+    {
+      "id": "SVC-006",
+      "category": "services",
+      "requirement": "Verify maintenance quiescence and restart order.",
+      "prerequisites": [
+        "SVC-001"
+      ],
+      "target": {
+        "environment": "disposable-fixture",
+        "component": "Bot profile maintenance"
+      },
+      "command_test_hook": "acceptance/hooks/run-requirement --id SVC-006 --target disposable-fixture",
+      "evidence_artifacts": [
+        "evidence/{run_id}/services/quiescence.json"
+      ],
+      "pass_criteria": [
+        "New work drains/rejects, gateway and serve stop, no profile DB/WAL descriptor remains, maintenance runs, then gateway health passes before serve starts."
+      ],
+      "failure_rollback_behavior": [
+        "Abort maintenance before writes or restore pre-maintenance snapshot; keep both processes stopped if state is uncertain."
+      ],
+      "destructive": true,
+      "secret_risk": false,
+      "mandatory": true
+    },
+    {
+      "id": "GAT-001",
+      "category": "gateway-scheduler",
+      "requirement": "Verify exactly one gateway owns Telegram polling and cron for each profile and serve owns neither.",
+      "prerequisites": [
+        "SVC-001"
+      ],
+      "target": {
+        "environment": "live-production",
+        "component": "all Bot profiles"
+      },
+      "command_test_hook": "acceptance/hooks/run-requirement --id GAT-001 --target live-production",
+      "evidence_artifacts": [
+        "evidence/{run_id}/gateway/ownership.json"
+      ],
+      "pass_criteria": [
+        "No multiplex gateway, standalone cron, second gateway, CLI/chat writer, or messaging-enabled serve exists."
+      ],
+      "failure_rollback_behavior": [
+        "Stop all writers for affected profile, repair ownership, run DB integrity check, then start gateway before serve."
+      ],
+      "destructive": false,
+      "secret_risk": false,
+      "mandatory": true
+    },
+    {
+      "id": "GAT-002",
+      "category": "gateway-scheduler",
+      "requirement": "Stress simultaneous gateway, Desktop, and cron state writes for the pinned version on every profile.",
+      "prerequisites": [
+        "GAT-001"
+      ],
+      "target": {
+        "environment": "disposable-fixture",
+        "component": "chief, test-worker, laptop-worker"
+      },
+      "command_test_hook": "acceptance/hooks/run-requirement --id GAT-002 --target disposable-fixture",
+      "evidence_artifacts": [
+        "evidence/{run_id}/gateway/concurrency-junit.xml",
+        "evidence/{run_id}/gateway/state-integrity.json"
+      ],
+      "pass_criteria": [
+        "All correlation markers have exactly one correctly attributed reply; no lost/cross-attributed turn, busy/corruption error, duplicate handling, or unhealthy DB/WAL after restart."
+      ],
+      "failure_rollback_behavior": [
+        "Reject pinned version/pairing; disable affected Desktop backend and restore fixture state."
+      ],
+      "destructive": true,
+      "secret_risk": false,
+      "mandatory": true
+    },
+    {
+      "id": "GAT-003",
+      "category": "gateway-scheduler",
+      "requirement": "Verify provider/model pin for live turns and routines.",
+      "prerequisites": [
+        "GAT-001"
+      ],
+      "target": {
+        "environment": "live-production",
+        "component": "all Bot profiles"
+      },
+      "command_test_hook": "acceptance/hooks/run-requirement --id GAT-003 --target live-production",
+      "evidence_artifacts": [
+        "evidence/{run_id}/gateway/provider-pin.json"
+      ],
+      "pass_criteria": [
+        "Only openai-codex with gpt-5.6-sol is configured and observed; no fallback provider/model is enabled."
+      ],
+      "failure_rollback_behavior": [
+        "Disable turns/routines until exact pin is restored."
+      ],
+      "destructive": false,
+      "secret_risk": true,
+      "mandatory": true
+    },
+    {
+      "id": "GAT-004",
+      "category": "gateway-scheduler",
+      "requirement": "Verify routine schedule ownership, deduplication, result recording, and restart catch-up policy.",
+      "prerequisites": [
+        "GAT-002"
+      ],
+      "target": {
+        "environment": "disposable-fixture",
+        "component": "cron ticker"
+      },
+      "command_test_hook": "acceptance/hooks/run-requirement --id GAT-004 --target disposable-fixture",
+      "evidence_artifacts": [
+        "evidence/{run_id}/routines/scheduler.json"
+      ],
+      "pass_criteria": [
+        "Each due occurrence runs at most once under its owner, records outcome/correlation, and restart causes neither silent loss nor duplicate execution."
+      ],
+      "failure_rollback_behavior": [
+        "Pause affected schedule, reconcile from durable ledger, and require approval for uncertain side-effect retry."
+      ],
+      "destructive": true,
+      "secret_risk": false,
+      "mandatory": true
+    },
+    {
+      "id": "TEL-001",
+      "category": "telegram",
+      "requirement": "Verify approved inbound Telegram message admission and outbound reply for each mapped server Bot.",
+      "prerequisites": [
+        "GAT-001",
+        "NET-001"
+      ],
+      "target": {
+        "environment": "live-production",
+        "component": "Telegram gateways"
+      },
+      "command_test_hook": "acceptance/hooks/run-requirement --id TEL-001 --target live-production",
+      "evidence_artifacts": [
+        "evidence/{run_id}/telegram/roundtrip.json"
+      ],
+      "pass_criteria": [
+        "Allowlisted numeric user/chat receives exactly one attributed reply from mapped owner; no public webhook/listener exists."
+      ],
+      "failure_rollback_behavior": [
+        "Disable mapping, preserve sanitized IDs/digests only, and repair gateway admission."
+      ],
+      "destructive": false,
+      "secret_risk": true,
+      "mandatory": true
+    },
+    {
+      "id": "TEL-002",
+      "category": "telegram",
+      "requirement": "Verify unauthorized, unpaired, wrong-chat, and cross-Bot Telegram routing attempts are denied.",
+      "prerequisites": [
+        "TEL-001"
+      ],
+      "target": {
+        "environment": "disposable-fixture",
+        "component": "Telegram admission fixture"
+      },
+      "command_test_hook": "acceptance/hooks/run-requirement --id TEL-002 --target disposable-fixture",
+      "evidence_artifacts": [
+        "evidence/{run_id}/telegram/negative-routing.json"
+      ],
+      "pass_criteria": [
+        "Every unauthorized fixture yields no Bot turn, no side effect, and a sanitized deny event."
+      ],
+      "failure_rollback_behavior": [
+        "Disable affected gateway and revoke mapping until admission is repaired."
+      ],
+      "destructive": false,
+      "secret_risk": true,
+      "mandatory": true
+    },
+    {
+      "id": "TEL-003",
+      "category": "telegram",
+      "requirement": "Verify changing Channel owner derives a same-owner opaque credential handle and rejects mismatched ownership.",
+      "prerequisites": [
+        "TEL-001"
+      ],
+      "target": {
+        "environment": "disposable-fixture",
+        "component": "Channel mapping fixture"
+      },
+      "command_test_hook": "acceptance/hooks/run-requirement --id TEL-003 --target disposable-fixture",
+      "evidence_artifacts": [
+        "evidence/{run_id}/telegram/owner-routing.json"
+      ],
+      "pass_criteria": [
+        "Messages route only to selected owner; cross-owner handle and nonnumeric authority identifiers are rejected."
+      ],
+      "failure_rollback_behavior": [
+        "Rollback mapping atomically to prior owner; do not copy credentials."
+      ],
+      "destructive": true,
+      "secret_risk": true,
+      "mandatory": true
+    },
+    {
+      "id": "TEL-004",
+      "category": "telegram",
+      "requirement": "Verify Telegram outbound errors, retry limits, attribution, and idempotency do not duplicate a message.",
+      "prerequisites": [
+        "TEL-001"
+      ],
+      "target": {
+        "environment": "disposable-fixture",
+        "component": "Telegram outage fixture"
+      },
+      "command_test_hook": "acceptance/hooks/run-requirement --id TEL-004 --target disposable-fixture",
+      "evidence_artifacts": [
+        "evidence/{run_id}/telegram/outbound-retry.json"
+      ],
+      "pass_criteria": [
+        "A bounded outage yields either one confirmed outbound message or a failed outcome; never more than one; alert/evidence is sanitized."
+      ],
+      "failure_rollback_behavior": [
+        "Stop retry after bound, retain original idempotency key, and require state inspection before fresh approval where applicable."
+      ],
+      "destructive": true,
+      "secret_risk": false,
+      "mandatory": true
+    },
+    {
+      "id": "BOT-001",
+      "category": "bot-isolation",
+      "requirement": "Verify persona, identity, model, instructions, memory mode, capabilities, skill assignment, routine, and runtime survive restart for each Bot.",
+      "prerequisites": [
+        "SVC-005"
+      ],
+      "target": {
+        "environment": "live-production",
+        "component": "all Bot profiles"
+      },
+      "command_test_hook": "acceptance/hooks/run-requirement --id BOT-001 --target live-production",
+      "evidence_artifacts": [
+        "evidence/{run_id}/bots/config-persistence.json"
+      ],
+      "pass_criteria": [
+        "Each Bot returns its own expected non-secret configuration after restart with no default-profile fallback."
+      ],
+      "failure_rollback_behavior": [
+        "Disable mismatched Bot and restore its Bot-scoped R1 backup."
+      ],
+      "destructive": false,
+      "secret_risk": false,
+      "mandatory": true
+    },
+    {
+      "id": "BOT-002",
+      "category": "bot-isolation",
+      "requirement": "Verify memory and canonical session persistence and attribution across gateway/serve restart.",
+      "prerequisites": [
+        "BOT-001"
+      ],
+      "target": {
+        "environment": "disposable-fixture",
+        "component": "Bot state fixture"
+      },
+      "command_test_hook": "acceptance/hooks/run-requirement --id BOT-002 --target disposable-fixture",
+      "evidence_artifacts": [
+        "evidence/{run_id}/bots/memory-session.json"
+      ],
+      "pass_criteria": [
+        "Seeded non-secret marker remains only in owning Bot memory/session and replies preserve Bot/session attribution."
+      ],
+      "failure_rollback_behavior": [
+        "Stop both processes, run integrity checks, restore owning Bot only, and investigate leakage as incident."
+      ],
+      "destructive": true,
+      "secret_risk": false,
+      "mandatory": true
+    },
+    {
+      "id": "BOT-003",
+      "category": "bot-isolation",
+      "requirement": "Verify skills and tools are allowlisted per Bot and unavailable to Bots lacking assignment.",
+      "prerequisites": [
+        "BOT-001"
+      ],
+      "target": {
+        "environment": "disposable-fixture",
+        "component": "capability fixture"
+      },
+      "command_test_hook": "acceptance/hooks/run-requirement --id BOT-003 --target disposable-fixture",
+      "evidence_artifacts": [
+        "evidence/{run_id}/bots/skills-tools.json"
+      ],
+      "pass_criteria": [
+        "Assigned harmless skill succeeds; unassigned and cross-Bot capability invocation fails before execution."
+      ],
+      "failure_rollback_behavior": [
+        "Disable capability broker for affected Bot and restore reviewed allowlist."
+      ],
+      "destructive": false,
+      "secret_risk": false,
+      "mandatory": true
+    },
+    {
+      "id": "BOT-004",
+      "category": "bot-isolation",
+      "requirement": "Verify credential handles and broker use are Bot-, purpose-, adapter-, and destination-scoped without value disclosure.",
+      "prerequisites": [
+        "BOT-001"
+      ],
+      "target": {
+        "environment": "disposable-fixture",
+        "component": "credential canary fixture"
+      },
+      "command_test_hook": "acceptance/hooks/run-requirement --id BOT-004 --target disposable-fixture",
+      "evidence_artifacts": [
+        "evidence/{run_id}/bots/credential-boundary.json"
+      ],
+      "pass_criteria": [
+        "Owner operation succeeds through broker; cross-Bot/scope/destination/direct-egress attempts fail; seeded canary is absent from environment, argv, files, outputs, logs, sessions, and evidence."
+      ],
+      "failure_rollback_behavior": [
+        "Disable/revoke handle, quarantine evidence, rotate seeded credential, and fail release."
+      ],
+      "destructive": true,
+      "secret_risk": true,
+      "mandatory": true
+    },
+    {
+      "id": "BOT-005",
+      "category": "bot-isolation",
+      "requirement": "Verify each Bot workspace, HOME, profile root, download release path, and terminal cwd are exact and non-shared.",
+      "prerequisites": [
+        "BOT-001"
+      ],
+      "target": {
+        "environment": "live-production",
+        "component": "runtime mounts"
+      },
+      "command_test_hook": "acceptance/hooks/run-requirement --id BOT-005 --target live-production",
+      "evidence_artifacts": [
+        "evidence/{run_id}/bots/mounts-paths.json"
+      ],
+      "pass_criteria": [
+        "Every resolved path and mount matches locked topology; another Bot root, host home/admin socket, and installation default profile are absent."
+      ],
+      "failure_rollback_behavior": [
+        "Stop affected container and rebuild mounts from reviewed manifest."
+      ],
+      "destructive": false,
+      "secret_risk": false,
+      "mandatory": true
+    },
+    {
+      "id": "BOT-006",
+      "category": "bot-isolation",
+      "requirement": "Verify Unix users, rootless containers, networks, process visibility, ownership, permissions, capabilities, sandbox, and resource limits isolate server Bots.",
+      "prerequisites": [
+        "BOT-005"
+      ],
+      "target": {
+        "environment": "disposable-fixture",
+        "component": "server isolation fixture"
+      },
+      "command_test_hook": "acceptance/hooks/run-requirement --id BOT-006 --target disposable-fixture",
+      "evidence_artifacts": [
+        "evidence/{run_id}/bots/os-container-isolation.json"
+      ],
+      "pass_criteria": [
+        "Cross-Bot filesystem/network/DNS/process/audit-write probes fail; containers are non-root/unprivileged, sandboxed, capability-dropped, socket-free, and bounded."
+      ],
+      "failure_rollback_behavior": [
+        "Stop compromised boundary, preserve metadata, rebuild Bot container set and rotate its credentials."
+      ],
+      "destructive": true,
+      "secret_risk": false,
+      "mandatory": true
+    },
+    {
+      "id": "BOT-007",
+      "category": "bot-isolation",
+      "requirement": "Verify Browser Profile, credential, session, memory, workspace, download, audit, and backup namespaces never leak between Bots.",
+      "prerequisites": [
+        "BOT-004",
+        "BOT-006"
+      ],
+      "target": {
+        "environment": "disposable-fixture",
+        "component": "cross-Bot canary fixture"
+      },
+      "command_test_hook": "acceptance/hooks/run-requirement --id BOT-007 --target disposable-fixture",
+      "evidence_artifacts": [
+        "evidence/{run_id}/bots/cross-bot-leakage.json"
+      ],
+      "pass_criteria": [
+        "Every owner-tagged canary is visible only to its owner and every cross-owner read/write fails."
+      ],
+      "failure_rollback_behavior": [
+        "Treat any leak as security incident; disable both Bots, rotate affected credentials, restore from known-clean points."
+      ],
+      "destructive": true,
+      "secret_risk": true,
+      "mandatory": true
+    },
+    {
+      "id": "BOT-008",
+      "category": "bot-isolation",
+      "requirement": "Verify test-worker has test-only authority and cannot resolve production accounts, handles, or data.",
+      "prerequisites": [
+        "BOT-004"
+      ],
+      "target": {
+        "environment": "live-production",
+        "component": "test-worker"
+      },
+      "command_test_hook": "acceptance/hooks/run-requirement --id BOT-008 --target live-production",
+      "evidence_artifacts": [
+        "evidence/{run_id}/bots/test-worker-scope.json"
+      ],
+      "pass_criteria": [
+        "No production credential/account/data reference is configured or resolvable."
+      ],
+      "failure_rollback_behavior": [
+        "Disable test-worker and revoke any excessive grant immediately."
+      ],
+      "destructive": false,
+      "secret_risk": true,
+      "mandatory": true
+    },
+    {
+      "id": "DSK-001",
+      "category": "desktop-rooms",
+      "requirement": "Verify each canonical Bot Chat persists, routes to exactly its owner, and shows stable Bot/session attribution.",
+      "prerequisites": [
+        "BOT-002",
+        "NET-004"
+      ],
+      "target": {
+        "environment": "live-production",
+        "component": "Hermes Desktop"
+      },
+      "command_test_hook": "acceptance/hooks/run-requirement --id DSK-001 --target live-production",
+      "evidence_artifacts": [
+        "evidence/{run_id}/desktop/canonical-chats.json"
+      ],
+      "pass_criteria": [
+        "Messages and replies remain in the owning canonical chat across reconnect/restart with no cross-profile attribution."
+      ],
+      "failure_rollback_behavior": [
+        "Disable incorrect backend route and restore prior chat mapping."
+      ],
+      "destructive": false,
+      "secret_risk": false,
+      "mandatory": true
+    },
+    {
+      "id": "DSK-002",
+      "category": "desktop-rooms",
+      "requirement": "Verify Room membership and transcript attribution do not merge profiles, credentials, memory, or authority.",
+      "prerequisites": [
+        "DSK-001"
+      ],
+      "target": {
+        "environment": "disposable-fixture",
+        "component": "Bot Room fixture"
+      },
+      "command_test_hook": "acceptance/hooks/run-requirement --id DSK-002 --target disposable-fixture",
+      "evidence_artifacts": [
+        "evidence/{run_id}/desktop/rooms.json"
+      ],
+      "pass_criteria": [
+        "Only members receive eligible dispatch; transcript attributes every response; member data boundaries remain intact."
+      ],
+      "failure_rollback_behavior": [
+        "Close fixture Room, revert membership, and fail on any state leakage."
+      ],
+      "destructive": true,
+      "secret_risk": false,
+      "mandatory": true
+    },
+    {
+      "id": "DSK-003",
+      "category": "desktop-rooms",
+      "requirement": "Verify mentions dispatch only named online members and unmentioned routing is bounded.",
+      "prerequisites": [
+        "DSK-002"
+      ],
+      "target": {
+        "environment": "disposable-fixture",
+        "component": "mention fixture"
+      },
+      "command_test_hook": "acceptance/hooks/run-requirement --id DSK-003 --target disposable-fixture",
+      "evidence_artifacts": [
+        "evidence/{run_id}/desktop/mentions.json"
+      ],
+      "pass_criteria": [
+        "Mention reaches exactly named member; nonmember/offline Bot is not dispatched; unmentioned message terminates within configured bounded rounds without loop."
+      ],
+      "failure_rollback_behavior": [
+        "Stop Room routing and preserve transcript metadata for diagnosis."
+      ],
+      "destructive": true,
+      "secret_risk": false,
+      "mandatory": true
+    },
+    {
+      "id": "DSK-004",
+      "category": "desktop-rooms",
+      "requirement": "Verify direct and Room delegation retains target runtime permissions, credentials, availability, and approvals.",
+      "prerequisites": [
+        "DSK-003",
+        "BOT-003"
+      ],
+      "target": {
+        "environment": "disposable-fixture",
+        "component": "delegation fixture"
+      },
+      "command_test_hook": "acceptance/hooks/run-requirement --id DSK-004 --target disposable-fixture",
+      "evidence_artifacts": [
+        "evidence/{run_id}/desktop/delegation.json"
+      ],
+      "pass_criteria": [
+        "Target receives task/result correlation but gains no source authority; denied target action remains denied."
+      ],
+      "failure_rollback_behavior": [
+        "Cancel delegation and quarantine result if target identity/authority is ambiguous."
+      ],
+      "destructive": true,
+      "secret_risk": false,
+      "mandatory": true
+    },
+    {
+      "id": "RTN-001",
+      "category": "routines",
+      "requirement": "Verify server routines execute while Hermes Desktop clients are closed.",
+      "prerequisites": [
+        "GAT-004"
+      ],
+      "target": {
+        "environment": "disposable-fixture",
+        "component": "server routine fixture"
+      },
+      "command_test_hook": "acceptance/hooks/run-requirement --id RTN-001 --target disposable-fixture",
+      "evidence_artifacts": [
+        "evidence/{run_id}/routines/desktop-off.json"
+      ],
+      "pass_criteria": [
+        "Due server routine completes once with Desktop closed and records owner/result."
+      ],
+      "failure_rollback_behavior": [
+        "Pause routine and repair gateway ownership; do not introduce a second scheduler."
+      ],
+      "destructive": true,
+      "secret_risk": false,
+      "mandatory": true
+    },
+    {
+      "id": "RTN-002",
+      "category": "routines",
+      "requirement": "Verify server routines continue while the Mac is off and Mac-bound work degrades explicitly.",
+      "prerequisites": [
+        "RTN-001"
+      ],
+      "target": {
+        "environment": "disposable-fixture",
+        "component": "Mac-off fixture"
+      },
+      "command_test_hook": "acceptance/hooks/run-requirement --id RTN-002 --target disposable-fixture",
+      "evidence_artifacts": [
+        "evidence/{run_id}/routines/mac-off.json"
+      ],
+      "pass_criteria": [
+        "Server-only routine completes; Mac-bound delegation reports laptop_unavailable within 60 seconds and causes no Mac mutation."
+      ],
+      "failure_rollback_behavior": [
+        "Keep Mac work queued/failed per declared policy and never redirect it to server filesystem authority."
+      ],
+      "destructive": true,
+      "secret_risk": false,
+      "mandatory": true
+    },
+    {
+      "id": "RTN-003",
+      "category": "routines",
+      "requirement": "Verify laptop-worker routine behavior while Desktop is closed, Mac is awake, and Mac later sleeps.",
+      "prerequisites": [
+        "GAT-004"
+      ],
+      "target": {
+        "environment": "disposable-fixture",
+        "component": "laptop routine fixture"
+      },
+      "command_test_hook": "acceptance/hooks/run-requirement --id RTN-003 --target disposable-fixture",
+      "evidence_artifacts": [
+        "evidence/{run_id}/routines/laptop-availability.json"
+      ],
+      "pass_criteria": [
+        "Launchd gateway owns cron with Desktop closed; safe read-only routine can run awake; sleep/offline mutation fails closed and records outcome."
+      ],
+      "failure_rollback_behavior": [
+        "Pause laptop routine and require fresh local approval after recovery."
+      ],
+      "destructive": true,
+      "secret_risk": false,
+      "mandatory": true
+    },
+    {
+      "id": "BRW-001",
+      "category": "browser",
+      "requirement": "Verify headed Chromium visual output over authenticated tailnet-only noVNC with raw VNC/CDP unreachable from host, tailnet, and Internet.",
+      "prerequisites": [
+        "NET-004",
+        "SVC-001"
+      ],
+      "target": {
+        "environment": "live-production",
+        "component": "server browsers"
+      },
+      "command_test_hook": "acceptance/hooks/run-requirement --id BRW-001 --target live-production",
+      "evidence_artifacts": [
+        "evidence/{run_id}/browser/visual-private-access.json",
+        "evidence/{run_id}/browser/cdp-vnc-denial.json"
+      ],
+      "pass_criteria": [
+        "Approved view shows current Bot browser; noVNC input is off outside HUMAN; raw ports fail from every non-container source."
+      ],
+      "failure_rollback_behavior": [
+        "Disable proxy/browser route and enter RECOVERING until exposure is removed."
+      ],
+      "destructive": false,
+      "secret_risk": true,
+      "mandatory": true
+    },
+    {
+      "id": "BRW-002",
+      "category": "browser",
+      "requirement": "Verify Bot-scoped browser cookies/local storage/session and benign page state survive normal browser and VM restart.",
+      "prerequisites": [
+        "BRW-001",
+        "SVC-005"
+      ],
+      "target": {
+        "environment": "disposable-fixture",
+        "component": "persistent Browser Profiles"
+      },
+      "command_test_hook": "acceptance/hooks/run-requirement --id BRW-002 --target disposable-fixture",
+      "evidence_artifacts": [
+        "evidence/{run_id}/browser/persistence.json"
+      ],
+      "pass_criteria": [
+        "Seeded disposable session survives restart only for its Bot; browser starts RECOVERING and later passes harmless probe."
+      ],
+      "failure_rollback_behavior": [
+        "Keep automation disabled and restore same-Bot browser snapshot or require fresh login."
+      ],
+      "destructive": true,
+      "secret_risk": true,
+      "mandatory": true
+    },
+    {
+      "id": "BRW-003",
+      "category": "browser",
+      "requirement": "Verify legal takeover transitions AUTOMATION to DRAINING to HUMAN to RECOVERING to AUTOMATION.",
+      "prerequisites": [
+        "BRW-001"
+      ],
+      "target": {
+        "environment": "disposable-fixture",
+        "component": "takeover fixture"
+      },
+      "command_test_hook": "acceptance/hooks/run-requirement --id BRW-003 --target disposable-fixture",
+      "evidence_artifacts": [
+        "evidence/{run_id}/browser/takeover-transitions.json"
+      ],
+      "pass_criteria": [
+        "Each transition is audited; CDP clients reach zero before HUMAN; each transition completes within 60 seconds; one admin controls input; recovery rotates lease and passes probe."
+      ],
+      "failure_rollback_behavior": [
+        "Revoke grant/input, close CDP/VNC, remain RECOVERING, and alert."
+      ],
+      "destructive": true,
+      "secret_risk": true,
+      "mandatory": true
+    },
+    {
+      "id": "BRW-004",
+      "category": "browser",
+      "requirement": "Verify simultaneous automation and human input is impossible during races and concurrent takeover claims.",
+      "prerequisites": [
+        "BRW-003"
+      ],
+      "target": {
+        "environment": "disposable-fixture",
+        "component": "takeover race fixture"
+      },
+      "command_test_hook": "acceptance/hooks/run-requirement --id BRW-004 --target disposable-fixture",
+      "evidence_artifacts": [
+        "evidence/{run_id}/browser/control-races.json"
+      ],
+      "pass_criteria": [
+        "At every sample at most one control plane is enabled; one claimant wins or all fail closed; stale nonce and invalid transition fail."
+      ],
+      "failure_rollback_behavior": [
+        "Revoke all leases and grants, enter RECOVERING, and alert."
+      ],
+      "destructive": true,
+      "secret_risk": true,
+      "mandatory": true
+    },
+    {
+      "id": "BRW-005",
+      "category": "browser",
+      "requirement": "Verify HUMAN disconnect, abandonment, ten-minute timeout, and proxy/session loss revoke input and enter RECOVERING.",
+      "prerequisites": [
+        "BRW-003"
+      ],
+      "target": {
+        "environment": "disposable-fixture",
+        "component": "takeover abandonment fixture"
+      },
+      "command_test_hook": "acceptance/hooks/run-requirement --id BRW-005 --target disposable-fixture",
+      "evidence_artifacts": [
+        "evidence/{run_id}/browser/abandonment.json"
+      ],
+      "pass_criteria": [
+        "All cases deny CDP/noVNC input after event, revoke credential, and enter RECOVERING within 60 seconds."
+      ],
+      "failure_rollback_behavior": [
+        "Remain RECOVERING and require a new approved takeover after safe recovery."
+      ],
+      "destructive": true,
+      "secret_risk": true,
+      "mandatory": true
+    },
+    {
+      "id": "BRW-006",
+      "category": "browser",
+      "requirement": "Verify browser/supervisor restart or reboot during HUMAN never resumes human or automation control implicitly.",
+      "prerequisites": [
+        "BRW-003"
+      ],
+      "target": {
+        "environment": "disposable-fixture",
+        "component": "takeover reboot fixture"
+      },
+      "command_test_hook": "acceptance/hooks/run-requirement --id BRW-006 --target disposable-fixture",
+      "evidence_artifacts": [
+        "evidence/{run_id}/browser/reboot-during-human.json"
+      ],
+      "pass_criteria": [
+        "After restart state is RECOVERING, all prior credentials/nonces fail, and both input paths remain denied until checklist passes."
+      ],
+      "failure_rollback_behavior": [
+        "Keep browser disabled and rebuild supervisor state if recovery cannot prove safety."
+      ],
+      "destructive": true,
+      "secret_risk": true,
+      "mandatory": true
+    },
+    {
+      "id": "BRW-007",
+      "category": "browser",
+      "requirement": "Verify takeover bootstrap and evidence contain no credential in URL, history, logs, screenshot, CDP, crash report, page JavaScript, or agent context.",
+      "prerequisites": [
+        "BRW-003"
+      ],
+      "target": {
+        "environment": "disposable-fixture",
+        "component": "takeover secret canary fixture"
+      },
+      "command_test_hook": "acceptance/hooks/run-requirement --id BRW-007 --target disposable-fixture",
+      "evidence_artifacts": [
+        "evidence/{run_id}/browser/takeover-redaction.json"
+      ],
+      "pass_criteria": [
+        "Credential arrives only through authenticated no-store bootstrap; seeded canary is absent from every inspected sink."
+      ],
+      "failure_rollback_behavior": [
+        "Deny takeover, quarantine sinks, rotate credential, and treat disclosure as incident."
+      ],
+      "destructive": true,
+      "secret_risk": true,
+      "mandatory": true
+    },
+    {
+      "id": "BRW-008",
+      "category": "browser",
+      "requirement": "Verify profile concurrency lock prevents two Chromium owners and detects stale locks without cloning profile state.",
+      "prerequisites": [
+        "BRW-002"
+      ],
+      "target": {
+        "environment": "disposable-fixture",
+        "component": "Browser Profile concurrency fixture"
+      },
+      "command_test_hook": "acceptance/hooks/run-requirement --id BRW-008 --target disposable-fixture",
+      "evidence_artifacts": [
+        "evidence/{run_id}/browser/profile-concurrency.json"
+      ],
+      "pass_criteria": [
+        "Second owner fails before profile write; original remains healthy; stale-lock recovery enters RECOVERING and preserves integrity."
+      ],
+      "failure_rollback_behavior": [
+        "Stop both processes, validate profile, restore same-Bot snapshot if damaged."
+      ],
+      "destructive": true,
+      "secret_risk": false,
+      "mandatory": true
+    },
+    {
+      "id": "BRW-009",
+      "category": "browser",
+      "requirement": "Verify cross-Bot Browser Profile, account, downloads, private network, and lease leakage is denied.",
+      "prerequisites": [
+        "BRW-008",
+        "BOT-007"
+      ],
+      "target": {
+        "environment": "disposable-fixture",
+        "component": "browser leakage fixture"
+      },
+      "command_test_hook": "acceptance/hooks/run-requirement --id BRW-009 --target disposable-fixture",
+      "evidence_artifacts": [
+        "evidence/{run_id}/browser/cross-bot.json"
+      ],
+      "pass_criteria": [
+        "Cross-Bot filesystem/CDP/noVNC/account canaries all fail and neither profile changes."
+      ],
+      "failure_rollback_behavior": [
+        "Disable both browsers, rotate affected sessions, and restore known-clean same-Bot snapshots."
+      ],
+      "destructive": true,
+      "secret_risk": true,
+      "mandatory": true
+    },
+    {
+      "id": "BRW-010",
+      "category": "browser",
+      "requirement": "Verify disposable login and logout exercise uses a non-production account and leaves no credential in evidence.",
+      "prerequisites": [
+        "BRW-007"
+      ],
+      "target": {
+        "environment": "disposable-fixture",
+        "component": "disposable browser account"
+      },
+      "command_test_hook": "acceptance/hooks/run-requirement --id BRW-010 --target disposable-fixture",
+      "evidence_artifacts": [
+        "evidence/{run_id}/browser/disposable-login.json"
+      ],
+      "pass_criteria": [
+        "Login persists for owning Bot, is unavailable cross-Bot, logout/revocation invalidates session, and evidence contains no credential/cookie content."
+      ],
+      "failure_rollback_behavior": [
+        "Revoke fixture account/session, destroy fixture profile, and quarantine unsafe evidence."
+      ],
+      "destructive": true,
+      "secret_risk": true,
+      "mandatory": true
+    },
+    {
+      "id": "LAP-001",
+      "category": "laptop",
+      "requirement": "Verify native laptop-worker profile, fixed cwd/HOME, one launchd gateway, Desktop-managed isolated serve, FileVault, and no server Browser Profile or Azure mount.",
+      "prerequisites": [
+        "BOT-001"
+      ],
+      "target": {
+        "environment": "live-production",
+        "component": "johan-mac"
+      },
+      "command_test_hook": "acceptance/hooks/run-requirement --id LAP-001 --target live-production",
+      "evidence_artifacts": [
+        "evidence/{run_id}/laptop/runtime-inventory.json"
+      ],
+      "pass_criteria": [
+        "Configuration exactly matches locked Mac boundary and no second gateway/serve/general remote filesystem service exists."
+      ],
+      "failure_rollback_behavior": [
+        "Stop laptop-worker service and restore reviewed Mac configuration using Mac-local approval."
+      ],
+      "destructive": false,
+      "secret_risk": true,
+      "mandatory": true
+    },
+    {
+      "id": "LAP-002",
+      "category": "laptop",
+      "requirement": "Verify delegated read of a regular fixture inside each registered approved root.",
+      "prerequisites": [
+        "LAP-001",
+        "DSK-004"
+      ],
+      "target": {
+        "environment": "disposable-fixture",
+        "component": "approved Mac roots"
+      },
+      "command_test_hook": "acceptance/hooks/run-requirement --id LAP-002 --target disposable-fixture",
+      "evidence_artifacts": [
+        "evidence/{run_id}/laptop/approved-reads.json"
+      ],
+      "pass_criteria": [
+        "Read returns exact fixture digest with attribution and no mutation; unregistered Projects children are not readable."
+      ],
+      "failure_rollback_behavior": [
+        "Disable read adapter if confinement cannot be proved."
+      ],
+      "destructive": true,
+      "secret_risk": false,
+      "mandatory": true
+    },
+    {
+      "id": "LAP-003",
+      "category": "laptop",
+      "requirement": "Verify permanent denial of sensitive roots, credential files, browser profiles, personal folders, and active-profile credentials through general tools.",
+      "prerequisites": [
+        "LAP-002"
+      ],
+      "target": {
+        "environment": "disposable-fixture",
+        "component": "Mac deny fixtures"
+      },
+      "command_test_hook": "acceptance/hooks/run-requirement --id LAP-003 --target disposable-fixture",
+      "evidence_artifacts": [
+        "evidence/{run_id}/laptop/sensitive-denial.json"
+      ],
+      "pass_criteria": [
+        "Every direct and delegated read/write/list attempt is denied before content disclosure."
+      ],
+      "failure_rollback_behavior": [
+        "Disable laptop-worker and investigate any disclosure as security incident."
+      ],
+      "destructive": true,
+      "secret_risk": true,
+      "mandatory": true
+    },
+    {
+      "id": "LAP-004",
+      "category": "laptop",
+      "requirement": "Verify symlink, alias, hard-link, mount/device swap, parent traversal, case/Unicode ambiguity, special file, and path race cannot escape an approved root.",
+      "prerequisites": [
+        "LAP-002"
+      ],
+      "target": {
+        "environment": "disposable-fixture",
+        "component": "Mac path-race fixtures"
+      },
+      "command_test_hook": "acceptance/hooks/run-requirement --id LAP-004 --target disposable-fixture",
+      "evidence_artifacts": [
+        "evidence/{run_id}/laptop/path-confinement.json"
+      ],
+      "pass_criteria": [
+        "Every escape/race is denied and no out-of-root content or metadata is read or changed."
+      ],
+      "failure_rollback_behavior": [
+        "Disable adapter and preserve filesystem metadata for investigation."
+      ],
+      "destructive": true,
+      "secret_risk": true,
+      "mandatory": true
+    },
+    {
+      "id": "LAP-005",
+      "category": "laptop",
+      "requirement": "Verify every Mac mutation requires exact local single-use approval and changes exactly one fixture.",
+      "prerequisites": [
+        "LAP-002"
+      ],
+      "target": {
+        "environment": "disposable-fixture",
+        "component": "Mac mutation fixture"
+      },
+      "command_test_hook": "acceptance/hooks/run-requirement --id LAP-005 --target disposable-fixture",
+      "evidence_artifacts": [
+        "evidence/{run_id}/laptop/mutation-approval.json"
+      ],
+      "pass_criteria": [
+        "Create/write/rename/copy/delete/metadata/process/install/config fixtures each pause locally; one grant authorizes exactly one unchanged target and replay fails."
+      ],
+      "failure_rollback_behavior": [
+        "Leave target unchanged or reconcile partial result; reuse idempotency key but require fresh manifest/grant for retry."
+      ],
+      "destructive": true,
+      "secret_risk": true,
+      "mandatory": true
+    },
+    {
+      "id": "LAP-006",
+      "category": "laptop",
+      "requirement": "Verify Telegram, Room, server, cron, reviewed manifest, and standing authority cannot approve a Mac mutation.",
+      "prerequisites": [
+        "LAP-005"
+      ],
+      "target": {
+        "environment": "disposable-fixture",
+        "component": "Mac authority fixture"
+      },
+      "command_test_hook": "acceptance/hooks/run-requirement --id LAP-006 --target disposable-fixture",
+      "evidence_artifacts": [
+        "evidence/{run_id}/laptop/approval-channel-denial.json"
+      ],
+      "pass_criteria": [
+        "All nonlocal approval attempts yield no mutation and a sanitized deny event."
+      ],
+      "failure_rollback_behavior": [
+        "Disable mutation adapter on any bypass."
+      ],
+      "destructive": true,
+      "secret_risk": true,
+      "mandatory": true
+    },
+    {
+      "id": "LAP-007",
+      "category": "laptop",
+      "requirement": "Verify mutation target changes and concurrent approval consumers fail closed.",
+      "prerequisites": [
+        "LAP-005"
+      ],
+      "target": {
+        "environment": "disposable-fixture",
+        "component": "Mac mutation race fixture"
+      },
+      "command_test_hook": "acceptance/hooks/run-requirement --id LAP-007 --target disposable-fixture",
+      "evidence_artifacts": [
+        "evidence/{run_id}/laptop/mutation-races.json"
+      ],
+      "pass_criteria": [
+        "Fingerprint change yields zero writes; concurrent consumers yield at most one write and exactly one durable grant consumption."
+      ],
+      "failure_rollback_behavior": [
+        "Quarantine ambiguous operation, inspect state, and require fresh local approval."
+      ],
+      "destructive": true,
+      "secret_risk": false,
+      "mandatory": true
+    },
+    {
+      "id": "LAP-008",
+      "category": "laptop",
+      "requirement": "Verify sleep, lock, logout, offline, approval UI loss, audit-full, and timeout stop Mac reads when confinement is uncertain and all mutations.",
+      "prerequisites": [
+        "LAP-005"
+      ],
+      "target": {
+        "environment": "disposable-fixture",
+        "component": "Mac offline fixtures"
+      },
+      "command_test_hook": "acceptance/hooks/run-requirement --id LAP-008 --target disposable-fixture",
+      "evidence_artifacts": [
+        "evidence/{run_id}/laptop/fail-closed.json"
+      ],
+      "pass_criteria": [
+        "Every mutation leaves fixture unchanged; availability changes to laptop_unavailable within 60 seconds; no remote fallback occurs."
+      ],
+      "failure_rollback_behavior": [
+        "Restore local prerequisites manually; require fresh approval after recovery."
+      ],
+      "destructive": true,
+      "secret_risk": false,
+      "mandatory": true
+    },
+    {
+      "id": "LAP-009",
+      "category": "laptop",
+      "requirement": "Verify reconnect discovery and reconciliation does not execute stale or queued mutations.",
+      "prerequisites": [
+        "LAP-008"
+      ],
+      "target": {
+        "environment": "disposable-fixture",
+        "component": "Mac reconnect fixture"
+      },
+      "command_test_hook": "acceptance/hooks/run-requirement --id LAP-009 --target disposable-fixture",
+      "evidence_artifacts": [
+        "evidence/{run_id}/laptop/reconnect.json"
+      ],
+      "pass_criteria": [
+        "Reachability and task ledger reconcile within 5 minutes; stale grants remain invalid; reads may resume; every mutation requires fresh local approval."
+      ],
+      "failure_rollback_behavior": [
+        "Keep laptop-worker unavailable and reconcile manually if ledger identity is uncertain."
+      ],
+      "destructive": true,
+      "secret_risk": false,
+      "mandatory": true
+    },
+    {
+      "id": "BKP-001",
+      "category": "backup-restore",
+      "requirement": "Verify latest successful encrypted scheduled R1 configuration backup for each server Bot is no more than 24 hours old (RPO 24h).",
+      "prerequisites": [
+        "SVC-006",
+        "AZR-003"
+      ],
+      "target": {
+        "environment": "live-production",
+        "component": "Bot R1 backups"
+      },
+      "command_test_hook": "acceptance/hooks/run-requirement --id BKP-001 --target live-production",
+      "evidence_artifacts": [
+        "evidence/{run_id}/backup/freshness.json"
+      ],
+      "pass_criteria": [
+        "Each Bot has a checksum-valid manifest and encrypted private restore point age <=24h; failed/missing job alerts."
+      ],
+      "failure_rollback_behavior": [
+        "Pause release; run approved backup after diagnosing cause; never substitute an unverified point."
+      ],
+      "destructive": false,
+      "secret_risk": true,
+      "mandatory": true
+    },
+    {
+      "id": "BKP-002",
+      "category": "backup-restore",
+      "requirement": "Verify latest browser-consistent encrypted snapshot for each server Bot is no more than 24 hours old.",
+      "prerequisites": [
+        "BKP-001"
+      ],
+      "target": {
+        "environment": "live-production",
+        "component": "Bot R2 snapshots"
+      },
+      "command_test_hook": "acceptance/hooks/run-requirement --id BKP-002 --target live-production",
+      "evidence_artifacts": [
+        "evidence/{run_id}/backup/browser-snapshot-freshness.json"
+      ],
+      "pass_criteria": [
+        "Each Browser Profile has an encrypted same-Bot restore point age <=24h captured under proven consistency protocol."
+      ],
+      "failure_rollback_behavior": [
+        "Disable browser automation until a valid snapshot exists."
+      ],
+      "destructive": false,
+      "secret_risk": true,
+      "mandatory": true
+    },
+    {
+      "id": "BKP-003",
+      "category": "backup-restore",
+      "requirement": "Verify R1 export projection excludes R3, Browser Profile, live DB handles, special links/files, and other Bot roots.",
+      "prerequisites": [
+        "BKP-001"
+      ],
+      "target": {
+        "environment": "disposable-fixture",
+        "component": "backup namespace fixture"
+      },
+      "command_test_hook": "acceptance/hooks/run-requirement --id BKP-003 --target disposable-fixture",
+      "evidence_artifacts": [
+        "evidence/{run_id}/backup/export-boundary.json"
+      ],
+      "pass_criteria": [
+        "Backup principal sees only prepared read-only R1 tree; every excluded canary and cross-Bot path is absent; write is limited to one Bot prefix."
+      ],
+      "failure_rollback_behavior": [
+        "Revoke backup principal, delete unsafe staged copy, rotate exposed credentials, and fail release."
+      ],
+      "destructive": true,
+      "secret_risk": true,
+      "mandatory": true
+    },
+    {
+      "id": "BKP-004",
+      "category": "backup-restore",
+      "requirement": "Restore test-worker R1 and R2 into a clean isolated target without stopping or altering chief.",
+      "prerequisites": [
+        "BKP-002",
+        "BKP-003"
+      ],
+      "target": {
+        "environment": "clean-environment",
+        "component": "isolated restore target"
+      },
+      "command_test_hook": "acceptance/hooks/run-requirement --id BKP-004 --target clean-environment",
+      "evidence_artifacts": [
+        "evidence/{run_id}/restore/manifest.json",
+        "evidence/{run_id}/restore/isolation.json"
+      ],
+      "pass_criteria": [
+        "Restore completes within RTO 4 hours; checksums, ownership, modes, DB/WAL health, one-gateway/one-serve contract, identity/persona, memory/session, skills/routines, browser state, and service smoke tests pass; chief before/after digests match."
+      ],
+      "failure_rollback_behavior": [
+        "Destroy isolated target; keep production untouched; choose earlier verified point or fix runbook and repeat."
+      ],
+      "destructive": true,
+      "secret_risk": true,
+      "mandatory": true
+    },
+    {
+      "id": "BKP-005",
+      "category": "backup-restore",
+      "requirement": "Verify restored browser starts RECOVERING and completes the recovery checklist before automation.",
+      "prerequisites": [
+        "BKP-004"
+      ],
+      "target": {
+        "environment": "clean-environment",
+        "component": "restored test-worker browser"
+      },
+      "command_test_hook": "acceptance/hooks/run-requirement --id BKP-005 --target clean-environment",
+      "evidence_artifacts": [
+        "evidence/{run_id}/restore/browser-recovery.json"
+      ],
+      "pass_criteria": [
+        "Prior leases/takeover credentials fail; profile health, known tab/window, rotated nonce, and harmless probe pass before AUTOMATION."
+      ],
+      "failure_rollback_behavior": [
+        "Keep restored browser disabled and repeat same-Bot restore or require fresh login."
+      ],
+      "destructive": true,
+      "secret_risk": true,
+      "mandatory": true
+    },
+    {
+      "id": "BKP-006",
+      "category": "backup-restore",
+      "requirement": "Verify rollback selects a known-good Bot-scoped point, quiesces both processes, validates before cutover, and never rolls one Bot state into another.",
+      "prerequisites": [
+        "BKP-004"
+      ],
+      "target": {
+        "environment": "disposable-fixture",
+        "component": "rollback fixture"
+      },
+      "command_test_hook": "acceptance/hooks/run-requirement --id BKP-006 --target disposable-fixture",
+      "evidence_artifacts": [
+        "evidence/{run_id}/restore/rollback.json"
+      ],
+      "pass_criteria": [
+        "Failed canary deployment returns to pre-change identity/state with checksums and service health; unrelated Bot remains unchanged."
+      ],
+      "failure_rollback_behavior": [
+        "Keep affected Bot disabled and escalate to isolated restore; never perform in-place speculative repair."
+      ],
+      "destructive": true,
+      "secret_risk": true,
+      "mandatory": true
+    },
+    {
+      "id": "MON-001",
+      "category": "monitoring",
+      "requirement": "Verify fleet health covers host, disk, credit, gateway, serve, scheduler, provider, browser recovery, backup/restore, tailnet, and Mac reachability.",
+      "prerequisites": [
+        "SVC-005",
+        "BKP-001"
+      ],
+      "target": {
+        "environment": "live-production",
+        "component": "monitoring stack"
+      },
+      "command_test_hook": "acceptance/hooks/run-requirement --id MON-001 --target live-production",
+      "evidence_artifacts": [
+        "evidence/{run_id}/monitoring/check-inventory.json"
+      ],
+      "pass_criteria": [
+        "Every required signal has owner, cadence, threshold, last success, and sanitized runbook link; stale/missing checks are unhealthy."
+      ],
+      "failure_rollback_behavior": [
+        "Fail release and disable unattended work for unmonitored critical components."
+      ],
+      "destructive": false,
+      "secret_risk": false,
+      "mandatory": true
+    },
+    {
+      "id": "MON-002",
+      "category": "monitoring",
+      "requirement": "Inject each alert condition and verify Telegram alert delivery.",
+      "prerequisites": [
+        "MON-001",
+        "TEL-001"
+      ],
+      "target": {
+        "environment": "disposable-fixture",
+        "component": "alert fixtures"
+      },
+      "command_test_hook": "acceptance/hooks/run-requirement --id MON-002 --target disposable-fixture",
+      "evidence_artifacts": [
+        "evidence/{run_id}/monitoring/telegram-alerts.json"
+      ],
+      "pass_criteria": [
+        "Every injected condition produces one correctly attributed Telegram alert within 5 minutes containing only event ID, Bot, safe reason code, and time."
+      ],
+      "failure_rollback_behavior": [
+        "Use secondary human monitoring path, disable unattended work, and repair alerts before release."
+      ],
+      "destructive": true,
+      "secret_risk": true,
+      "mandatory": true
+    },
+    {
+      "id": "MON-003",
+      "category": "monitoring",
+      "requirement": "Verify audit/evidence archive encryption, immutability, redaction, chain integrity, and retention.",
+      "prerequisites": [
+        "REP-002",
+        "MON-001"
+      ],
+      "target": {
+        "environment": "live-production",
+        "component": "audit archive"
+      },
+      "command_test_hook": "acceptance/hooks/run-requirement --id MON-003 --target live-production",
+      "evidence_artifacts": [
+        "evidence/{run_id}/monitoring/audit-retention.json",
+        "evidence/{run_id}/monitoring/chain-verification.json"
+      ],
+      "pass_criteria": [
+        "Production configuration retains encrypted evidence for 400 days; public access is off; secret canaries absent; daily/monthly verification and lifecycle authorization controls pass."
+      ],
+      "failure_rollback_behavior": [
+        "Block high-impact operations, quarantine unsafe evidence, repair chain/archive, and rotate exposed credentials."
+      ],
+      "destructive": false,
+      "secret_risk": true,
+      "mandatory": true
+    },
+    {
+      "id": "FIN-001",
+      "category": "failure-injection",
+      "requirement": "Inject gateway kill using a bounded disposable fixture.",
+      "prerequisites": [
+        "MON-002"
+      ],
+      "target": {
+        "environment": "disposable-fixture",
+        "component": "failure harness"
+      },
+      "command_test_hook": "acceptance/hooks/run-requirement --id FIN-001 --target disposable-fixture",
+      "evidence_artifacts": [
+        "evidence/{run_id}/failure/fin-001.json"
+      ],
+      "pass_criteria": [
+        "gateway stops side effects, recovers healthy within 120 seconds, and does not duplicate work."
+      ],
+      "failure_rollback_behavior": [
+        "Stop injection, restore last known-good state using component runbook, verify isolation/final health, and fail release on any unsafe or threshold-violating outcome."
+      ],
+      "destructive": true,
+      "secret_risk": false,
+      "mandatory": true
+    },
+    {
+      "id": "FIN-002",
+      "category": "failure-injection",
+      "requirement": "Inject serve kill using a bounded disposable fixture.",
+      "prerequisites": [
+        "MON-002"
+      ],
+      "target": {
+        "environment": "disposable-fixture",
+        "component": "failure harness"
+      },
+      "command_test_hook": "acceptance/hooks/run-requirement --id FIN-002 --target disposable-fixture",
+      "evidence_artifacts": [
+        "evidence/{run_id}/failure/fin-002.json"
+      ],
+      "pass_criteria": [
+        "Desktop becomes unavailable then authenticated healthy within 120 seconds without affecting gateway."
+      ],
+      "failure_rollback_behavior": [
+        "Stop injection, restore last known-good state using component runbook, verify isolation/final health, and fail release on any unsafe or threshold-violating outcome."
+      ],
+      "destructive": true,
+      "secret_risk": false,
+      "mandatory": true
+    },
+    {
+      "id": "FIN-003",
+      "category": "failure-injection",
+      "requirement": "Inject browser crash using a bounded disposable fixture.",
+      "prerequisites": [
+        "MON-002"
+      ],
+      "target": {
+        "environment": "disposable-fixture",
+        "component": "failure harness"
+      },
+      "command_test_hook": "acceptance/hooks/run-requirement --id FIN-003 --target disposable-fixture",
+      "evidence_artifacts": [
+        "evidence/{run_id}/failure/fin-003.json"
+      ],
+      "pass_criteria": [
+        "lease enters RECOVERING and non-browser Bot work remains available."
+      ],
+      "failure_rollback_behavior": [
+        "Stop injection, restore last known-good state using component runbook, verify isolation/final health, and fail release on any unsafe or threshold-violating outcome."
+      ],
+      "destructive": true,
+      "secret_risk": false,
+      "mandatory": true
+    },
+    {
+      "id": "FIN-004",
+      "category": "failure-injection",
+      "requirement": "Inject lease supervisor kill using a bounded disposable fixture.",
+      "prerequisites": [
+        "MON-002"
+      ],
+      "target": {
+        "environment": "disposable-fixture",
+        "component": "failure harness"
+      },
+      "command_test_hook": "acceptance/hooks/run-requirement --id FIN-004 --target disposable-fixture",
+      "evidence_artifacts": [
+        "evidence/{run_id}/failure/fin-004.json"
+      ],
+      "pass_criteria": [
+        "CDP/noVNC input are denied, RECOVERING is recorded, and alert arrives within 5 minutes."
+      ],
+      "failure_rollback_behavior": [
+        "Stop injection, restore last known-good state using component runbook, verify isolation/final health, and fail release on any unsafe or threshold-violating outcome."
+      ],
+      "destructive": true,
+      "secret_risk": false,
+      "mandatory": true
+    },
+    {
+      "id": "FIN-005",
+      "category": "failure-injection",
+      "requirement": "Inject reverse proxy kill using a bounded disposable fixture.",
+      "prerequisites": [
+        "MON-002"
+      ],
+      "target": {
+        "environment": "disposable-fixture",
+        "component": "failure harness"
+      },
+      "command_test_hook": "acceptance/hooks/run-requirement --id FIN-005 --target disposable-fixture",
+      "evidence_artifacts": [
+        "evidence/{run_id}/failure/fin-005.json"
+      ],
+      "pass_criteria": [
+        "private UI/takeover fail unavailable without public fallback and recover within 120 seconds."
+      ],
+      "failure_rollback_behavior": [
+        "Stop injection, restore last known-good state using component runbook, verify isolation/final health, and fail release on any unsafe or threshold-violating outcome."
+      ],
+      "destructive": true,
+      "secret_risk": false,
+      "mandatory": true
+    },
+    {
+      "id": "FIN-006",
+      "category": "failure-injection",
+      "requirement": "Inject provider auth/quota/outage using a bounded disposable fixture.",
+      "prerequisites": [
+        "MON-002"
+      ],
+      "target": {
+        "environment": "disposable-fixture",
+        "component": "failure harness"
+      },
+      "command_test_hook": "acceptance/hooks/run-requirement --id FIN-006 --target disposable-fixture",
+      "evidence_artifacts": [
+        "evidence/{run_id}/failure/fin-006.json"
+      ],
+      "pass_criteria": [
+        "turn and routine fail with no fallback and sanitized alert arrives within 5 minutes."
+      ],
+      "failure_rollback_behavior": [
+        "Stop injection, restore last known-good state using component runbook, verify isolation/final health, and fail release on any unsafe or threshold-violating outcome."
+      ],
+      "destructive": true,
+      "secret_risk": true,
+      "mandatory": true
+    },
+    {
+      "id": "FIN-007",
+      "category": "failure-injection",
+      "requirement": "Inject backup failure or stale point using a bounded disposable fixture.",
+      "prerequisites": [
+        "MON-002"
+      ],
+      "target": {
+        "environment": "disposable-fixture",
+        "component": "failure harness"
+      },
+      "command_test_hook": "acceptance/hooks/run-requirement --id FIN-007 --target disposable-fixture",
+      "evidence_artifacts": [
+        "evidence/{run_id}/failure/fin-007.json"
+      ],
+      "pass_criteria": [
+        "freshness becomes unhealthy, restore is blocked, and alert arrives within 5 minutes."
+      ],
+      "failure_rollback_behavior": [
+        "Stop injection, restore last known-good state using component runbook, verify isolation/final health, and fail release on any unsafe or threshold-violating outcome."
+      ],
+      "destructive": true,
+      "secret_risk": false,
+      "mandatory": true
+    },
+    {
+      "id": "FIN-008",
+      "category": "failure-injection",
+      "requirement": "Inject audit collector/archive lag/disk full using a bounded disposable fixture.",
+      "prerequisites": [
+        "MON-002"
+      ],
+      "target": {
+        "environment": "disposable-fixture",
+        "component": "failure harness"
+      },
+      "command_test_hook": "acceptance/hooks/run-requirement --id FIN-008 --target disposable-fixture",
+      "evidence_artifacts": [
+        "evidence/{run_id}/failure/fin-008.json"
+      ],
+      "pass_criteria": [
+        "side effects, approvals, secrets, Mac mutation, and takeover fail closed while bounded diagnostics remain."
+      ],
+      "failure_rollback_behavior": [
+        "Stop injection, restore last known-good state using component runbook, verify isolation/final health, and fail release on any unsafe or threshold-violating outcome."
+      ],
+      "destructive": true,
+      "secret_risk": true,
+      "mandatory": true
+    },
+    {
+      "id": "FIN-009",
+      "category": "failure-injection",
+      "requirement": "Inject secret broker or policy gate kill using a bounded disposable fixture.",
+      "prerequisites": [
+        "MON-002"
+      ],
+      "target": {
+        "environment": "disposable-fixture",
+        "component": "failure harness"
+      },
+      "command_test_hook": "acceptance/hooks/run-requirement --id FIN-009 --target disposable-fixture",
+      "evidence_artifacts": [
+        "evidence/{run_id}/failure/fin-009.json"
+      ],
+      "pass_criteria": [
+        "credential use and side effects stop with no value disclosure or bypass."
+      ],
+      "failure_rollback_behavior": [
+        "Stop injection, restore last known-good state using component runbook, verify isolation/final health, and fail release on any unsafe or threshold-violating outcome."
+      ],
+      "destructive": true,
+      "secret_risk": true,
+      "mandatory": true
+    },
+    {
+      "id": "FIN-010",
+      "category": "failure-injection",
+      "requirement": "Inject Telegram outage using a bounded disposable fixture.",
+      "prerequisites": [
+        "MON-002"
+      ],
+      "target": {
+        "environment": "disposable-fixture",
+        "component": "failure harness"
+      },
+      "command_test_hook": "acceptance/hooks/run-requirement --id FIN-010 --target disposable-fixture",
+      "evidence_artifacts": [
+        "evidence/{run_id}/failure/fin-010.json"
+      ],
+      "pass_criteria": [
+        "retry is bounded and produces no duplicate outbound message."
+      ],
+      "failure_rollback_behavior": [
+        "Stop injection, restore last known-good state using component runbook, verify isolation/final health, and fail release on any unsafe or threshold-violating outcome."
+      ],
+      "destructive": true,
+      "secret_risk": false,
+      "mandatory": true
+    },
+    {
+      "id": "FIN-011",
+      "category": "failure-injection",
+      "requirement": "Inject Mac sleep/offline/reconnect using a bounded disposable fixture.",
+      "prerequisites": [
+        "MON-002"
+      ],
+      "target": {
+        "environment": "disposable-fixture",
+        "component": "failure harness"
+      },
+      "command_test_hook": "acceptance/hooks/run-requirement --id FIN-011 --target disposable-fixture",
+      "evidence_artifacts": [
+        "evidence/{run_id}/failure/fin-011.json"
+      ],
+      "pass_criteria": [
+        "laptop_unavailable is reported within 60 seconds and reconciliation completes within 5 minutes without stale mutation."
+      ],
+      "failure_rollback_behavior": [
+        "Stop injection, restore last known-good state using component runbook, verify isolation/final health, and fail release on any unsafe or threshold-violating outcome."
+      ],
+      "destructive": true,
+      "secret_risk": false,
+      "mandatory": true
+    },
+    {
+      "id": "FIN-012",
+      "category": "failure-injection",
+      "requirement": "Inject VM reboot using a bounded disposable fixture.",
+      "prerequisites": [
+        "MON-002"
+      ],
+      "target": {
+        "environment": "disposable-fixture",
+        "component": "failure harness"
+      },
+      "command_test_hook": "acceptance/hooks/run-requirement --id FIN-012 --target disposable-fixture",
+      "evidence_artifacts": [
+        "evidence/{run_id}/failure/fin-012.json"
+      ],
+      "pass_criteria": [
+        "entire fleet returns healthy within 10 minutes in safe start order."
+      ],
+      "failure_rollback_behavior": [
+        "Stop injection, restore last known-good state using component runbook, verify isolation/final health, and fail release on any unsafe or threshold-violating outcome."
+      ],
+      "destructive": true,
+      "secret_risk": false,
+      "mandatory": true
+    },
+    {
+      "id": "FIN-013",
+      "category": "failure-injection",
+      "requirement": "Inject Tailscale loss using a bounded disposable fixture.",
+      "prerequisites": [
+        "MON-002"
+      ],
+      "target": {
+        "environment": "disposable-fixture",
+        "component": "failure harness"
+      },
+      "command_test_hook": "acceptance/hooks/run-requirement --id FIN-013 --target disposable-fixture",
+      "evidence_artifacts": [
+        "evidence/{run_id}/failure/fin-013.json"
+      ],
+      "pass_criteria": [
+        "admin/takeover access stops and no public listener appears."
+      ],
+      "failure_rollback_behavior": [
+        "Stop injection, restore last known-good state using component runbook, verify isolation/final health, and fail release on any unsafe or threshold-violating outcome."
+      ],
+      "destructive": true,
+      "secret_risk": false,
+      "mandatory": true
+    },
+    {
+      "id": "FIN-014",
+      "category": "failure-injection",
+      "requirement": "Inject takeover abandon/race/reboot using a bounded disposable fixture.",
+      "prerequisites": [
+        "MON-002"
+      ],
+      "target": {
+        "environment": "disposable-fixture",
+        "component": "failure harness"
+      },
+      "command_test_hook": "acceptance/hooks/run-requirement --id FIN-014 --target disposable-fixture",
+      "evidence_artifacts": [
+        "evidence/{run_id}/failure/fin-014.json"
+      ],
+      "pass_criteria": [
+        "both control paths fail closed to RECOVERING and transition completes within 60 seconds."
+      ],
+      "failure_rollback_behavior": [
+        "Stop injection, restore last known-good state using component runbook, verify isolation/final health, and fail release on any unsafe or threshold-violating outcome."
+      ],
+      "destructive": true,
+      "secret_risk": false,
+      "mandatory": true
+    },
+    {
+      "id": "FIN-015",
+      "category": "failure-injection",
+      "requirement": "Inject profile DB/WAL contention fixture using a bounded disposable fixture.",
+      "prerequisites": [
+        "MON-002"
+      ],
+      "target": {
+        "environment": "disposable-fixture",
+        "component": "failure harness"
+      },
+      "command_test_hook": "acceptance/hooks/run-requirement --id FIN-015 --target disposable-fixture",
+      "evidence_artifacts": [
+        "evidence/{run_id}/failure/fin-015.json"
+      ],
+      "pass_criteria": [
+        "concurrent interfaces produce no corruption, duplicate, lost, or cross-attributed state."
+      ],
+      "failure_rollback_behavior": [
+        "Stop injection, restore last known-good state using component runbook, verify isolation/final health, and fail release on any unsafe or threshold-violating outcome."
+      ],
+      "destructive": true,
+      "secret_risk": false,
+      "mandatory": true
+    },
+    {
+      "id": "FIN-016",
+      "category": "failure-injection",
+      "requirement": "Inject restore-point corruption fixture using a bounded disposable fixture.",
+      "prerequisites": [
+        "MON-002"
+      ],
+      "target": {
+        "environment": "disposable-fixture",
+        "component": "failure harness"
+      },
+      "command_test_hook": "acceptance/hooks/run-requirement --id FIN-016 --target disposable-fixture",
+      "evidence_artifacts": [
+        "evidence/{run_id}/failure/fin-016.json"
+      ],
+      "pass_criteria": [
+        "checksum validation rejects point before cutover and production remains unchanged."
+      ],
+      "failure_rollback_behavior": [
+        "Stop injection, restore last known-good state using component runbook, verify isolation/final health, and fail release on any unsafe or threshold-violating outcome."
+      ],
+      "destructive": true,
+      "secret_risk": false,
+      "mandatory": true
+    },
+    {
+      "id": "RUN-001",
+      "category": "runbook",
+      "requirement": "Create an additional disposable server Bot from the documented runbook without copying live state.",
+      "prerequisites": [
+        "FIN-001",
+        "FIN-016"
+      ],
+      "target": {
+        "environment": "clean-environment",
+        "component": "additional Bot fixture"
+      },
+      "command_test_hook": "acceptance/hooks/run-requirement --id RUN-001 --target clean-environment",
+      "evidence_artifacts": [
+        "evidence/{run_id}/runbook/additional-bot.json"
+      ],
+      "pass_criteria": [
+        "Unique profile/Unix user/container network/workspace/credentials/Browser Profile/ports/routes/backup prefix are created from reviewed manifests; default profile and existing Bots remain unchanged."
+      ],
+      "failure_rollback_behavior": [
+        "Destroy additional Bot fixture with audited cleanup; repair runbook/manifests."
+      ],
+      "destructive": true,
+      "secret_risk": true,
+      "mandatory": true
+    },
+    {
+      "id": "RUN-002",
+      "category": "runbook",
+      "requirement": "Remove the additional Bot using the retirement runbook and prove resource/credential/audit retention behavior.",
+      "prerequisites": [
+        "RUN-001"
+      ],
+      "target": {
+        "environment": "clean-environment",
+        "component": "additional Bot fixture"
+      },
+      "command_test_hook": "acceptance/hooks/run-requirement --id RUN-002 --target clean-environment",
+      "evidence_artifacts": [
+        "evidence/{run_id}/runbook/retirement.json"
+      ],
+      "pass_criteria": [
+        "Services/routes are absent, credentials revoked, mutable state removed, retained evidence follows 400-day policy, and existing Bot health/digests are unchanged."
+      ],
+      "failure_rollback_behavior": [
+        "Keep fixture disabled and complete approved cleanup manually; never delete immutable evidence early."
+      ],
+      "destructive": true,
+      "secret_risk": true,
+      "mandatory": true
+    },
+    {
+      "id": "GAP-001",
+      "category": "unsupported-gaps",
+      "requirement": "Validate the capability parity register against current implementation and official-source snapshots.",
+      "prerequisites": [
+        "REP-003"
+      ],
+      "target": {
+        "environment": "clean-environment",
+        "component": "capability register"
+      },
+      "command_test_hook": "acceptance/hooks/run-requirement --id GAP-001 --target clean-environment",
+      "evidence_artifacts": [
+        "evidence/{run_id}/gaps/capability-parity.json"
+      ],
+      "pass_criteria": [
+        "Every requested capability is classified native, implemented equivalent, or unsupported; each claim links evidence/version; no simulated/prototype behavior is presented as production."
+      ],
+      "failure_rollback_behavior": [
+        "Fail release for any unclassified, overstated, or stale claim."
+      ],
+      "destructive": false,
+      "secret_risk": false,
+      "mandatory": true
+    },
+    {
+      "id": "GAP-002",
+      "category": "unsupported-gaps",
+      "requirement": "Verify Grok-only and vendor-only capabilities remain explicitly unsupported unless a tested equivalent exists: managed user VM, integrated Agent Computer takeover, secure masked-secret handoff, universal Auto Review rules, first-party iPhone client, teach-by-demonstration, and x.ai public Bot-sharing links.",
+      "prerequisites": [
+        "GAP-001"
+      ],
+      "target": {
+        "environment": "clean-environment",
+        "component": "operator documentation"
+      },
+      "command_test_hook": "acceptance/hooks/run-requirement --id GAP-002 --target clean-environment",
+      "evidence_artifacts": [
+        "evidence/{run_id}/gaps/unsupported.json"
+      ],
+      "pass_criteria": [
+        "Every named vendor-only capability is present in the gap register; each states user impact, safe degraded behavior, source/version, tracking issue/owner, and no silent substitute or parity claim."
+      ],
+      "failure_rollback_behavior": [
+        "Disable/label affected UI and documentation claim; do not waive the gate by skipping."
+      ],
+      "destructive": false,
+      "secret_risk": false,
+      "mandatory": true
+    },
+    {
+      "id": "GAP-003",
+      "category": "unsupported-gaps",
+      "requirement": "Verify File Bridge and any other deferred component is absent from listeners, mounts, routing, and capability claims.",
+      "prerequisites": [
+        "NET-001",
+        "GAP-001"
+      ],
+      "target": {
+        "environment": "live-production",
+        "component": "deferred components"
+      },
+      "command_test_hook": "acceptance/hooks/run-requirement --id GAP-003 --target live-production",
+      "evidence_artifacts": [
+        "evidence/{run_id}/gaps/deferred-absence.json"
+      ],
+      "pass_criteria": [
+        "No File Bridge listener/mount/general remote shell exists and UI/docs state delegation-only Mac access until separately accepted."
+      ],
+      "failure_rollback_behavior": [
+        "Remove undeclared component and treat unexpected Mac exposure as incident."
+      ],
+      "destructive": false,
+      "secret_risk": false,
+      "mandatory": true
+    },
+    {
+      "id": "HLT-001",
+      "category": "final-health",
+      "requirement": "Run all non-destructive live health and negative-boundary probes after failure cleanup and restore drills.",
+      "prerequisites": [
+        "RUN-002",
+        "GAP-002",
+        "GAP-003"
+      ],
+      "target": {
+        "environment": "live-production",
+        "component": "entire fleet"
+      },
+      "command_test_hook": "acceptance/hooks/run-requirement --id HLT-001 --target live-production",
+      "evidence_artifacts": [
+        "evidence/{run_id}/final/health.json",
+        "evidence/{run_id}/final/junit.xml"
+      ],
+      "pass_criteria": [
+        "All required services, private access, Bot boundaries, gateways, schedulers, Channels, Desktop, Rooms, routines, browsers, laptop status, backups, monitoring, and alerts are healthy with no active recovery/incident state."
+      ],
+      "failure_rollback_behavior": [
+        "Do not release; rollback affected change or restore affected Bot and repeat dependent requirements."
+      ],
+      "destructive": false,
+      "secret_risk": true,
+      "mandatory": true
+    },
+    {
+      "id": "HLT-002",
+      "category": "final-health",
+      "requirement": "Assemble and sign the release evidence manifest and compute the binary production decision.",
+      "prerequisites": [
+        "HLT-001"
+      ],
+      "target": {
+        "environment": "clean-environment",
+        "component": "release evidence bundle"
+      },
+      "command_test_hook": "acceptance/hooks/run-requirement --id HLT-002 --target clean-environment",
+      "evidence_artifacts": [
+        "evidence/{run_id}/final/evidence-manifest.json",
+        "evidence/{run_id}/final/release-decision.json"
+      ],
+      "pass_criteria": [
+        "Every catalog ID has exactly one current PASS result, no BLOCKED/SKIPPED/FAIL result, all artifacts verify by digest, evidence is encrypted/redacted, and production decision is PASS."
+      ],
+      "failure_rollback_behavior": [
+        "Production decision is FAIL; unattended routines and production enablement remain blocked."
+      ],
+      "destructive": false,
+      "secret_risk": true,
+      "mandatory": true
+    }
+  ]
+}
