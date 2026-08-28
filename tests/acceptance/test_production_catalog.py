@@ -19,17 +19,19 @@ DOC_PATH = ROOT / "docs" / "acceptance" / "production-standard.md"
 REQUIRED_TOP = {
     "schema_version", "title", "canonical", "semantics", "defaults",
     "target_environments", "execution_order", "requirements",
+    "locked_source_crosswalk",
 }
 REQUIRED_REQUIREMENT = {
     "id", "category", "requirement", "prerequisites", "target",
     "command_test_hook", "evidence_artifacts", "pass_criteria",
+    "authoritative_evidence",
     "failure_rollback_behavior", "destructive", "secret_risk", "mandatory",
 }
 REQUIRED_CATEGORIES = {
     "repository", "azure", "network", "services", "gateway-scheduler",
     "telegram", "bot-isolation", "desktop-rooms", "routines", "browser",
     "laptop", "backup-restore", "monitoring", "failure-injection", "runbook",
-    "unsupported-gaps", "final-health",
+    "unsupported-gaps", "final-health", "policy-security",
 }
 EXPECTED_DEFAULTS = {
     "process_recovery_seconds_max": 120,
@@ -37,6 +39,9 @@ EXPECTED_DEFAULTS = {
     "scheduled_config_backup_age_hours_max": 24,
     "scheduled_config_rpo_hours": 24,
     "browser_consistent_snapshot_age_hours_max": 24,
+    "backup_daily_restore_points_min": 7,
+    "backup_weekly_restore_points_min": 4,
+    "backup_monthly_restore_points_min": 3,
     "alert_delivery_seconds_max": 300,
     "laptop_unavailable_seconds_max": 60,
     "reconnect_reconciliation_seconds_max": 300,
@@ -47,6 +52,15 @@ EXPECTED_DEFAULTS = {
     "evidence_contains_secrets": False,
 }
 EXPECTED_TARGETS = {"clean-environment", "live-production", "disposable-fixture"}
+LOCKED_SOURCE_CASES = {
+    *(f"AUTH-{number:02d}" for number in range(1, 9)),
+    *(f"MAC-{number:02d}" for number in range(1, 4)),
+    *(f"BROW-{number:02d}" for number in range(1, 4)),
+    *(f"SEC-{number:02d}" for number in range(1, 5)),
+    *(f"AUD-{number:02d}" for number in range(1, 6)),
+    *(f"FAIL-{number:02d}" for number in range(1, 3)),
+    "BG-01", "ISO-01", "SCAN-01",
+}
 REQUIRED_IDS = {
     "AZR-001", "AZR-003", "AZR-004", "NET-001", "NET-003", "SVC-001",
     "SVC-002", "SVC-005", "GAT-001", "GAT-002", "GAT-004", "TEL-001",
@@ -115,7 +129,7 @@ class ProductionCatalogTest(unittest.TestCase):
 
     def test_top_level_schema_and_exact_defaults(self):
         self.assertEqual(set(self.catalog), REQUIRED_TOP)
-        self.assertEqual(self.catalog["schema_version"], "1.0")
+        self.assertEqual(self.catalog["schema_version"], "1.1")
         self.assertIs(self.catalog["canonical"], True)
         self.assertEqual(self.catalog["defaults"], EXPECTED_DEFAULTS)
         self.assertEqual(set(self.catalog["target_environments"]), EXPECTED_TARGETS)
@@ -141,7 +155,7 @@ class ProductionCatalogTest(unittest.TestCase):
                 self.assertIn(item["target"]["environment"], EXPECTED_TARGETS)
                 self.assertTrue(item["target"]["component"].strip())
                 self.assertIsInstance(item["prerequisites"], list)
-                for field in ("evidence_artifacts", "pass_criteria", "failure_rollback_behavior"):
+                for field in ("evidence_artifacts", "authoritative_evidence", "pass_criteria", "failure_rollback_behavior"):
                     self.assertIsInstance(item[field], list)
                     self.assertTrue(item[field])
                     self.assertTrue(all(isinstance(x, str) and x.strip() for x in item[field]))
@@ -153,8 +167,72 @@ class ProductionCatalogTest(unittest.TestCase):
                     f"acceptance/hooks/run-requirement --id {item['id']} --target {item['target']['environment']}",
                 )
                 self.assertTrue(all(path.startswith("evidence/{run_id}/") for path in item["evidence_artifacts"]))
-                if item["destructive"]:
-                    self.assertIn(item["target"]["environment"], {"disposable-fixture", "clean-environment"})
+                if item["destructive"] and item["target"]["environment"] == "live-production":
+                    self.assertEqual(item["id"], "SVC-005")
+
+    def test_criteria_are_binary_artifact_bound_and_not_vague(self):
+        comparator = re.compile(r"(?:equals?|==|<=|>=|less than|greater than|at most|at least|zero|exactly|absent|denied|fails?|matches?)", re.I)
+        artifact = re.compile(r"evidence/\{run_id\}/")
+        vague = re.compile(r"^\s*(?:all\s+)?(?:controls?|checks?|gates?)\s+pass(?:ed)?[.!]?\s*$", re.I)
+        for item in self.requirements:
+            with self.subTest(item=item["id"]):
+                for criterion in item["pass_criteria"]:
+                    self.assertRegex(criterion, comparator, "criterion lacks an observable/expected comparator")
+                    self.assertRegex(criterion, artifact, "criterion lacks an artifact reference")
+                    self.assertIsNone(vague.fullmatch(criterion))
+                    self.assertNotIn("controls pass", criterion.lower())
+                for evidence in item["authoritative_evidence"]:
+                    self.assertRegex(evidence, artifact)
+
+    def test_exact_locked_source_crosswalk_and_one_requirement_per_case(self):
+        crosswalk = self.catalog["locked_source_crosswalk"]
+        self.assertEqual(set(crosswalk), LOCKED_SOURCE_CASES)
+        flattened = []
+        for case, requirement_ids in crosswalk.items():
+            with self.subTest(case=case):
+                self.assertIsInstance(requirement_ids, list)
+                self.assertEqual(len(requirement_ids), 1)
+                rid = requirement_ids[0]
+                self.assertIn(rid, self.by_id)
+                requirement = self.by_id[rid]
+                self.assertEqual(requirement["category"], "policy-security")
+                self.assertIn(case, requirement["requirement"])
+                self.assertTrue(requirement["authoritative_evidence"])
+                flattened.append(rid)
+        self.assertEqual(len(flattened), len(set(flattened)))
+        policy_ids = {item["id"] for item in self.requirements if item["category"] == "policy-security"}
+        self.assertEqual(policy_ids, set(flattened))
+
+    def test_only_exact_svc005_live_destructive_pre_activation_exception(self):
+        live_destructive = [item for item in self.requirements if item["destructive"] and item["target"]["environment"] == "live-production"]
+        self.assertEqual([item["id"] for item in live_destructive], ["SVC-005"])
+        item = self.by_id["SVC-005"]
+        text = " ".join(all_strings(item)).lower()
+        for phrase in ("actual provisioned", "pre-activation", "azure activity log", "resource id", "production activation"):
+            self.assertIn(phrase, text)
+        self.assertIn("provisioned-vm-binding.json", " ".join(item["evidence_artifacts"]))
+
+    def test_live_exact_profile_concurrency_and_destructive_equivalent_split(self):
+        live = self.by_id["GAT-002"]
+        self.assertEqual(live["target"]["environment"], "live-production")
+        self.assertIs(live["destructive"], False)
+        live_text = " ".join(all_strings(live)).lower()
+        for phrase in ("chief", "test-worker", "laptop-worker", "gateway", "desktop", "pinned", "argv", "db", "wal", "integrity_check"):
+            self.assertIn(phrase, live_text)
+        fixture = self.by_id["GAT-005"]
+        self.assertEqual(fixture["target"]["environment"], "disposable-fixture")
+        self.assertIs(fixture["destructive"], True)
+        fixture_text = " ".join(all_strings(fixture)).lower()
+        for phrase in ("equivalent", "contention", "restart", "schema", "wal", "integrity_check"):
+            self.assertIn(phrase, fixture_text)
+
+    def test_live_backup_retention_tiers_and_authorities(self):
+        item = self.by_id["BKP-007"]
+        self.assertEqual(item["target"]["environment"], "live-production")
+        self.assertIs(item["destructive"], False)
+        text = " ".join(all_strings(item)).lower()
+        for phrase in ("7 daily", "4 weekly", "3 monthly", "retention-policy.json", "restore-point-inventory.json", "deletion-authority.json", "every live bot"):
+            self.assertIn(phrase, text)
 
     def test_unique_stable_ids_and_complete_execution_order(self):
         ids = [item["id"] for item in self.requirements]

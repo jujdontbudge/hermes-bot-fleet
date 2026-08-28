@@ -1,5 +1,5 @@
 {
-  "schema_version": "1.0",
+  "schema_version": "1.1",
   "title": "Hermes Bot Fleet production acceptance requirements",
   "canonical": true,
   "semantics": {
@@ -18,6 +18,9 @@
     "scheduled_config_backup_age_hours_max": 24,
     "scheduled_config_rpo_hours": 24,
     "browser_consistent_snapshot_age_hours_max": 24,
+    "backup_daily_restore_points_min": 7,
+    "backup_weekly_restore_points_min": 4,
+    "backup_monthly_restore_points_min": 3,
     "alert_delivery_seconds_max": 300,
     "laptop_unavailable_seconds_max": 60,
     "reconnect_reconciliation_seconds_max": 300,
@@ -37,6 +40,34 @@
     "REP-002",
     "REP-003",
     "REP-004",
+    "PSC-001",
+    "PSC-002",
+    "PSC-003",
+    "PSC-004",
+    "PSC-005",
+    "PSC-006",
+    "PSC-007",
+    "PSC-008",
+    "PSC-009",
+    "PSC-010",
+    "PSC-011",
+    "PSC-012",
+    "PSC-013",
+    "PSC-014",
+    "PSC-015",
+    "PSC-016",
+    "PSC-017",
+    "PSC-018",
+    "PSC-019",
+    "PSC-020",
+    "PSC-021",
+    "PSC-022",
+    "PSC-023",
+    "PSC-024",
+    "PSC-025",
+    "PSC-026",
+    "PSC-027",
+    "PSC-028",
     "AZR-001",
     "AZR-002",
     "AZR-003",
@@ -56,6 +87,7 @@
     "SVC-006",
     "GAT-001",
     "GAT-002",
+    "GAT-005",
     "GAT-003",
     "GAT-004",
     "TEL-001",
@@ -102,6 +134,7 @@
     "BKP-004",
     "BKP-005",
     "BKP-006",
+    "BKP-007",
     "MON-001",
     "MON-002",
     "MON-003",
@@ -144,14 +177,17 @@
         "evidence/{run_id}/inventory/release.json"
       ],
       "pass_criteria": [
-        "All revisions and digests are immutable, non-empty, mutually consistent, and map to reviewed artifacts."
+        "All revisions and digests are immutable, non-empty, mutually consistent, and map to reviewed artifacts. Observable: authoritative result fields; expected comparator: every stated value and threshold equals or satisfies this criterion. Artifact reference: evidence/{run_id}/inventory/release.json."
       ],
       "failure_rollback_behavior": [
         "Fail release; make no infrastructure change."
       ],
       "destructive": false,
       "secret_risk": false,
-      "mandatory": true
+      "mandatory": true,
+      "authoritative_evidence": [
+        "Declared release inputs authoritative observer output at evidence/{run_id}/inventory/release.json"
+      ]
     },
     {
       "id": "REP-002",
@@ -169,14 +205,17 @@
         "evidence/{run_id}/scans/secret-scan.json"
       ],
       "pass_criteria": [
-        "All configured scanners report zero unresolved secret findings and evidence uses only opaque handles/digests."
+        "All configured scanners report zero unresolved secret findings and evidence uses only opaque handles/digests. Observable: authoritative result fields; expected comparator: every stated value and threshold equals or satisfies this criterion. Artifact reference: evidence/{run_id}/scans/secret-scan.json."
       ],
       "failure_rollback_behavior": [
         "Quarantine evidence, rotate any exposed credential outside agent context, remove the exposure, and rerun from REP-001."
       ],
       "destructive": false,
       "secret_risk": true,
-      "mandatory": true
+      "mandatory": true,
+      "authoritative_evidence": [
+        "Declared repository and evidence authoritative observer output at evidence/{run_id}/scans/secret-scan.json"
+      ]
     },
     {
       "id": "REP-003",
@@ -194,14 +233,17 @@
         "evidence/{run_id}/documentation/consistency.json"
       ],
       "pass_criteria": [
-        "No contradictory topology, policy, UX, port, identity, isolation, or authority statement; every gap has owner, tracking issue, impact, and blocked capability."
+        "No contradictory topology, policy, UX, port, identity, isolation, or authority statement; every gap has owner, tracking issue, impact, and blocked capability. Observable: authoritative result fields; expected comparator: every stated value and threshold equals or satisfies this criterion. Artifact reference: evidence/{run_id}/documentation/consistency.json."
       ],
       "failure_rollback_behavior": [
         "Fail release; correct docs or implementation without weakening locked decisions."
       ],
       "destructive": false,
       "secret_risk": false,
-      "mandatory": true
+      "mandatory": true,
+      "authoritative_evidence": [
+        "Declared documentation authoritative observer output at evidence/{run_id}/documentation/consistency.json"
+      ]
     },
     {
       "id": "REP-004",
@@ -221,12 +263,799 @@
         "evidence/{run_id}/clean/inventory.json"
       ],
       "pass_criteria": [
-        "Fresh host reaches pre-service readiness with no undeclared manual step, inherited state, or agent-visible secret."
+        "Fresh host reaches pre-service readiness with no undeclared manual step, inherited state, or agent-visible secret. Observable: authoritative result fields; expected comparator: every stated value and threshold equals or satisfies this criterion. Artifact reference: evidence/{run_id}/clean/bootstrap.log."
       ],
       "failure_rollback_behavior": [
         "Destroy the clean fixture, repair automation/runbook, and repeat."
       ],
       "destructive": true,
+      "secret_risk": true,
+      "mandatory": true,
+      "authoritative_evidence": [
+        "Declared bootstrap authoritative observer output at evidence/{run_id}/clean/bootstrap.log"
+      ]
+    },
+    {
+      "id": "PSC-001",
+      "category": "policy-security",
+      "requirement": "Execute locked security-policy case AUTH-01: Unknown-action deny and safe-read admission.",
+      "prerequisites": [
+        "REP-004"
+      ],
+      "target": {
+        "environment": "disposable-fixture",
+        "component": "locked policy acceptance case AUTH-01"
+      },
+      "command_test_hook": "acceptance/hooks/run-requirement --id PSC-001 --target disposable-fixture",
+      "evidence_artifacts": [
+        "evidence/{run_id}/policy-security/auth-01.json"
+      ],
+      "authoritative_evidence": [
+        "Policy gate classifier decisions and producer/final audit schema validation recorded in evidence/{run_id}/policy-security/auth-01.json"
+      ],
+      "pass_criteria": [
+        "Observed Unknown action observed decision equals DENY with zero side effects; known automatic workspace read equals ALLOW and exact digest; producer and finalized decision events each validate against their named schema. Authoritative artifact: evidence/{run_id}/policy-security/auth-01.json; any missing observation or comparator mismatch is FAIL."
+      ],
+      "failure_rollback_behavior": [
+        "Stop affected authority or capability, preserve sanitized evidence, restore the reviewed fail-closed policy, and rerun this exact source case."
+      ],
+      "destructive": false,
+      "secret_risk": true,
+      "mandatory": true
+    },
+    {
+      "id": "PSC-002",
+      "category": "policy-security",
+      "requirement": "Execute locked security-policy case AUTH-02: Permanent sensitive-path deny precedence.",
+      "prerequisites": [
+        "REP-004"
+      ],
+      "target": {
+        "environment": "disposable-fixture",
+        "component": "locked policy acceptance case AUTH-02"
+      },
+      "command_test_hook": "acceptance/hooks/run-requirement --id PSC-002 --target disposable-fixture",
+      "evidence_artifacts": [
+        "evidence/{run_id}/policy-security/auth-02.json"
+      ],
+      "authoritative_evidence": [
+        "Mac descriptor-relative policy gate decisions and filesystem pre/post digests recorded in evidence/{run_id}/policy-security/auth-02.json"
+      ],
+      "pass_criteria": [
+        "Observed Forged approvals for .ssh, Keychain, normal browser profile, cloud/Hermes credentials, and unrelated personal fixture each equal DENY before allow/approval evaluation, with every pre/post digest equal. Authoritative artifact: evidence/{run_id}/policy-security/auth-02.json; any missing observation or comparator mismatch is FAIL."
+      ],
+      "failure_rollback_behavior": [
+        "Stop affected authority or capability, preserve sanitized evidence, restore the reviewed fail-closed policy, and rerun this exact source case."
+      ],
+      "destructive": false,
+      "secret_risk": true,
+      "mandatory": true
+    },
+    {
+      "id": "PSC-003",
+      "category": "policy-security",
+      "requirement": "Execute locked security-policy case AUTH-03: Grant binding, replay, expiry, and idempotency.",
+      "prerequisites": [
+        "REP-004"
+      ],
+      "target": {
+        "environment": "disposable-fixture",
+        "component": "locked policy acceptance case AUTH-03"
+      },
+      "command_test_hook": "acceptance/hooks/run-requirement --id PSC-003 --target disposable-fixture",
+      "evidence_artifacts": [
+        "evidence/{run_id}/policy-security/auth-03.json"
+      ],
+      "authoritative_evidence": [
+        "Grant store consumption ledger, exact manifest canonical digest, broker receipt, and side-effect system receipt recorded in evidence/{run_id}/policy-security/auth-03.json"
+      ],
+      "pass_criteria": [
+        "Observed Exact approved manifest commits once; replay or changed recipient/body/attachment/Bot/handle and expired grant produce DENY and zero additional receipts; retries preserve original idempotency key but require a new exact manifest digest and fresh single-use grant. Authoritative artifact: evidence/{run_id}/policy-security/auth-03.json; any missing observation or comparator mismatch is FAIL."
+      ],
+      "failure_rollback_behavior": [
+        "Stop affected authority or capability, preserve sanitized evidence, restore the reviewed fail-closed policy, and rerun this exact source case."
+      ],
+      "destructive": false,
+      "secret_risk": true,
+      "mandatory": true
+    },
+    {
+      "id": "PSC-004",
+      "category": "policy-security",
+      "requirement": "Execute locked security-policy case AUTH-04: Approval-class action admission.",
+      "prerequisites": [
+        "REP-004"
+      ],
+      "target": {
+        "environment": "disposable-fixture",
+        "component": "locked policy acceptance case AUTH-04"
+      },
+      "command_test_hook": "acceptance/hooks/run-requirement --id PSC-004 --target disposable-fixture",
+      "evidence_artifacts": [
+        "evidence/{run_id}/policy-security/auth-04.json"
+      ],
+      "authoritative_evidence": [
+        "Deny-first classifier matrix, policy decision events, and fixture side-effect receipts recorded in evidence/{run_id}/policy-security/auth-04.json"
+      ],
+      "pass_criteria": [
+        "Observed Purchases, publishing, third-party sends, destructive actions, account/IAM changes, and unrelated production mutations each equal REQUIRE_APPROVAL and have zero auto-run receipts. Authoritative artifact: evidence/{run_id}/policy-security/auth-04.json; any missing observation or comparator mismatch is FAIL."
+      ],
+      "failure_rollback_behavior": [
+        "Stop affected authority or capability, preserve sanitized evidence, restore the reviewed fail-closed policy, and rerun this exact source case."
+      ],
+      "destructive": false,
+      "secret_risk": true,
+      "mandatory": true
+    },
+    {
+      "id": "PSC-005",
+      "category": "policy-security",
+      "requirement": "Execute locked security-policy case AUTH-05: Nonce concurrency and durable single consumption.",
+      "prerequisites": [
+        "REP-004"
+      ],
+      "target": {
+        "environment": "disposable-fixture",
+        "component": "locked policy acceptance case AUTH-05"
+      },
+      "command_test_hook": "acceptance/hooks/run-requirement --id PSC-005 --target disposable-fixture",
+      "evidence_artifacts": [
+        "evidence/{run_id}/policy-security/auth-05.json"
+      ],
+      "authoritative_evidence": [
+        "Transactional grant/nonce ledger and authoritative fixture side-effect receipt recorded in evidence/{run_id}/policy-security/auth-05.json"
+      ],
+      "pass_criteria": [
+        "Observed Concurrent consumers observe exactly one durable nonce consumption and authoritative side-effect receipt count is <=1; all losing decisions equal DENY. Authoritative artifact: evidence/{run_id}/policy-security/auth-05.json; any missing observation or comparator mismatch is FAIL."
+      ],
+      "failure_rollback_behavior": [
+        "Stop affected authority or capability, preserve sanitized evidence, restore the reviewed fail-closed policy, and rerun this exact source case."
+      ],
+      "destructive": false,
+      "secret_risk": true,
+      "mandatory": true
+    },
+    {
+      "id": "PSC-006",
+      "category": "policy-security",
+      "requirement": "Execute locked security-policy case AUTH-06: Clock, signing, grant reconstruction, key rotation, and audit fail-closed.",
+      "prerequisites": [
+        "REP-004"
+      ],
+      "target": {
+        "environment": "disposable-fixture",
+        "component": "locked policy acceptance case AUTH-06"
+      },
+      "command_test_hook": "acceptance/hooks/run-requirement --id PSC-006 --target disposable-fixture",
+      "evidence_artifacts": [
+        "evidence/{run_id}/policy-security/auth-06.json"
+      ],
+      "authoritative_evidence": [
+        "Monotonic-clock record, canonical grant verifier, Ed25519 certificate/revocation inventory, gate journal, and audit availability probe recorded in evidence/{run_id}/policy-security/auth-06.json"
+      ],
+      "pass_criteria": [
+        "Observed Clock rollback, revision/restart/fingerprint races, malformed or non-64-byte signature, wrong domain/mode, missing/unknown/expired/revoked key, invalid root, non-canonical reconstruction, and audit outage each equal DENY; certified key rotation and reviewed root cross-certificate observations equal VALID without weakening expiry/revocation. Authoritative artifact: evidence/{run_id}/policy-security/auth-06.json; any missing observation or comparator mismatch is FAIL."
+      ],
+      "failure_rollback_behavior": [
+        "Stop affected authority or capability, preserve sanitized evidence, restore the reviewed fail-closed policy, and rerun this exact source case."
+      ],
+      "destructive": false,
+      "secret_risk": true,
+      "mandatory": true
+    },
+    {
+      "id": "PSC-007",
+      "category": "policy-security",
+      "requirement": "Execute locked security-policy case AUTH-07: Initial-provisioning standing-authority carve-out.",
+      "prerequisites": [
+        "REP-004"
+      ],
+      "target": {
+        "environment": "disposable-fixture",
+        "component": "locked policy acceptance case AUTH-07"
+      },
+      "command_test_hook": "acceptance/hooks/run-requirement --id PSC-007 --target disposable-fixture",
+      "evidence_artifacts": [
+        "evidence/{run_id}/policy-security/auth-07.json"
+      ],
+      "authoritative_evidence": [
+        "Assigned-ticket binding, reviewed canonical manifest, architecture comparator, policy decisions, and fixture receipts recorded in evidence/{run_id}/policy-security/auth-07.json"
+      ],
+      "pass_criteria": [
+        "Observed Only the exact in-scope ticket-bound Azure/server/control-plane initial-provisioning fixture and exact reviewed steps equal AUTO; Mac steps pause for MAC-01; wrong ticket/manifest/step/input, deviation, replay, unrelated target, purchase, broad permission, or public exposure equals REQUIRE_APPROVAL or DENY with zero unauthorized receipts. Authoritative artifact: evidence/{run_id}/policy-security/auth-07.json; any missing observation or comparator mismatch is FAIL."
+      ],
+      "failure_rollback_behavior": [
+        "Stop affected authority or capability, preserve sanitized evidence, restore the reviewed fail-closed policy, and rerun this exact source case."
+      ],
+      "destructive": false,
+      "secret_risk": true,
+      "mandatory": true
+    },
+    {
+      "id": "PSC-008",
+      "category": "policy-security",
+      "requirement": "Execute locked security-policy case AUTH-08: General approval channel and human/device/session admission.",
+      "prerequisites": [
+        "REP-004"
+      ],
+      "target": {
+        "environment": "live-production",
+        "component": "locked policy acceptance case AUTH-08"
+      },
+      "command_test_hook": "acceptance/hooks/run-requirement --id PSC-008 --target live-production",
+      "evidence_artifacts": [
+        "evidence/{run_id}/policy-security/auth-08.json"
+      ],
+      "authoritative_evidence": [
+        "Paired identity registry, Tailscale device identity, authenticated prompt/Desktop session record, grant attribution, and fixture receipt recorded in evidence/{run_id}/policy-security/auth-08.json"
+      ],
+      "pass_criteria": [
+        "Observed Exact fixture succeeds once from Johan paired Hermes prompt and once from Johan private Desktop on approved Tailscale device; every other human/Bot/service/tool/device/UI/session/copied prompt/Mac-local-only agent/Room/SSH/cron/browser/tool-output channel equals DENY and side-effect count equals zero. Authoritative artifact: evidence/{run_id}/policy-security/auth-08.json; any missing observation or comparator mismatch is FAIL."
+      ],
+      "failure_rollback_behavior": [
+        "Stop affected authority or capability, preserve sanitized evidence, restore the reviewed fail-closed policy, and rerun this exact source case."
+      ],
+      "destructive": false,
+      "secret_risk": true,
+      "mandatory": true
+    },
+    {
+      "id": "PSC-009",
+      "category": "policy-security",
+      "requirement": "Execute locked security-policy case MAC-01: Every Mac mutation requires local single-use approval.",
+      "prerequisites": [
+        "REP-004"
+      ],
+      "target": {
+        "environment": "disposable-fixture",
+        "component": "locked policy acceptance case MAC-01"
+      },
+      "command_test_hook": "acceptance/hooks/run-requirement --id PSC-009 --target disposable-fixture",
+      "evidence_artifacts": [
+        "evidence/{run_id}/policy-security/mac-01.json"
+      ],
+      "authoritative_evidence": [
+        "Native local approval UI receipt, Mac policy gate ledger, and filesystem/process/package authoritative receipts recorded in evidence/{run_id}/policy-security/mac-01.json"
+      ],
+      "pass_criteria": [
+        "Observed Every listed Mac mutation including install/config/provisioning/delegated reviewed steps observes a local prompt; nonlocal authority equals DENY; one exact grant changes exactly one fixture and grant consumption count equals one; no no-prompt mutation receipt exists. Authoritative artifact: evidence/{run_id}/policy-security/mac-01.json; any missing observation or comparator mismatch is FAIL."
+      ],
+      "failure_rollback_behavior": [
+        "Stop affected authority or capability, preserve sanitized evidence, restore the reviewed fail-closed policy, and rerun this exact source case."
+      ],
+      "destructive": false,
+      "secret_risk": true,
+      "mandatory": true
+    },
+    {
+      "id": "PSC-010",
+      "category": "policy-security",
+      "requirement": "Execute locked security-policy case MAC-02: Mac path confinement and race denial.",
+      "prerequisites": [
+        "REP-004"
+      ],
+      "target": {
+        "environment": "disposable-fixture",
+        "component": "locked policy acceptance case MAC-02"
+      },
+      "command_test_hook": "acceptance/hooks/run-requirement --id PSC-010 --target disposable-fixture",
+      "evidence_artifacts": [
+        "evidence/{run_id}/policy-security/mac-02.json"
+      ],
+      "authoritative_evidence": [
+        "Descriptor-relative resolver trace and filesystem inode/device pre/post inventory recorded in evidence/{run_id}/policy-security/mac-02.json"
+      ],
+      "pass_criteria": [
+        "Observed Symlink, alias, hard-link, mount/device swap, case/Unicode ambiguity, parent traversal, destination race, and selected-root removal each equal DENY with out-of-root read/write count zero. Authoritative artifact: evidence/{run_id}/policy-security/mac-02.json; any missing observation or comparator mismatch is FAIL."
+      ],
+      "failure_rollback_behavior": [
+        "Stop affected authority or capability, preserve sanitized evidence, restore the reviewed fail-closed policy, and rerun this exact source case."
+      ],
+      "destructive": false,
+      "secret_risk": true,
+      "mandatory": true
+    },
+    {
+      "id": "PSC-011",
+      "category": "policy-security",
+      "requirement": "Execute locked security-policy case MAC-03: Mac availability and audit fail-closed.",
+      "prerequisites": [
+        "REP-004"
+      ],
+      "target": {
+        "environment": "disposable-fixture",
+        "component": "locked policy acceptance case MAC-03"
+      },
+      "command_test_hook": "acceptance/hooks/run-requirement --id PSC-011 --target disposable-fixture",
+      "evidence_artifacts": [
+        "evidence/{run_id}/policy-security/mac-03.json"
+      ],
+      "authoritative_evidence": [
+        "Mac power/session state, approval UI and gateway supervisor journal, audit capacity probe, and fixture digests recorded in evidence/{run_id}/policy-security/mac-03.json"
+      ],
+      "pass_criteria": [
+        "Observed Lock, sleep, offline, approval UI kill, gateway restart, timeout, and audit-full each leave pre/post fixture digests equal and mutation receipt count zero. Authoritative artifact: evidence/{run_id}/policy-security/mac-03.json; any missing observation or comparator mismatch is FAIL."
+      ],
+      "failure_rollback_behavior": [
+        "Stop affected authority or capability, preserve sanitized evidence, restore the reviewed fail-closed policy, and rerun this exact source case."
+      ],
+      "destructive": false,
+      "secret_risk": true,
+      "mandatory": true
+    },
+    {
+      "id": "PSC-012",
+      "category": "policy-security",
+      "requirement": "Execute locked security-policy case BROW-01: Exclusive time-bounded browser takeover.",
+      "prerequisites": [
+        "REP-004"
+      ],
+      "target": {
+        "environment": "disposable-fixture",
+        "component": "locked policy acceptance case BROW-01"
+      },
+      "command_test_hook": "acceptance/hooks/run-requirement --id PSC-012 --target disposable-fixture",
+      "evidence_artifacts": [
+        "evidence/{run_id}/policy-security/brow-01.json"
+      ],
+      "authoritative_evidence": [
+        "Lease supervisor state journal, CDP socket/client inventory, noVNC authenticated input record, and monotonic timer recorded in evidence/{run_id}/policy-security/brow-01.json"
+      ],
+      "pass_criteria": [
+        "Observed Approved takeover observes CDP client count zero before HUMAN, exactly one Johan noVNC session, duration <=600 seconds, and concurrent CDP/noVNC enabled samples equal zero. Authoritative artifact: evidence/{run_id}/policy-security/brow-01.json; any missing observation or comparator mismatch is FAIL."
+      ],
+      "failure_rollback_behavior": [
+        "Stop affected authority or capability, preserve sanitized evidence, restore the reviewed fail-closed policy, and rerun this exact source case."
+      ],
+      "destructive": false,
+      "secret_risk": true,
+      "mandatory": true
+    },
+    {
+      "id": "PSC-013",
+      "category": "policy-security",
+      "requirement": "Execute locked security-policy case BROW-02: Takeover token binding and crash/disconnect recovery.",
+      "prerequisites": [
+        "REP-004"
+      ],
+      "target": {
+        "environment": "disposable-fixture",
+        "component": "locked policy acceptance case BROW-02"
+      },
+      "command_test_hook": "acceptance/hooks/run-requirement --id PSC-013 --target disposable-fixture",
+      "evidence_artifacts": [
+        "evidence/{run_id}/policy-security/brow-02.json"
+      ],
+      "authoritative_evidence": [
+        "Lease supervisor journal, token verifier decisions, process supervisor events, and independent input probes recorded in evidence/{run_id}/policy-security/brow-02.json"
+      ],
+      "pass_criteria": [
+        "Observed Replay/wrong-Bot/wrong-device/expired token and supervisor/proxy/browser crash or disconnect each produce RECOVERING, revoked credential, and denied CDP/noVNC input. Authoritative artifact: evidence/{run_id}/policy-security/brow-02.json; any missing observation or comparator mismatch is FAIL."
+      ],
+      "failure_rollback_behavior": [
+        "Stop affected authority or capability, preserve sanitized evidence, restore the reviewed fail-closed policy, and rerun this exact source case."
+      ],
+      "destructive": false,
+      "secret_risk": true,
+      "mandatory": true
+    },
+    {
+      "id": "PSC-014",
+      "category": "policy-security",
+      "requirement": "Execute locked security-policy case BROW-03: Token-free takeover bootstrap and authority separation.",
+      "prerequisites": [
+        "REP-004"
+      ],
+      "target": {
+        "environment": "disposable-fixture",
+        "component": "locked policy acceptance case BROW-03"
+      },
+      "command_test_hook": "acceptance/hooks/run-requirement --id PSC-014 --target disposable-fixture",
+      "evidence_artifacts": [
+        "evidence/{run_id}/policy-security/brow-03.json"
+      ],
+      "authoritative_evidence": [
+        "URL parser, no-store bootstrap receipt, sink canary scan, browser gate decision, and side-effect receipt recorded in evidence/{run_id}/policy-security/brow-03.json"
+      ],
+      "pass_criteria": [
+        "Observed Every URL component including fragment has canary count zero; credential delivery count equals one via authenticated no-store bootstrap; history/log/screenshot/CDP/crash/model/tool/JavaScript canary counts equal zero; approval-class browser effect equals REQUIRE_APPROVAL with zero effect. Authoritative artifact: evidence/{run_id}/policy-security/brow-03.json; any missing observation or comparator mismatch is FAIL."
+      ],
+      "failure_rollback_behavior": [
+        "Stop affected authority or capability, preserve sanitized evidence, restore the reviewed fail-closed policy, and rerun this exact source case."
+      ],
+      "destructive": false,
+      "secret_risk": true,
+      "mandatory": true
+    },
+    {
+      "id": "PSC-015",
+      "category": "policy-security",
+      "requirement": "Execute locked security-policy case SEC-01: Secret non-disclosure lifecycle at runtime.",
+      "prerequisites": [
+        "REP-004"
+      ],
+      "target": {
+        "environment": "disposable-fixture",
+        "component": "locked policy acceptance case SEC-01"
+      },
+      "command_test_hook": "acceptance/hooks/run-requirement --id PSC-015 --target disposable-fixture",
+      "evidence_artifacts": [
+        "evidence/{run_id}/policy-security/sec-01.json"
+      ],
+      "authoritative_evidence": [
+        "Process environment/argv/open-file inventory plus tool/session/log canary scanner recorded in evidence/{run_id}/policy-security/sec-01.json"
+      ],
+      "pass_criteria": [
+        "Observed Agent-readable environment, argv, open files, output, model/session capture, and logs expose only handles and seeded secret canary count equals zero. Authoritative artifact: evidence/{run_id}/policy-security/sec-01.json; any missing observation or comparator mismatch is FAIL."
+      ],
+      "failure_rollback_behavior": [
+        "Stop affected authority or capability, preserve sanitized evidence, restore the reviewed fail-closed policy, and rerun this exact source case."
+      ],
+      "destructive": false,
+      "secret_risk": true,
+      "mandatory": true
+    },
+    {
+      "id": "PSC-016",
+      "category": "policy-security",
+      "requirement": "Execute locked security-policy case SEC-02: Broker binding, DNS/redirect/reflection, and egress controls.",
+      "prerequisites": [
+        "REP-004"
+      ],
+      "target": {
+        "environment": "disposable-fixture",
+        "component": "locked policy acceptance case SEC-02"
+      },
+      "command_test_hook": "acceptance/hooks/run-requirement --id PSC-016 --target disposable-fixture",
+      "evidence_artifacts": [
+        "evidence/{run_id}/policy-security/sec-02.json"
+      ],
+      "authoritative_evidence": [
+        "Broker authorization record, resolver pin trace, HTTP redirect/response filter record, egress firewall flow log, and destination receipt recorded in evidence/{run_id}/policy-security/sec-02.json"
+      ],
+      "pass_criteria": [
+        "Observed Exact Bot/handle/method/destination succeeds once; cross-Bot, redirect, DNS rebinding, alternate port/path, direct egress, and response reflection each equal DENY with destination/egress unauthorized receipt count zero. Authoritative artifact: evidence/{run_id}/policy-security/sec-02.json; any missing observation or comparator mismatch is FAIL."
+      ],
+      "failure_rollback_behavior": [
+        "Stop affected authority or capability, preserve sanitized evidence, restore the reviewed fail-closed policy, and rerun this exact source case."
+      ],
+      "destructive": false,
+      "secret_risk": true,
+      "mandatory": true
+    },
+    {
+      "id": "PSC-017",
+      "category": "policy-security",
+      "requirement": "Execute locked security-policy case SEC-03: Secret rotation, revocation, expiry, and inventory lifecycle.",
+      "prerequisites": [
+        "REP-004"
+      ],
+      "target": {
+        "environment": "disposable-fixture",
+        "component": "locked policy acceptance case SEC-03"
+      },
+      "command_test_hook": "acceptance/hooks/run-requirement --id PSC-017 --target disposable-fixture",
+      "evidence_artifacts": [
+        "evidence/{run_id}/policy-security/sec-03.json"
+      ],
+      "authoritative_evidence": [
+        "Secret authority version inventory, broker decision ledger, rotation receipt, and expiry monitor recorded in evidence/{run_id}/policy-security/sec-03.json"
+      ],
+      "pass_criteria": [
+        "Observed New rotation canary succeeds, old version state equals revoked and use equals DENY, inventory active version equals new version, and expired/overdue handle state equals disabled. Authoritative artifact: evidence/{run_id}/policy-security/sec-03.json; any missing observation or comparator mismatch is FAIL."
+      ],
+      "failure_rollback_behavior": [
+        "Stop affected authority or capability, preserve sanitized evidence, restore the reviewed fail-closed policy, and rerun this exact source case."
+      ],
+      "destructive": false,
+      "secret_risk": true,
+      "mandatory": true
+    },
+    {
+      "id": "PSC-018",
+      "category": "policy-security",
+      "requirement": "Execute locked security-policy case SEC-04: Production-secret and backup-principal separation.",
+      "prerequisites": [
+        "REP-004"
+      ],
+      "target": {
+        "environment": "disposable-fixture",
+        "component": "locked policy acceptance case SEC-04"
+      },
+      "command_test_hook": "acceptance/hooks/run-requirement --id PSC-018 --target disposable-fixture",
+      "evidence_artifacts": [
+        "evidence/{run_id}/policy-security/sec-04.json"
+      ],
+      "authoritative_evidence": [
+        "Broker handle-resolution decisions and storage RBAC/data-plane denial logs recorded in evidence/{run_id}/policy-security/sec-04.json"
+      ],
+      "pass_criteria": [
+        "Observed test-worker production-handle resolution count equals zero; backup principal R3 and other-Bot prefix reads each equal DENY with returned byte count zero. Authoritative artifact: evidence/{run_id}/policy-security/sec-04.json; any missing observation or comparator mismatch is FAIL."
+      ],
+      "failure_rollback_behavior": [
+        "Stop affected authority or capability, preserve sanitized evidence, restore the reviewed fail-closed policy, and rerun this exact source case."
+      ],
+      "destructive": false,
+      "secret_risk": true,
+      "mandatory": true
+    },
+    {
+      "id": "PSC-019",
+      "category": "policy-security",
+      "requirement": "Execute locked security-policy case AUD-01: Audit producer and finalized collector schemas.",
+      "prerequisites": [
+        "REP-004"
+      ],
+      "target": {
+        "environment": "disposable-fixture",
+        "component": "locked policy acceptance case AUD-01"
+      },
+      "command_test_hook": "acceptance/hooks/run-requirement --id PSC-019 --target disposable-fixture",
+      "evidence_artifacts": [
+        "evidence/{run_id}/policy-security/aud-01.json"
+      ],
+      "authoritative_evidence": [
+        "Named producer-envelope JSON Schema validator, finalized-event JSON Schema validator, collector assignment record, and rejection ledger recorded in evidence/{run_id}/policy-security/aud-01.json"
+      ],
+      "pass_criteria": [
+        "Observed All event classes validate first against producer schema without collector-owned fields and then final schema with observation/redaction/sequence/integrity fields; extra fields, identity mismatch, incomplete correlation, and raw values each equal REJECT. Authoritative artifact: evidence/{run_id}/policy-security/aud-01.json; any missing observation or comparator mismatch is FAIL."
+      ],
+      "failure_rollback_behavior": [
+        "Stop affected authority or capability, preserve sanitized evidence, restore the reviewed fail-closed policy, and rerun this exact source case."
+      ],
+      "destructive": false,
+      "secret_risk": true,
+      "mandatory": true
+    },
+    {
+      "id": "PSC-020",
+      "category": "policy-security",
+      "requirement": "Execute locked security-policy case AUD-02: Audit redaction across every sink.",
+      "prerequisites": [
+        "REP-004"
+      ],
+      "target": {
+        "environment": "disposable-fixture",
+        "component": "locked policy acceptance case AUD-02"
+      },
+      "command_test_hook": "acceptance/hooks/run-requirement --id PSC-020 --target disposable-fixture",
+      "evidence_artifacts": [
+        "evidence/{run_id}/policy-security/aud-02.json"
+      ],
+      "authoritative_evidence": [
+        "Typed redactor report and canary scans of local, journal, archive, alert, and JUnit sinks recorded in evidence/{run_id}/policy-security/aud-02.json"
+      ],
+      "pass_criteria": [
+        "Observed Password/token/cookie/header/query seeded canary count equals zero in every named sink, with omitted/redacted field counts equal expected fixture values. Authoritative artifact: evidence/{run_id}/policy-security/aud-02.json; any missing observation or comparator mismatch is FAIL."
+      ],
+      "failure_rollback_behavior": [
+        "Stop affected authority or capability, preserve sanitized evidence, restore the reviewed fail-closed policy, and rerun this exact source case."
+      ],
+      "destructive": false,
+      "secret_risk": true,
+      "mandatory": true
+    },
+    {
+      "id": "PSC-021",
+      "category": "policy-security",
+      "requirement": "Execute locked security-policy case AUD-03: Audit tamper, HMAC rotation, and signed checkpoints.",
+      "prerequisites": [
+        "REP-004"
+      ],
+      "target": {
+        "environment": "disposable-fixture",
+        "component": "locked policy acceptance case AUD-03"
+      },
+      "command_test_hook": "acceptance/hooks/run-requirement --id PSC-021 --target disposable-fixture",
+      "evidence_artifacts": [
+        "evidence/{run_id}/policy-security/aud-03.json"
+      ],
+      "authoritative_evidence": [
+        "HMAC chain verifier, key-boundary inventory, daily Ed25519 checkpoint certificate/signature/object digest, and cross-checkpoint link verifier recorded in evidence/{run_id}/policy-security/aud-03.json"
+      ],
+      "pass_criteria": [
+        "Observed Edit/delete/reorder/duplicate/gap/key-version mutations each make verification equal INVALID; K-to-K+1 boundary continuity equals VALID; checkpoint replacement and unknown/revoked signing key each equal INVALID. Authoritative artifact: evidence/{run_id}/policy-security/aud-03.json; any missing observation or comparator mismatch is FAIL."
+      ],
+      "failure_rollback_behavior": [
+        "Stop affected authority or capability, preserve sanitized evidence, restore the reviewed fail-closed policy, and rerun this exact source case."
+      ],
+      "destructive": false,
+      "secret_risk": true,
+      "mandatory": true
+    },
+    {
+      "id": "PSC-022",
+      "category": "policy-security",
+      "requirement": "Execute locked security-policy case AUD-04: Audit archive rights, immutable retention, deletion authority, and recurring verification.",
+      "prerequisites": [
+        "REP-004"
+      ],
+      "target": {
+        "environment": "disposable-fixture",
+        "component": "locked policy acceptance case AUD-04"
+      },
+      "command_test_hook": "acceptance/hooks/run-requirement --id PSC-022 --target disposable-fixture",
+      "evidence_artifacts": [
+        "evidence/{run_id}/policy-security/aud-04.json"
+      ],
+      "authoritative_evidence": [
+        "Archive RBAC/encryption/Bot-prefix policy, local rotation and lag monitor, live lifecycle policy, verifier authorization tags, and daily/monthly scheduler receipts recorded in evidence/{run_id}/policy-security/aud-04.json"
+      ],
+      "pass_criteria": [
+        "Observed Collector rights equal create-only, public access equals false, encryption/Bot separation equal enabled, local rotation equals 30 days, lag alarm threshold <=24 hours, immutable retention >=400 days, deletion requires expiry AND valid verifier-only exact-digest tag, and daily/monthly verification receipt counts equal schedule with skipped/failed runs alerted. Authoritative artifact: evidence/{run_id}/policy-security/aud-04.json; any missing observation or comparator mismatch is FAIL."
+      ],
+      "failure_rollback_behavior": [
+        "Stop affected authority or capability, preserve sanitized evidence, restore the reviewed fail-closed policy, and rerun this exact source case."
+      ],
+      "destructive": false,
+      "secret_risk": true,
+      "mandatory": true
+    },
+    {
+      "id": "PSC-023",
+      "category": "policy-security",
+      "requirement": "Execute locked security-policy case AUD-05: Audit retirement, multi-key deletion, and key destruction ordering.",
+      "prerequisites": [
+        "REP-004"
+      ],
+      "target": {
+        "environment": "disposable-fixture",
+        "component": "locked policy acceptance case AUD-05"
+      },
+      "command_test_hook": "acceptance/hooks/run-requirement --id PSC-023 --target disposable-fixture",
+      "evidence_artifacts": [
+        "evidence/{run_id}/policy-security/aud-05.json"
+      ],
+      "authoritative_evidence": [
+        "Disposable object/tag inventory, verifier ledger, archive deletion receipts, HSM/KMS key-state receipts, and live 400-day policy inspection recorded in evidence/{run_id}/policy-security/aud-05.json"
+      ],
+      "pass_criteria": [
+        "Observed Retired HMAC key signing equals DENY and remains verifier-only until covered expiry; shared K/K+1 object is ineligible after K alone and eligible only after both exact-digest authorizations; malformed tags/key sets equal DENY; covered-object deletion confirmations precede each key-destroyed receipt; live retention remains >=400 days and signing trust continuity is valid or explicitly marked. Authoritative artifact: evidence/{run_id}/policy-security/aud-05.json; any missing observation or comparator mismatch is FAIL."
+      ],
+      "failure_rollback_behavior": [
+        "Stop affected authority or capability, preserve sanitized evidence, restore the reviewed fail-closed policy, and rerun this exact source case."
+      ],
+      "destructive": true,
+      "secret_risk": true,
+      "mandatory": true
+    },
+    {
+      "id": "PSC-024",
+      "category": "policy-security",
+      "requirement": "Execute locked security-policy case FAIL-01: Security component and audit-storage failure behavior.",
+      "prerequisites": [
+        "REP-004"
+      ],
+      "target": {
+        "environment": "disposable-fixture",
+        "component": "locked policy acceptance case FAIL-01"
+      },
+      "command_test_hook": "acceptance/hooks/run-requirement --id PSC-024 --target disposable-fixture",
+      "evidence_artifacts": [
+        "evidence/{run_id}/policy-security/fail-01.json"
+      ],
+      "authoritative_evidence": [
+        "Supervisor kill/fill events, gate/broker/audit/lease decisions, side-effect receipts, diagnostic bounds, and alert receipt recorded in evidence/{run_id}/policy-security/fail-01.json"
+      ],
+      "pass_criteria": [
+        "Observed For each killed component and full-log fixture, side-effect receipt count equals zero, safe diagnostic count stays within declared bound, and exactly one sanitized alert is observed within 300 seconds. Authoritative artifact: evidence/{run_id}/policy-security/fail-01.json; any missing observation or comparator mismatch is FAIL."
+      ],
+      "failure_rollback_behavior": [
+        "Stop affected authority or capability, preserve sanitized evidence, restore the reviewed fail-closed policy, and rerun this exact source case."
+      ],
+      "destructive": false,
+      "secret_risk": false,
+      "mandatory": true
+    },
+    {
+      "id": "PSC-025",
+      "category": "policy-security",
+      "requirement": "Execute locked security-policy case FAIL-02: Pinned provider failure without fallback.",
+      "prerequisites": [
+        "REP-004"
+      ],
+      "target": {
+        "environment": "disposable-fixture",
+        "component": "locked policy acceptance case FAIL-02"
+      },
+      "command_test_hook": "acceptance/hooks/run-requirement --id PSC-025 --target disposable-fixture",
+      "evidence_artifacts": [
+        "evidence/{run_id}/policy-security/fail-02.json"
+      ],
+      "authoritative_evidence": [
+        "Provider client attempt ledger, configuration pin, failure audit event, and Telegram alert receipt recorded in evidence/{run_id}/policy-security/fail-02.json"
+      ],
+      "pass_criteria": [
+        "Observed Induced openai-codex/gpt-5.6-sol failure observes fallback provider/model call count zero and exactly one sanitized failure event and alert. Authoritative artifact: evidence/{run_id}/policy-security/fail-02.json; any missing observation or comparator mismatch is FAIL."
+      ],
+      "failure_rollback_behavior": [
+        "Stop affected authority or capability, preserve sanitized evidence, restore the reviewed fail-closed policy, and rerun this exact source case."
+      ],
+      "destructive": false,
+      "secret_risk": false,
+      "mandatory": true
+    },
+    {
+      "id": "PSC-026",
+      "category": "policy-security",
+      "requirement": "Execute locked security-policy case BG-01: Human-only scoped break-glass recovery.",
+      "prerequisites": [
+        "REP-004"
+      ],
+      "target": {
+        "environment": "disposable-fixture",
+        "component": "locked policy acceptance case BG-01"
+      },
+      "command_test_hook": "acceptance/hooks/run-requirement --id PSC-026 --target disposable-fixture",
+      "evidence_artifacts": [
+        "evidence/{run_id}/policy-security/bg-01.json"
+      ],
+      "authoritative_evidence": [
+        "Break-glass identity/grant ledger, autonomy state, policy decisions, monotonic expiry, and recovery checklist receipts recorded in evidence/{run_id}/policy-security/bg-01.json"
+      ],
+      "pass_criteria": [
+        "Observed Bot invocation equals DENY; one human grant scope/time equals approved bounds, autonomy equals disabled, permanent-deny probes equal DENY, post-expiry use equals DENY, and autonomy resumes only after every recovery checklist receipt equals PASS. Authoritative artifact: evidence/{run_id}/policy-security/bg-01.json; any missing observation or comparator mismatch is FAIL."
+      ],
+      "failure_rollback_behavior": [
+        "Stop affected authority or capability, preserve sanitized evidence, restore the reviewed fail-closed policy, and rerun this exact source case."
+      ],
+      "destructive": false,
+      "secret_risk": true,
+      "mandatory": true
+    },
+    {
+      "id": "PSC-027",
+      "category": "policy-security",
+      "requirement": "Execute locked security-policy case ISO-01: Cross-Bot operating-system and policy isolation.",
+      "prerequisites": [
+        "REP-004"
+      ],
+      "target": {
+        "environment": "disposable-fixture",
+        "component": "locked policy acceptance case ISO-01"
+      },
+      "command_test_hook": "acceptance/hooks/run-requirement --id PSC-027 --target disposable-fixture",
+      "evidence_artifacts": [
+        "evidence/{run_id}/policy-security/iso-01.json"
+      ],
+      "authoritative_evidence": [
+        "Filesystem/network/browser/broker/audit/process/policy-gate denial probes and owner pre/post digests recorded in evidence/{run_id}/policy-security/iso-01.json"
+      ],
+      "pass_criteria": [
+        "Observed Every cross-Bot filesystem, network, browser, credential, audit-write, process-inspection, and approval-use probe equals DENY and all owner pre/post digests equal. Authoritative artifact: evidence/{run_id}/policy-security/iso-01.json; any missing observation or comparator mismatch is FAIL."
+      ],
+      "failure_rollback_behavior": [
+        "Stop affected authority or capability, preserve sanitized evidence, restore the reviewed fail-closed policy, and rerun this exact source case."
+      ],
+      "destructive": false,
+      "secret_risk": false,
+      "mandatory": true
+    },
+    {
+      "id": "PSC-028",
+      "category": "policy-security",
+      "requirement": "Execute locked security-policy case SCAN-01: Repository, history, evidence, config, log, and artifact secret scans.",
+      "prerequisites": [
+        "REP-004"
+      ],
+      "target": {
+        "environment": "disposable-fixture",
+        "component": "locked policy acceptance case SCAN-01"
+      },
+      "command_test_hook": "acceptance/hooks/run-requirement --id PSC-028 --target disposable-fixture",
+      "evidence_artifacts": [
+        "evidence/{run_id}/policy-security/scan-01.json"
+      ],
+      "authoritative_evidence": [
+        "Pinned secret scanners and entropy/provider detector reports over tracked files, Git history, issue evidence, generated config, logs, and test artifacts recorded in evidence/{run_id}/policy-security/scan-01.json"
+      ],
+      "pass_criteria": [
+        "Observed Every named scan scope completes and unresolved seeded-canary, secret, private-key, and cookie finding count equals zero. Authoritative artifact: evidence/{run_id}/policy-security/scan-01.json; any missing observation or comparator mismatch is FAIL."
+      ],
+      "failure_rollback_behavior": [
+        "Stop affected authority or capability, preserve sanitized evidence, restore the reviewed fail-closed policy, and rerun this exact source case."
+      ],
+      "destructive": false,
       "secret_risk": true,
       "mandatory": true
     },
@@ -247,14 +1076,17 @@
         "evidence/{run_id}/azure/cost-selection.json"
       ],
       "pass_criteria": [
-        "Selected region/SKU is available, Ubuntu-compatible, within quota and remaining credit, and is the cheaper feasible option; hourly/monthly estimates and observation time are recorded."
+        "Selected region/SKU is available, Ubuntu-compatible, within quota and remaining credit, and is the cheaper feasible option; hourly/monthly estimates and observation time are recorded. Observable: authoritative result fields; expected comparator: every stated value and threshold equals or satisfies this criterion. Artifact reference: evidence/{run_id}/azure/feasibility.json."
       ],
       "failure_rollback_behavior": [
         "Fail before provisioning; select no assumed or unavailable SKU."
       ],
       "destructive": false,
       "secret_risk": true,
-      "mandatory": true
+      "mandatory": true,
+      "authoritative_evidence": [
+        "Declared Azure control plane authoritative observer output at evidence/{run_id}/azure/feasibility.json"
+      ]
     },
     {
       "id": "AZR-002",
@@ -272,14 +1104,17 @@
         "evidence/{run_id}/azure/resources.json"
       ],
       "pass_criteria": [
-        "Exactly the reviewed resources exist with expected ownership/tags/region and no orphaned fleet resource."
+        "Exactly the reviewed resources exist with expected ownership/tags/region and no orphaned fleet resource. Observable: authoritative result fields; expected comparator: every stated value and threshold equals or satisfies this criterion. Artifact reference: evidence/{run_id}/azure/resources.json."
       ],
       "failure_rollback_behavior": [
         "Fail release; reconcile only through reviewed manifest or remove orphan with approval."
       ],
       "destructive": false,
       "secret_risk": false,
-      "mandatory": true
+      "mandatory": true,
+      "authoritative_evidence": [
+        "Declared Azure resources authoritative observer output at evidence/{run_id}/azure/resources.json"
+      ]
     },
     {
       "id": "AZR-003",
@@ -297,14 +1132,17 @@
         "evidence/{run_id}/azure/encryption.json"
       ],
       "pass_criteria": [
-        "Encryption at rest is enabled everywhere; Blob public access is disabled; transport requires TLS; backup namespaces are Bot-scoped."
+        "Encryption at rest is enabled everywhere; Blob public access is disabled; transport requires TLS; backup namespaces are Bot-scoped. Observable: authoritative result fields; expected comparator: every stated value and threshold equals or satisfies this criterion. Artifact reference: evidence/{run_id}/azure/encryption.json."
       ],
       "failure_rollback_behavior": [
         "Disable affected service, deny backup/restore, revert exposure, and repair encryption before rerun."
       ],
       "destructive": false,
       "secret_risk": true,
-      "mandatory": true
+      "mandatory": true,
+      "authoritative_evidence": [
+        "Declared Azure storage authoritative observer output at evidence/{run_id}/azure/encryption.json"
+      ]
     },
     {
       "id": "AZR-004",
@@ -323,14 +1161,17 @@
         "evidence/{run_id}/network/external-scan.json"
       ],
       "pass_criteria": [
-        "Effective Internet-to-VM probes fail for all TCP/UDP ports and Azure shows no public inbound path."
+        "Effective Internet-to-VM probes fail for all TCP/UDP ports and Azure shows no public inbound path. Observable: authoritative result fields; expected comparator: every stated value and threshold equals or satisfies this criterion. Artifact reference: evidence/{run_id}/azure/effective-nsg.json."
       ],
       "failure_rollback_behavior": [
         "Immediately remove exposure using reviewed rollback; stop exposed services and fail release."
       ],
       "destructive": false,
       "secret_risk": false,
-      "mandatory": true
+      "mandatory": true,
+      "authoritative_evidence": [
+        "Declared NIC and NSG authoritative observer output at evidence/{run_id}/azure/effective-nsg.json"
+      ]
     },
     {
       "id": "AZR-005",
@@ -349,14 +1190,17 @@
         "evidence/{run_id}/azure/diagnostic-scan.json"
       ],
       "pass_criteria": [
-        "Zero prohibited values or payload classes are present."
+        "Zero prohibited values or payload classes are present. Observable: authoritative result fields; expected comparator: every stated value and threshold equals or satisfies this criterion. Artifact reference: evidence/{run_id}/azure/diagnostic-scan.json."
       ],
       "failure_rollback_behavior": [
         "Disable unsafe diagnostic sink, quarantine artifacts, rotate exposed credentials, and fail release."
       ],
       "destructive": false,
       "secret_risk": true,
-      "mandatory": true
+      "mandatory": true,
+      "authoritative_evidence": [
+        "Declared Azure diagnostics authoritative observer output at evidence/{run_id}/azure/diagnostic-scan.json"
+      ]
     },
     {
       "id": "AZR-006",
@@ -375,14 +1219,17 @@
         "evidence/{run_id}/azure/budget.json"
       ],
       "pass_criteria": [
-        "Budget/credit alerts are enabled, recipients are correct, and estimate does not exceed approved available credit."
+        "Budget/credit alerts are enabled, recipients are correct, and estimate does not exceed approved available credit. Observable: authoritative result fields; expected comparator: every stated value and threshold equals or satisfies this criterion. Artifact reference: evidence/{run_id}/azure/budget.json."
       ],
       "failure_rollback_behavior": [
         "Fail release; stop optional resources and obtain explicit approval for any cost change."
       ],
       "destructive": false,
       "secret_risk": false,
-      "mandatory": true
+      "mandatory": true,
+      "authoritative_evidence": [
+        "Declared Azure cost controls authoritative observer output at evidence/{run_id}/azure/budget.json"
+      ]
     },
     {
       "id": "NET-001",
@@ -400,14 +1247,17 @@
         "evidence/{run_id}/network/listeners.json"
       ],
       "pass_criteria": [
-        "Only SSH 22 and private proxy 443 bind the Tailscale address; 8701,8702,6081,6082 bind host loopback; 5900 and 9222 are browser-container loopback only; 9223 is Bot-private; 8642 and File Bridge are absent."
+        "Only SSH 22 and private proxy 443 bind the Tailscale address; 8701,8702,6081,6082 bind host loopback; 5900 and 9222 are browser-container loopback only; 9223 is Bot-private; 8642 and File Bridge are absent. Observable: authoritative result fields; expected comparator: every stated value and threshold equals or satisfies this criterion. Artifact reference: evidence/{run_id}/network/listeners.json."
       ],
       "failure_rollback_behavior": [
         "Stop the unexpected listener, restore reviewed bind configuration, and fail release."
       ],
       "destructive": false,
       "secret_risk": false,
-      "mandatory": true
+      "mandatory": true,
+      "authoritative_evidence": [
+        "Declared fleet-server authoritative observer output at evidence/{run_id}/network/listeners.json"
+      ]
     },
     {
       "id": "NET-002",
@@ -425,14 +1275,17 @@
         "evidence/{run_id}/network/nftables.json"
       ],
       "pass_criteria": [
-        "Ruleset exactly implements locked policy and direct probes to all VM non-loopback addresses on backend/control ports fail."
+        "Ruleset exactly implements locked policy and direct probes to all VM non-loopback addresses on backend/control ports fail. Observable: authoritative result fields; expected comparator: every stated value and threshold equals or satisfies this criterion. Artifact reference: evidence/{run_id}/network/nftables.json."
       ],
       "failure_rollback_behavior": [
         "Apply reviewed deny-first rules through private console; stop services if safe rollback cannot be proved."
       ],
       "destructive": false,
       "secret_risk": false,
-      "mandatory": true
+      "mandatory": true,
+      "authoritative_evidence": [
+        "Declared host firewall authoritative observer output at evidence/{run_id}/network/nftables.json"
+      ]
     },
     {
       "id": "NET-003",
@@ -451,14 +1304,17 @@
         "evidence/{run_id}/network/tailscale-negative.json"
       ],
       "pass_criteria": [
-        "Johan approved device reaches only TCP 22/443; unauthorized principal reaches neither; Funnel, public Serve/share, Tailscale SSH, exit node, and subnet routing are disabled."
+        "Johan approved device reaches only TCP 22/443; unauthorized principal reaches neither; Funnel, public Serve/share, Tailscale SSH, exit node, and subnet routing are disabled. Observable: authoritative result fields; expected comparator: every stated value and threshold equals or satisfies this criterion. Artifact reference: evidence/{run_id}/network/tailscale-policy.json."
       ],
       "failure_rollback_behavior": [
         "Revoke node/routes, disable proxy and SSH until policy is corrected, and fail release."
       ],
       "destructive": false,
       "secret_risk": true,
-      "mandatory": true
+      "mandatory": true,
+      "authoritative_evidence": [
+        "Declared tailnet authoritative observer output at evidence/{run_id}/network/tailscale-policy.json"
+      ]
     },
     {
       "id": "NET-004",
@@ -476,14 +1332,17 @@
         "evidence/{run_id}/network/private-access.json"
       ],
       "pass_criteria": [
-        "Approved device succeeds with application authentication; unauthenticated requests fail; each Bot origin maps only to its own loopback backend."
+        "Approved device succeeds with application authentication; unauthenticated requests fail; each Bot origin maps only to its own loopback backend. Observable: authoritative result fields; expected comparator: every stated value and threshold equals or satisfies this criterion. Artifact reference: evidence/{run_id}/network/private-access.json."
       ],
       "failure_rollback_behavior": [
         "Disable incorrect route/auth configuration and restore last known-good proxy policy."
       ],
       "destructive": false,
       "secret_risk": true,
-      "mandatory": true
+      "mandatory": true,
+      "authoritative_evidence": [
+        "Declared private admin plane authoritative observer output at evidence/{run_id}/network/private-access.json"
+      ]
     },
     {
       "id": "NET-005",
@@ -501,14 +1360,17 @@
         "evidence/{run_id}/failure/tailscale-loss.json"
       ],
       "pass_criteria": [
-        "SSH/Desktop/takeover become unavailable, public probes remain denied, and existing safe Telegram/routine processing behavior matches policy."
+        "SSH/Desktop/takeover become unavailable, public probes remain denied, and existing safe Telegram/routine processing behavior matches policy. Observable: authoritative result fields; expected comparator: every stated value and threshold equals or satisfies this criterion. Artifact reference: evidence/{run_id}/failure/tailscale-loss.json."
       ],
       "failure_rollback_behavior": [
         "Restore tailnet path through provider console; never open public fallback; fail release on exposure."
       ],
       "destructive": true,
       "secret_risk": false,
-      "mandatory": true
+      "mandatory": true,
+      "authoritative_evidence": [
+        "Declared network failure fixture authoritative observer output at evidence/{run_id}/failure/tailscale-loss.json"
+      ]
     },
     {
       "id": "SVC-001",
@@ -526,14 +1388,17 @@
         "evidence/{run_id}/services/unit-inventory.json"
       ],
       "pass_criteria": [
-        "Each server Bot has one non-root gateway and one serve --isolated; laptop-worker has one launchd gateway and one Desktop-managed isolated serve only while Desktop is open; no duplicate writer exists."
+        "Each server Bot has one non-root gateway and one serve --isolated; laptop-worker has one launchd gateway and one Desktop-managed isolated serve only while Desktop is open; no duplicate writer exists. Observable: authoritative result fields; expected comparator: every stated value and threshold equals or satisfies this criterion. Artifact reference: evidence/{run_id}/services/unit-inventory.json."
       ],
       "failure_rollback_behavior": [
         "Stop duplicates, disable affected Bot, restore reviewed units, and fail release."
       ],
       "destructive": false,
       "secret_risk": false,
-      "mandatory": true
+      "mandatory": true,
+      "authoritative_evidence": [
+        "Declared all runtimes authoritative observer output at evidence/{run_id}/services/unit-inventory.json"
+      ]
     },
     {
       "id": "SVC-002",
@@ -551,14 +1416,17 @@
         "evidence/{run_id}/services/gateway-kill.json"
       ],
       "pass_criteria": [
-        "Each gateway returns healthy with one PID and resumes polling/scheduling in 120 seconds or less without duplicate turns."
+        "Each gateway returns healthy with one PID and resumes polling/scheduling in 120 seconds or less without duplicate turns. Observable: authoritative result fields; expected comparator: every stated value and threshold equals or satisfies this criterion. Artifact reference: evidence/{run_id}/services/gateway-kill.json."
       ],
       "failure_rollback_behavior": [
         "Disable crash-looping unit, preserve state/evidence, and restore last known-good unit/image."
       ],
       "destructive": true,
       "secret_risk": false,
-      "mandatory": true
+      "mandatory": true,
+      "authoritative_evidence": [
+        "Declared server gateways authoritative observer output at evidence/{run_id}/services/gateway-kill.json"
+      ]
     },
     {
       "id": "SVC-003",
@@ -576,14 +1444,17 @@
         "evidence/{run_id}/services/serve-kill.json"
       ],
       "pass_criteria": [
-        "Each serve returns authenticated and healthy with one PID in 120 seconds or less and profile integrity passes."
+        "Each serve returns authenticated and healthy with one PID in 120 seconds or less and profile integrity passes. Observable: authoritative result fields; expected comparator: every stated value and threshold equals or satisfies this criterion. Artifact reference: evidence/{run_id}/services/serve-kill.json."
       ],
       "failure_rollback_behavior": [
         "Disable affected Desktop route and restore last known-good unit/image."
       ],
       "destructive": true,
       "secret_risk": false,
-      "mandatory": true
+      "mandatory": true,
+      "authoritative_evidence": [
+        "Declared server Desktop backends authoritative observer output at evidence/{run_id}/services/serve-kill.json"
+      ]
     },
     {
       "id": "SVC-004",
@@ -601,41 +1472,50 @@
         "evidence/{run_id}/services/component-kill.json"
       ],
       "pass_criteria": [
-        "Affected component recovers in 120 seconds or less where safe; browser ownership enters RECOVERING; no cross-Bot restart or unsafe control occurs."
+        "Affected component recovers in 120 seconds or less where safe; browser ownership enters RECOVERING; no cross-Bot restart or unsafe control occurs. Observable: authoritative result fields; expected comparator: every stated value and threshold equals or satisfies this criterion. Artifact reference: evidence/{run_id}/services/component-kill.json."
       ],
       "failure_rollback_behavior": [
         "Keep browser control disabled, isolate failed Bot, and restore component from pinned artifact."
       ],
       "destructive": true,
       "secret_risk": false,
-      "mandatory": true
+      "mandatory": true,
+      "authoritative_evidence": [
+        "Declared server components authoritative observer output at evidence/{run_id}/services/component-kill.json"
+      ]
     },
     {
       "id": "SVC-005",
       "category": "services",
-      "requirement": "Reboot the Azure VM and verify ordered fleet recovery.",
+      "requirement": "During the approved pre-activation execution window only, reboot the actual provisioned Azure production VM and verify ordered fleet recovery before any production Bot is enabled.",
       "prerequisites": [
         "SVC-002",
         "SVC-003",
         "SVC-004"
       ],
       "target": {
-        "environment": "disposable-fixture",
-        "component": "fleet-server"
+        "environment": "live-production",
+        "component": "actual provisioned Azure fleet-server VM (pre-activation)"
       },
-      "command_test_hook": "acceptance/hooks/run-requirement --id SVC-005 --target disposable-fixture",
+      "command_test_hook": "acceptance/hooks/run-requirement --id SVC-005 --target live-production",
       "evidence_artifacts": [
-        "evidence/{run_id}/services/vm-reboot.json"
+        "evidence/{run_id}/services/vm-reboot.json",
+        "evidence/{run_id}/azure/provisioned-vm-binding.json"
       ],
       "pass_criteria": [
-        "Within 10 minutes of reboot all host and Bot health gates pass; gateway precedes serve; browser begins RECOVERING; no duplicate processes/listeners or lost durable state."
+        "Observed Azure resource ID and VM name in evidence/{run_id}/azure/provisioned-vm-binding.json equal the live inventory from AZR-002, production activation is recorded false before reboot, and the approved pre-activation window is current; otherwise no reboot occurs and the result is FAIL.",
+        "Observed Azure Activity Log action is exactly one reboot of that actual provisioned VM; within <=600 seconds the host and every Bot health observation in evidence/{run_id}/services/vm-reboot.json equals healthy, gateway start precedes serve, browser starts RECOVERING, duplicate process/listener count equals zero, and pre/post durable-state digests are equal."
       ],
       "failure_rollback_behavior": [
         "Keep unattended routines and Desktop disabled; diagnose boot ordering and restore last known-good host snapshot if required."
       ],
       "destructive": true,
       "secret_risk": false,
-      "mandatory": true
+      "mandatory": true,
+      "authoritative_evidence": [
+        "Azure Activity Log reboot receipt and Azure resource-ID binding for the actual provisioned VM at evidence/{run_id}/azure/provisioned-vm-binding.json",
+        "Host boot ID, systemd journal, service health, listener inventory, and durable-state checks at evidence/{run_id}/services/vm-reboot.json"
+      ]
     },
     {
       "id": "SVC-006",
@@ -653,14 +1533,17 @@
         "evidence/{run_id}/services/quiescence.json"
       ],
       "pass_criteria": [
-        "New work drains/rejects, gateway and serve stop, no profile DB/WAL descriptor remains, maintenance runs, then gateway health passes before serve starts."
+        "New work drains/rejects, gateway and serve stop, no profile DB/WAL descriptor remains, maintenance runs, then gateway health passes before serve starts. Observable: authoritative result fields; expected comparator: every stated value and threshold equals or satisfies this criterion. Artifact reference: evidence/{run_id}/services/quiescence.json."
       ],
       "failure_rollback_behavior": [
         "Abort maintenance before writes or restore pre-maintenance snapshot; keep both processes stopped if state is uncertain."
       ],
       "destructive": true,
       "secret_risk": false,
-      "mandatory": true
+      "mandatory": true,
+      "authoritative_evidence": [
+        "Declared Bot profile maintenance authoritative observer output at evidence/{run_id}/services/quiescence.json"
+      ]
     },
     {
       "id": "GAT-001",
@@ -678,36 +1561,81 @@
         "evidence/{run_id}/gateway/ownership.json"
       ],
       "pass_criteria": [
-        "No multiplex gateway, standalone cron, second gateway, CLI/chat writer, or messaging-enabled serve exists."
+        "No multiplex gateway, standalone cron, second gateway, CLI/chat writer, or messaging-enabled serve exists. Observable: authoritative result fields; expected comparator: every stated value and threshold equals or satisfies this criterion. Artifact reference: evidence/{run_id}/gateway/ownership.json."
       ],
       "failure_rollback_behavior": [
         "Stop all writers for affected profile, repair ownership, run DB integrity check, then start gateway before serve."
       ],
       "destructive": false,
       "secret_risk": false,
-      "mandatory": true
+      "mandatory": true,
+      "authoritative_evidence": [
+        "Declared all Bot profiles authoritative observer output at evidence/{run_id}/gateway/ownership.json"
+      ]
     },
     {
       "id": "GAT-002",
       "category": "gateway-scheduler",
-      "requirement": "Stress simultaneous gateway, Desktop, and cron state writes for the pinned version on every profile.",
+      "requirement": "Run safe non-mutating live concurrency probes against the exact chief, test-worker, and laptop-worker gateway/Desktop process pairs using pinned versions and recorded commands, then verify canonical DB/WAL integrity.",
       "prerequisites": [
         "GAT-001"
       ],
       "target": {
-        "environment": "disposable-fixture",
-        "component": "chief, test-worker, laptop-worker"
+        "environment": "live-production",
+        "component": "exact chief, test-worker, and laptop-worker gateway/Desktop pairs"
       },
-      "command_test_hook": "acceptance/hooks/run-requirement --id GAT-002 --target disposable-fixture",
+      "command_test_hook": "acceptance/hooks/run-requirement --id GAT-002 --target live-production",
       "evidence_artifacts": [
-        "evidence/{run_id}/gateway/concurrency-junit.xml",
-        "evidence/{run_id}/gateway/state-integrity.json"
+        "evidence/{run_id}/gateway/live-pair-inventory.json",
+        "evidence/{run_id}/gateway/live-safe-concurrency.json",
+        "evidence/{run_id}/gateway/live-db-wal-integrity.json"
       ],
       "pass_criteria": [
-        "All correlation markers have exactly one correctly attributed reply; no lost/cross-attributed turn, busy/corruption error, duplicate handling, or unhealthy DB/WAL after restart."
+        "Observed profile set in evidence/{run_id}/gateway/live-pair-inventory.json equals exactly chief, test-worker, and laptop-worker; each has exactly one gateway and one Desktop serve process, and each observed version and argv equals REP-001 pins and SVC-001 commands.",
+        "For each exact live pair, observed harmless read-only correlation count in evidence/{run_id}/gateway/live-safe-concurrency.json equals one correctly attributed result per probe with zero state mutation, lost/cross-attributed turn, duplicate handling, busy error, or corruption error.",
+        "For each exact live profile, DB integrity_check in evidence/{run_id}/gateway/live-db-wal-integrity.json equals ok, WAL/checkpoint status equals healthy, and pre/post canonical DB/WAL content digests equal expected no-mutation digests."
       ],
       "failure_rollback_behavior": [
         "Reject pinned version/pairing; disable affected Desktop backend and restore fixture state."
+      ],
+      "destructive": false,
+      "secret_risk": false,
+      "mandatory": true,
+      "authoritative_evidence": [
+        "OS process inventory and pinned Hermes/Desktop package manifests with exact argv at evidence/{run_id}/gateway/live-pair-inventory.json",
+        "Gateway/Desktop correlation receipts at evidence/{run_id}/gateway/live-safe-concurrency.json",
+        "Canonical profile database integrity_check, WAL checkpoint status, and pre/post digests at evidence/{run_id}/gateway/live-db-wal-integrity.json"
+      ]
+    },
+    {
+      "id": "GAT-005",
+      "category": "gateway-scheduler",
+      "requirement": "Stress destructive contention and restart behavior using equivalent disposable chief, test-worker, and laptop-worker gateway/Desktop fixtures pinned to the live versions, commands, database schema, and WAL mode.",
+      "prerequisites": [
+        "GAT-002"
+      ],
+      "target": {
+        "environment": "disposable-fixture",
+        "component": "equivalent three-profile gateway/Desktop DB/WAL contention and restart fixture"
+      },
+      "command_test_hook": "acceptance/hooks/run-requirement --id GAT-005 --target disposable-fixture",
+      "evidence_artifacts": [
+        "evidence/{run_id}/gateway/fixture-equivalence.json",
+        "evidence/{run_id}/gateway/contention-restart-junit.xml",
+        "evidence/{run_id}/gateway/contention-db-wal-integrity.json"
+      ],
+      "authoritative_evidence": [
+        "Pinned manifest/argv/schema/WAL equivalence report at evidence/{run_id}/gateway/fixture-equivalence.json",
+        "Process supervisor and contention/restart test receipts at evidence/{run_id}/gateway/contention-restart-junit.xml",
+        "Database integrity_check, WAL checkpoint, correlation ledger, and pre/post fixture digests at evidence/{run_id}/gateway/contention-db-wal-integrity.json"
+      ],
+      "pass_criteria": [
+        "Observed fixture versions, exact gateway/Desktop commands, database schema, and WAL mode in evidence/{run_id}/gateway/fixture-equivalence.json equal the three live pair values recorded by GAT-002.",
+        "Under simultaneous fixture writes, forced contention, and gateway/Desktop restarts, observed correlation count in evidence/{run_id}/gateway/contention-restart-junit.xml equals one correctly attributed result per accepted operation with zero lost, cross-attributed, or duplicate commits.",
+        "After every restart, observed integrity_check equals ok, WAL/checkpoint state equals healthy, and fixture ledger/content digests in evidence/{run_id}/gateway/contention-db-wal-integrity.json equal the expected committed-operation set."
+      ],
+      "failure_rollback_behavior": [
+        "Destroy the equivalent fixture, reject the pinned version/pairing, keep unsafe live Desktop pairing disabled, and preserve sanitized evidence."
       ],
       "destructive": true,
       "secret_risk": false,
@@ -729,21 +1657,24 @@
         "evidence/{run_id}/gateway/provider-pin.json"
       ],
       "pass_criteria": [
-        "Only openai-codex with gpt-5.6-sol is configured and observed; no fallback provider/model is enabled."
+        "Only openai-codex with gpt-5.6-sol is configured and observed; no fallback provider/model is enabled. Observable: authoritative result fields; expected comparator: every stated value and threshold equals or satisfies this criterion. Artifact reference: evidence/{run_id}/gateway/provider-pin.json."
       ],
       "failure_rollback_behavior": [
         "Disable turns/routines until exact pin is restored."
       ],
       "destructive": false,
       "secret_risk": true,
-      "mandatory": true
+      "mandatory": true,
+      "authoritative_evidence": [
+        "Declared all Bot profiles authoritative observer output at evidence/{run_id}/gateway/provider-pin.json"
+      ]
     },
     {
       "id": "GAT-004",
       "category": "gateway-scheduler",
       "requirement": "Verify routine schedule ownership, deduplication, result recording, and restart catch-up policy.",
       "prerequisites": [
-        "GAT-002"
+        "GAT-005"
       ],
       "target": {
         "environment": "disposable-fixture",
@@ -754,14 +1685,17 @@
         "evidence/{run_id}/routines/scheduler.json"
       ],
       "pass_criteria": [
-        "Each due occurrence runs at most once under its owner, records outcome/correlation, and restart causes neither silent loss nor duplicate execution."
+        "Each due occurrence runs at most once under its owner, records outcome/correlation, and restart causes neither silent loss nor duplicate execution. Observable: authoritative result fields; expected comparator: every stated value and threshold equals or satisfies this criterion. Artifact reference: evidence/{run_id}/routines/scheduler.json."
       ],
       "failure_rollback_behavior": [
         "Pause affected schedule, reconcile from durable ledger, and require approval for uncertain side-effect retry."
       ],
       "destructive": true,
       "secret_risk": false,
-      "mandatory": true
+      "mandatory": true,
+      "authoritative_evidence": [
+        "Declared cron ticker authoritative observer output at evidence/{run_id}/routines/scheduler.json"
+      ]
     },
     {
       "id": "TEL-001",
@@ -780,14 +1714,17 @@
         "evidence/{run_id}/telegram/roundtrip.json"
       ],
       "pass_criteria": [
-        "Allowlisted numeric user/chat receives exactly one attributed reply from mapped owner; no public webhook/listener exists."
+        "Allowlisted numeric user/chat receives exactly one attributed reply from mapped owner; no public webhook/listener exists. Observable: authoritative result fields; expected comparator: every stated value and threshold equals or satisfies this criterion. Artifact reference: evidence/{run_id}/telegram/roundtrip.json."
       ],
       "failure_rollback_behavior": [
         "Disable mapping, preserve sanitized IDs/digests only, and repair gateway admission."
       ],
       "destructive": false,
       "secret_risk": true,
-      "mandatory": true
+      "mandatory": true,
+      "authoritative_evidence": [
+        "Declared Telegram gateways authoritative observer output at evidence/{run_id}/telegram/roundtrip.json"
+      ]
     },
     {
       "id": "TEL-002",
@@ -805,14 +1742,17 @@
         "evidence/{run_id}/telegram/negative-routing.json"
       ],
       "pass_criteria": [
-        "Every unauthorized fixture yields no Bot turn, no side effect, and a sanitized deny event."
+        "Every unauthorized fixture yields no Bot turn, no side effect, and a sanitized deny event. Observable: authoritative result fields; expected comparator: every stated value and threshold equals or satisfies this criterion. Artifact reference: evidence/{run_id}/telegram/negative-routing.json."
       ],
       "failure_rollback_behavior": [
         "Disable affected gateway and revoke mapping until admission is repaired."
       ],
       "destructive": false,
       "secret_risk": true,
-      "mandatory": true
+      "mandatory": true,
+      "authoritative_evidence": [
+        "Declared Telegram admission fixture authoritative observer output at evidence/{run_id}/telegram/negative-routing.json"
+      ]
     },
     {
       "id": "TEL-003",
@@ -830,14 +1770,17 @@
         "evidence/{run_id}/telegram/owner-routing.json"
       ],
       "pass_criteria": [
-        "Messages route only to selected owner; cross-owner handle and nonnumeric authority identifiers are rejected."
+        "Messages route only to selected owner; cross-owner handle and nonnumeric authority identifiers are rejected. Observable: authoritative result fields; expected comparator: every stated value and threshold equals or satisfies this criterion. Artifact reference: evidence/{run_id}/telegram/owner-routing.json."
       ],
       "failure_rollback_behavior": [
         "Rollback mapping atomically to prior owner; do not copy credentials."
       ],
       "destructive": true,
       "secret_risk": true,
-      "mandatory": true
+      "mandatory": true,
+      "authoritative_evidence": [
+        "Declared Channel mapping fixture authoritative observer output at evidence/{run_id}/telegram/owner-routing.json"
+      ]
     },
     {
       "id": "TEL-004",
@@ -855,14 +1798,17 @@
         "evidence/{run_id}/telegram/outbound-retry.json"
       ],
       "pass_criteria": [
-        "A bounded outage yields either one confirmed outbound message or a failed outcome; never more than one; alert/evidence is sanitized."
+        "A bounded outage yields either one confirmed outbound message or a failed outcome; never more than one; alert/evidence is sanitized. Observable: authoritative result fields; expected comparator: every stated value and threshold equals or satisfies this criterion. Artifact reference: evidence/{run_id}/telegram/outbound-retry.json."
       ],
       "failure_rollback_behavior": [
         "Stop retry after bound, retain original idempotency key, and require state inspection before fresh approval where applicable."
       ],
       "destructive": true,
       "secret_risk": false,
-      "mandatory": true
+      "mandatory": true,
+      "authoritative_evidence": [
+        "Declared Telegram outage fixture authoritative observer output at evidence/{run_id}/telegram/outbound-retry.json"
+      ]
     },
     {
       "id": "BOT-001",
@@ -880,14 +1826,17 @@
         "evidence/{run_id}/bots/config-persistence.json"
       ],
       "pass_criteria": [
-        "Each Bot returns its own expected non-secret configuration after restart with no default-profile fallback."
+        "Each Bot returns its own expected non-secret configuration after restart with no default-profile fallback. Observable: authoritative result fields; expected comparator: every stated value and threshold equals or satisfies this criterion. Artifact reference: evidence/{run_id}/bots/config-persistence.json."
       ],
       "failure_rollback_behavior": [
         "Disable mismatched Bot and restore its Bot-scoped R1 backup."
       ],
       "destructive": false,
       "secret_risk": false,
-      "mandatory": true
+      "mandatory": true,
+      "authoritative_evidence": [
+        "Declared all Bot profiles authoritative observer output at evidence/{run_id}/bots/config-persistence.json"
+      ]
     },
     {
       "id": "BOT-002",
@@ -905,14 +1854,17 @@
         "evidence/{run_id}/bots/memory-session.json"
       ],
       "pass_criteria": [
-        "Seeded non-secret marker remains only in owning Bot memory/session and replies preserve Bot/session attribution."
+        "Seeded non-secret marker remains only in owning Bot memory/session and replies preserve Bot/session attribution. Observable: authoritative result fields; expected comparator: every stated value and threshold equals or satisfies this criterion. Artifact reference: evidence/{run_id}/bots/memory-session.json."
       ],
       "failure_rollback_behavior": [
         "Stop both processes, run integrity checks, restore owning Bot only, and investigate leakage as incident."
       ],
       "destructive": true,
       "secret_risk": false,
-      "mandatory": true
+      "mandatory": true,
+      "authoritative_evidence": [
+        "Declared Bot state fixture authoritative observer output at evidence/{run_id}/bots/memory-session.json"
+      ]
     },
     {
       "id": "BOT-003",
@@ -930,14 +1882,17 @@
         "evidence/{run_id}/bots/skills-tools.json"
       ],
       "pass_criteria": [
-        "Assigned harmless skill succeeds; unassigned and cross-Bot capability invocation fails before execution."
+        "Assigned harmless skill succeeds; unassigned and cross-Bot capability invocation fails before execution. Observable: authoritative result fields; expected comparator: every stated value and threshold equals or satisfies this criterion. Artifact reference: evidence/{run_id}/bots/skills-tools.json."
       ],
       "failure_rollback_behavior": [
         "Disable capability broker for affected Bot and restore reviewed allowlist."
       ],
       "destructive": false,
       "secret_risk": false,
-      "mandatory": true
+      "mandatory": true,
+      "authoritative_evidence": [
+        "Declared capability fixture authoritative observer output at evidence/{run_id}/bots/skills-tools.json"
+      ]
     },
     {
       "id": "BOT-004",
@@ -955,14 +1910,17 @@
         "evidence/{run_id}/bots/credential-boundary.json"
       ],
       "pass_criteria": [
-        "Owner operation succeeds through broker; cross-Bot/scope/destination/direct-egress attempts fail; seeded canary is absent from environment, argv, files, outputs, logs, sessions, and evidence."
+        "Owner operation succeeds through broker; cross-Bot/scope/destination/direct-egress attempts fail; seeded canary is absent from environment, argv, files, outputs, logs, sessions, and evidence. Observable: authoritative result fields; expected comparator: every stated value and threshold equals or satisfies this criterion. Artifact reference: evidence/{run_id}/bots/credential-boundary.json."
       ],
       "failure_rollback_behavior": [
         "Disable/revoke handle, quarantine evidence, rotate seeded credential, and fail release."
       ],
       "destructive": true,
       "secret_risk": true,
-      "mandatory": true
+      "mandatory": true,
+      "authoritative_evidence": [
+        "Declared credential canary fixture authoritative observer output at evidence/{run_id}/bots/credential-boundary.json"
+      ]
     },
     {
       "id": "BOT-005",
@@ -980,14 +1938,17 @@
         "evidence/{run_id}/bots/mounts-paths.json"
       ],
       "pass_criteria": [
-        "Every resolved path and mount matches locked topology; another Bot root, host home/admin socket, and installation default profile are absent."
+        "Every resolved path and mount matches locked topology; another Bot root, host home/admin socket, and installation default profile are absent. Observable: authoritative result fields; expected comparator: every stated value and threshold equals or satisfies this criterion. Artifact reference: evidence/{run_id}/bots/mounts-paths.json."
       ],
       "failure_rollback_behavior": [
         "Stop affected container and rebuild mounts from reviewed manifest."
       ],
       "destructive": false,
       "secret_risk": false,
-      "mandatory": true
+      "mandatory": true,
+      "authoritative_evidence": [
+        "Declared runtime mounts authoritative observer output at evidence/{run_id}/bots/mounts-paths.json"
+      ]
     },
     {
       "id": "BOT-006",
@@ -1005,14 +1966,17 @@
         "evidence/{run_id}/bots/os-container-isolation.json"
       ],
       "pass_criteria": [
-        "Cross-Bot filesystem/network/DNS/process/audit-write probes fail; containers are non-root/unprivileged, sandboxed, capability-dropped, socket-free, and bounded."
+        "Cross-Bot filesystem/network/DNS/process/audit-write probes fail; containers are non-root/unprivileged, sandboxed, capability-dropped, socket-free, and bounded. Observable: authoritative result fields; expected comparator: every stated value and threshold equals or satisfies this criterion. Artifact reference: evidence/{run_id}/bots/os-container-isolation.json."
       ],
       "failure_rollback_behavior": [
         "Stop compromised boundary, preserve metadata, rebuild Bot container set and rotate its credentials."
       ],
       "destructive": true,
       "secret_risk": false,
-      "mandatory": true
+      "mandatory": true,
+      "authoritative_evidence": [
+        "Declared server isolation fixture authoritative observer output at evidence/{run_id}/bots/os-container-isolation.json"
+      ]
     },
     {
       "id": "BOT-007",
@@ -1031,14 +1995,17 @@
         "evidence/{run_id}/bots/cross-bot-leakage.json"
       ],
       "pass_criteria": [
-        "Every owner-tagged canary is visible only to its owner and every cross-owner read/write fails."
+        "Every owner-tagged canary is visible only to its owner and every cross-owner read/write fails. Observable: authoritative result fields; expected comparator: every stated value and threshold equals or satisfies this criterion. Artifact reference: evidence/{run_id}/bots/cross-bot-leakage.json."
       ],
       "failure_rollback_behavior": [
         "Treat any leak as security incident; disable both Bots, rotate affected credentials, restore from known-clean points."
       ],
       "destructive": true,
       "secret_risk": true,
-      "mandatory": true
+      "mandatory": true,
+      "authoritative_evidence": [
+        "Declared cross-Bot canary fixture authoritative observer output at evidence/{run_id}/bots/cross-bot-leakage.json"
+      ]
     },
     {
       "id": "BOT-008",
@@ -1056,14 +2023,17 @@
         "evidence/{run_id}/bots/test-worker-scope.json"
       ],
       "pass_criteria": [
-        "No production credential/account/data reference is configured or resolvable."
+        "No production credential/account/data reference is configured or resolvable. Observable: authoritative result fields; expected comparator: every stated value and threshold equals or satisfies this criterion. Artifact reference: evidence/{run_id}/bots/test-worker-scope.json."
       ],
       "failure_rollback_behavior": [
         "Disable test-worker and revoke any excessive grant immediately."
       ],
       "destructive": false,
       "secret_risk": true,
-      "mandatory": true
+      "mandatory": true,
+      "authoritative_evidence": [
+        "Declared test-worker authoritative observer output at evidence/{run_id}/bots/test-worker-scope.json"
+      ]
     },
     {
       "id": "DSK-001",
@@ -1082,14 +2052,17 @@
         "evidence/{run_id}/desktop/canonical-chats.json"
       ],
       "pass_criteria": [
-        "Messages and replies remain in the owning canonical chat across reconnect/restart with no cross-profile attribution."
+        "Messages and replies remain in the owning canonical chat across reconnect/restart with no cross-profile attribution. Observable: authoritative result fields; expected comparator: every stated value and threshold equals or satisfies this criterion. Artifact reference: evidence/{run_id}/desktop/canonical-chats.json."
       ],
       "failure_rollback_behavior": [
         "Disable incorrect backend route and restore prior chat mapping."
       ],
       "destructive": false,
       "secret_risk": false,
-      "mandatory": true
+      "mandatory": true,
+      "authoritative_evidence": [
+        "Declared Hermes Desktop authoritative observer output at evidence/{run_id}/desktop/canonical-chats.json"
+      ]
     },
     {
       "id": "DSK-002",
@@ -1107,14 +2080,17 @@
         "evidence/{run_id}/desktop/rooms.json"
       ],
       "pass_criteria": [
-        "Only members receive eligible dispatch; transcript attributes every response; member data boundaries remain intact."
+        "Only members receive eligible dispatch; transcript attributes every response; member data boundaries remain intact. Observable: authoritative result fields; expected comparator: every stated value and threshold equals or satisfies this criterion. Artifact reference: evidence/{run_id}/desktop/rooms.json."
       ],
       "failure_rollback_behavior": [
         "Close fixture Room, revert membership, and fail on any state leakage."
       ],
       "destructive": true,
       "secret_risk": false,
-      "mandatory": true
+      "mandatory": true,
+      "authoritative_evidence": [
+        "Declared Bot Room fixture authoritative observer output at evidence/{run_id}/desktop/rooms.json"
+      ]
     },
     {
       "id": "DSK-003",
@@ -1132,14 +2108,17 @@
         "evidence/{run_id}/desktop/mentions.json"
       ],
       "pass_criteria": [
-        "Mention reaches exactly named member; nonmember/offline Bot is not dispatched; unmentioned message terminates within configured bounded rounds without loop."
+        "Mention reaches exactly named member; nonmember/offline Bot is not dispatched; unmentioned message terminates within configured bounded rounds without loop. Observable: authoritative result fields; expected comparator: every stated value and threshold equals or satisfies this criterion. Artifact reference: evidence/{run_id}/desktop/mentions.json."
       ],
       "failure_rollback_behavior": [
         "Stop Room routing and preserve transcript metadata for diagnosis."
       ],
       "destructive": true,
       "secret_risk": false,
-      "mandatory": true
+      "mandatory": true,
+      "authoritative_evidence": [
+        "Declared mention fixture authoritative observer output at evidence/{run_id}/desktop/mentions.json"
+      ]
     },
     {
       "id": "DSK-004",
@@ -1158,14 +2137,17 @@
         "evidence/{run_id}/desktop/delegation.json"
       ],
       "pass_criteria": [
-        "Target receives task/result correlation but gains no source authority; denied target action remains denied."
+        "Target receives task/result correlation but gains no source authority; denied target action remains denied. Observable: authoritative result fields; expected comparator: every stated value and threshold equals or satisfies this criterion. Artifact reference: evidence/{run_id}/desktop/delegation.json."
       ],
       "failure_rollback_behavior": [
         "Cancel delegation and quarantine result if target identity/authority is ambiguous."
       ],
       "destructive": true,
       "secret_risk": false,
-      "mandatory": true
+      "mandatory": true,
+      "authoritative_evidence": [
+        "Declared delegation fixture authoritative observer output at evidence/{run_id}/desktop/delegation.json"
+      ]
     },
     {
       "id": "RTN-001",
@@ -1183,14 +2165,17 @@
         "evidence/{run_id}/routines/desktop-off.json"
       ],
       "pass_criteria": [
-        "Due server routine completes once with Desktop closed and records owner/result."
+        "Due server routine completes once with Desktop closed and records owner/result. Observable: authoritative result fields; expected comparator: every stated value and threshold equals or satisfies this criterion. Artifact reference: evidence/{run_id}/routines/desktop-off.json."
       ],
       "failure_rollback_behavior": [
         "Pause routine and repair gateway ownership; do not introduce a second scheduler."
       ],
       "destructive": true,
       "secret_risk": false,
-      "mandatory": true
+      "mandatory": true,
+      "authoritative_evidence": [
+        "Declared server routine fixture authoritative observer output at evidence/{run_id}/routines/desktop-off.json"
+      ]
     },
     {
       "id": "RTN-002",
@@ -1208,14 +2193,17 @@
         "evidence/{run_id}/routines/mac-off.json"
       ],
       "pass_criteria": [
-        "Server-only routine completes; Mac-bound delegation reports laptop_unavailable within 60 seconds and causes no Mac mutation."
+        "Server-only routine completes; Mac-bound delegation reports laptop_unavailable within 60 seconds and causes no Mac mutation. Observable: authoritative result fields; expected comparator: every stated value and threshold equals or satisfies this criterion. Artifact reference: evidence/{run_id}/routines/mac-off.json."
       ],
       "failure_rollback_behavior": [
         "Keep Mac work queued/failed per declared policy and never redirect it to server filesystem authority."
       ],
       "destructive": true,
       "secret_risk": false,
-      "mandatory": true
+      "mandatory": true,
+      "authoritative_evidence": [
+        "Declared Mac-off fixture authoritative observer output at evidence/{run_id}/routines/mac-off.json"
+      ]
     },
     {
       "id": "RTN-003",
@@ -1233,14 +2221,17 @@
         "evidence/{run_id}/routines/laptop-availability.json"
       ],
       "pass_criteria": [
-        "Launchd gateway owns cron with Desktop closed; safe read-only routine can run awake; sleep/offline mutation fails closed and records outcome."
+        "Launchd gateway owns cron with Desktop closed; safe read-only routine can run awake; sleep/offline mutation fails closed and records outcome. Observable: authoritative result fields; expected comparator: every stated value and threshold equals or satisfies this criterion. Artifact reference: evidence/{run_id}/routines/laptop-availability.json."
       ],
       "failure_rollback_behavior": [
         "Pause laptop routine and require fresh local approval after recovery."
       ],
       "destructive": true,
       "secret_risk": false,
-      "mandatory": true
+      "mandatory": true,
+      "authoritative_evidence": [
+        "Declared laptop routine fixture authoritative observer output at evidence/{run_id}/routines/laptop-availability.json"
+      ]
     },
     {
       "id": "BRW-001",
@@ -1260,14 +2251,17 @@
         "evidence/{run_id}/browser/cdp-vnc-denial.json"
       ],
       "pass_criteria": [
-        "Approved view shows current Bot browser; noVNC input is off outside HUMAN; raw ports fail from every non-container source."
+        "Approved view shows current Bot browser; noVNC input is off outside HUMAN; raw ports fail from every non-container source. Observable: authoritative result fields; expected comparator: every stated value and threshold equals or satisfies this criterion. Artifact reference: evidence/{run_id}/browser/visual-private-access.json."
       ],
       "failure_rollback_behavior": [
         "Disable proxy/browser route and enter RECOVERING until exposure is removed."
       ],
       "destructive": false,
       "secret_risk": true,
-      "mandatory": true
+      "mandatory": true,
+      "authoritative_evidence": [
+        "Declared server browsers authoritative observer output at evidence/{run_id}/browser/visual-private-access.json"
+      ]
     },
     {
       "id": "BRW-002",
@@ -1286,14 +2280,17 @@
         "evidence/{run_id}/browser/persistence.json"
       ],
       "pass_criteria": [
-        "Seeded disposable session survives restart only for its Bot; browser starts RECOVERING and later passes harmless probe."
+        "Seeded disposable session survives restart only for its Bot; browser starts RECOVERING and later passes harmless probe. Observable: authoritative result fields; expected comparator: every stated value and threshold equals or satisfies this criterion. Artifact reference: evidence/{run_id}/browser/persistence.json."
       ],
       "failure_rollback_behavior": [
         "Keep automation disabled and restore same-Bot browser snapshot or require fresh login."
       ],
       "destructive": true,
       "secret_risk": true,
-      "mandatory": true
+      "mandatory": true,
+      "authoritative_evidence": [
+        "Declared persistent Browser Profiles authoritative observer output at evidence/{run_id}/browser/persistence.json"
+      ]
     },
     {
       "id": "BRW-003",
@@ -1311,14 +2308,17 @@
         "evidence/{run_id}/browser/takeover-transitions.json"
       ],
       "pass_criteria": [
-        "Each transition is audited; CDP clients reach zero before HUMAN; each transition completes within 60 seconds; one admin controls input; recovery rotates lease and passes probe."
+        "Each transition is audited; CDP clients reach zero before HUMAN; each transition completes within 60 seconds; one admin controls input; recovery rotates lease and passes probe. Observable: authoritative result fields; expected comparator: every stated value and threshold equals or satisfies this criterion. Artifact reference: evidence/{run_id}/browser/takeover-transitions.json."
       ],
       "failure_rollback_behavior": [
         "Revoke grant/input, close CDP/VNC, remain RECOVERING, and alert."
       ],
       "destructive": true,
       "secret_risk": true,
-      "mandatory": true
+      "mandatory": true,
+      "authoritative_evidence": [
+        "Declared takeover fixture authoritative observer output at evidence/{run_id}/browser/takeover-transitions.json"
+      ]
     },
     {
       "id": "BRW-004",
@@ -1336,14 +2336,17 @@
         "evidence/{run_id}/browser/control-races.json"
       ],
       "pass_criteria": [
-        "At every sample at most one control plane is enabled; one claimant wins or all fail closed; stale nonce and invalid transition fail."
+        "At every sample at most one control plane is enabled; one claimant wins or all fail closed; stale nonce and invalid transition fail. Observable: authoritative result fields; expected comparator: every stated value and threshold equals or satisfies this criterion. Artifact reference: evidence/{run_id}/browser/control-races.json."
       ],
       "failure_rollback_behavior": [
         "Revoke all leases and grants, enter RECOVERING, and alert."
       ],
       "destructive": true,
       "secret_risk": true,
-      "mandatory": true
+      "mandatory": true,
+      "authoritative_evidence": [
+        "Declared takeover race fixture authoritative observer output at evidence/{run_id}/browser/control-races.json"
+      ]
     },
     {
       "id": "BRW-005",
@@ -1361,14 +2364,17 @@
         "evidence/{run_id}/browser/abandonment.json"
       ],
       "pass_criteria": [
-        "All cases deny CDP/noVNC input after event, revoke credential, and enter RECOVERING within 60 seconds."
+        "All cases deny CDP/noVNC input after event, revoke credential, and enter RECOVERING within 60 seconds. Observable: authoritative result fields; expected comparator: every stated value and threshold equals or satisfies this criterion. Artifact reference: evidence/{run_id}/browser/abandonment.json."
       ],
       "failure_rollback_behavior": [
         "Remain RECOVERING and require a new approved takeover after safe recovery."
       ],
       "destructive": true,
       "secret_risk": true,
-      "mandatory": true
+      "mandatory": true,
+      "authoritative_evidence": [
+        "Declared takeover abandonment fixture authoritative observer output at evidence/{run_id}/browser/abandonment.json"
+      ]
     },
     {
       "id": "BRW-006",
@@ -1386,14 +2392,17 @@
         "evidence/{run_id}/browser/reboot-during-human.json"
       ],
       "pass_criteria": [
-        "After restart state is RECOVERING, all prior credentials/nonces fail, and both input paths remain denied until checklist passes."
+        "After restart state is RECOVERING, all prior credentials/nonces fail, and both input paths remain denied until checklist passes. Observable: authoritative result fields; expected comparator: every stated value and threshold equals or satisfies this criterion. Artifact reference: evidence/{run_id}/browser/reboot-during-human.json."
       ],
       "failure_rollback_behavior": [
         "Keep browser disabled and rebuild supervisor state if recovery cannot prove safety."
       ],
       "destructive": true,
       "secret_risk": true,
-      "mandatory": true
+      "mandatory": true,
+      "authoritative_evidence": [
+        "Declared takeover reboot fixture authoritative observer output at evidence/{run_id}/browser/reboot-during-human.json"
+      ]
     },
     {
       "id": "BRW-007",
@@ -1411,14 +2420,17 @@
         "evidence/{run_id}/browser/takeover-redaction.json"
       ],
       "pass_criteria": [
-        "Credential arrives only through authenticated no-store bootstrap; seeded canary is absent from every inspected sink."
+        "Credential arrives only through authenticated no-store bootstrap; seeded canary is absent from every inspected sink. Observable: authoritative result fields; expected comparator: every stated value and threshold equals or satisfies this criterion. Artifact reference: evidence/{run_id}/browser/takeover-redaction.json."
       ],
       "failure_rollback_behavior": [
         "Deny takeover, quarantine sinks, rotate credential, and treat disclosure as incident."
       ],
       "destructive": true,
       "secret_risk": true,
-      "mandatory": true
+      "mandatory": true,
+      "authoritative_evidence": [
+        "Declared takeover secret canary fixture authoritative observer output at evidence/{run_id}/browser/takeover-redaction.json"
+      ]
     },
     {
       "id": "BRW-008",
@@ -1436,14 +2448,17 @@
         "evidence/{run_id}/browser/profile-concurrency.json"
       ],
       "pass_criteria": [
-        "Second owner fails before profile write; original remains healthy; stale-lock recovery enters RECOVERING and preserves integrity."
+        "Second owner fails before profile write; original remains healthy; stale-lock recovery enters RECOVERING and preserves integrity. Observable: authoritative result fields; expected comparator: every stated value and threshold equals or satisfies this criterion. Artifact reference: evidence/{run_id}/browser/profile-concurrency.json."
       ],
       "failure_rollback_behavior": [
         "Stop both processes, validate profile, restore same-Bot snapshot if damaged."
       ],
       "destructive": true,
       "secret_risk": false,
-      "mandatory": true
+      "mandatory": true,
+      "authoritative_evidence": [
+        "Declared Browser Profile concurrency fixture authoritative observer output at evidence/{run_id}/browser/profile-concurrency.json"
+      ]
     },
     {
       "id": "BRW-009",
@@ -1462,14 +2477,17 @@
         "evidence/{run_id}/browser/cross-bot.json"
       ],
       "pass_criteria": [
-        "Cross-Bot filesystem/CDP/noVNC/account canaries all fail and neither profile changes."
+        "Cross-Bot filesystem/CDP/noVNC/account canaries all fail and neither profile changes. Observable: authoritative result fields; expected comparator: every stated value and threshold equals or satisfies this criterion. Artifact reference: evidence/{run_id}/browser/cross-bot.json."
       ],
       "failure_rollback_behavior": [
         "Disable both browsers, rotate affected sessions, and restore known-clean same-Bot snapshots."
       ],
       "destructive": true,
       "secret_risk": true,
-      "mandatory": true
+      "mandatory": true,
+      "authoritative_evidence": [
+        "Declared browser leakage fixture authoritative observer output at evidence/{run_id}/browser/cross-bot.json"
+      ]
     },
     {
       "id": "BRW-010",
@@ -1487,14 +2505,17 @@
         "evidence/{run_id}/browser/disposable-login.json"
       ],
       "pass_criteria": [
-        "Login persists for owning Bot, is unavailable cross-Bot, logout/revocation invalidates session, and evidence contains no credential/cookie content."
+        "Login persists for owning Bot, is unavailable cross-Bot, logout/revocation invalidates session, and evidence contains no credential/cookie content. Observable: authoritative result fields; expected comparator: every stated value and threshold equals or satisfies this criterion. Artifact reference: evidence/{run_id}/browser/disposable-login.json."
       ],
       "failure_rollback_behavior": [
         "Revoke fixture account/session, destroy fixture profile, and quarantine unsafe evidence."
       ],
       "destructive": true,
       "secret_risk": true,
-      "mandatory": true
+      "mandatory": true,
+      "authoritative_evidence": [
+        "Declared disposable browser account authoritative observer output at evidence/{run_id}/browser/disposable-login.json"
+      ]
     },
     {
       "id": "LAP-001",
@@ -1512,14 +2533,17 @@
         "evidence/{run_id}/laptop/runtime-inventory.json"
       ],
       "pass_criteria": [
-        "Configuration exactly matches locked Mac boundary and no second gateway/serve/general remote filesystem service exists."
+        "Configuration exactly matches locked Mac boundary and no second gateway/serve/general remote filesystem service exists. Observable: authoritative result fields; expected comparator: every stated value and threshold equals or satisfies this criterion. Artifact reference: evidence/{run_id}/laptop/runtime-inventory.json."
       ],
       "failure_rollback_behavior": [
         "Stop laptop-worker service and restore reviewed Mac configuration using Mac-local approval."
       ],
       "destructive": false,
       "secret_risk": true,
-      "mandatory": true
+      "mandatory": true,
+      "authoritative_evidence": [
+        "Declared johan-mac authoritative observer output at evidence/{run_id}/laptop/runtime-inventory.json"
+      ]
     },
     {
       "id": "LAP-002",
@@ -1538,14 +2562,17 @@
         "evidence/{run_id}/laptop/approved-reads.json"
       ],
       "pass_criteria": [
-        "Read returns exact fixture digest with attribution and no mutation; unregistered Projects children are not readable."
+        "Read returns exact fixture digest with attribution and no mutation; unregistered Projects children are not readable. Observable: authoritative result fields; expected comparator: every stated value and threshold equals or satisfies this criterion. Artifact reference: evidence/{run_id}/laptop/approved-reads.json."
       ],
       "failure_rollback_behavior": [
         "Disable read adapter if confinement cannot be proved."
       ],
       "destructive": true,
       "secret_risk": false,
-      "mandatory": true
+      "mandatory": true,
+      "authoritative_evidence": [
+        "Declared approved Mac roots authoritative observer output at evidence/{run_id}/laptop/approved-reads.json"
+      ]
     },
     {
       "id": "LAP-003",
@@ -1563,14 +2590,17 @@
         "evidence/{run_id}/laptop/sensitive-denial.json"
       ],
       "pass_criteria": [
-        "Every direct and delegated read/write/list attempt is denied before content disclosure."
+        "Every direct and delegated read/write/list attempt is denied before content disclosure. Observable: authoritative result fields; expected comparator: every stated value and threshold equals or satisfies this criterion. Artifact reference: evidence/{run_id}/laptop/sensitive-denial.json."
       ],
       "failure_rollback_behavior": [
         "Disable laptop-worker and investigate any disclosure as security incident."
       ],
       "destructive": true,
       "secret_risk": true,
-      "mandatory": true
+      "mandatory": true,
+      "authoritative_evidence": [
+        "Declared Mac deny fixtures authoritative observer output at evidence/{run_id}/laptop/sensitive-denial.json"
+      ]
     },
     {
       "id": "LAP-004",
@@ -1588,14 +2618,17 @@
         "evidence/{run_id}/laptop/path-confinement.json"
       ],
       "pass_criteria": [
-        "Every escape/race is denied and no out-of-root content or metadata is read or changed."
+        "Every escape/race is denied and no out-of-root content or metadata is read or changed. Observable: authoritative result fields; expected comparator: every stated value and threshold equals or satisfies this criterion. Artifact reference: evidence/{run_id}/laptop/path-confinement.json."
       ],
       "failure_rollback_behavior": [
         "Disable adapter and preserve filesystem metadata for investigation."
       ],
       "destructive": true,
       "secret_risk": true,
-      "mandatory": true
+      "mandatory": true,
+      "authoritative_evidence": [
+        "Declared Mac path-race fixtures authoritative observer output at evidence/{run_id}/laptop/path-confinement.json"
+      ]
     },
     {
       "id": "LAP-005",
@@ -1613,14 +2646,17 @@
         "evidence/{run_id}/laptop/mutation-approval.json"
       ],
       "pass_criteria": [
-        "Create/write/rename/copy/delete/metadata/process/install/config fixtures each pause locally; one grant authorizes exactly one unchanged target and replay fails."
+        "Create/write/rename/copy/delete/metadata/process/install/config fixtures each pause locally; one grant authorizes exactly one unchanged target and replay fails. Observable: authoritative result fields; expected comparator: every stated value and threshold equals or satisfies this criterion. Artifact reference: evidence/{run_id}/laptop/mutation-approval.json."
       ],
       "failure_rollback_behavior": [
         "Leave target unchanged or reconcile partial result; reuse idempotency key but require fresh manifest/grant for retry."
       ],
       "destructive": true,
       "secret_risk": true,
-      "mandatory": true
+      "mandatory": true,
+      "authoritative_evidence": [
+        "Declared Mac mutation fixture authoritative observer output at evidence/{run_id}/laptop/mutation-approval.json"
+      ]
     },
     {
       "id": "LAP-006",
@@ -1638,14 +2674,17 @@
         "evidence/{run_id}/laptop/approval-channel-denial.json"
       ],
       "pass_criteria": [
-        "All nonlocal approval attempts yield no mutation and a sanitized deny event."
+        "All nonlocal approval attempts yield no mutation and a sanitized deny event. Observable: authoritative result fields; expected comparator: every stated value and threshold equals or satisfies this criterion. Artifact reference: evidence/{run_id}/laptop/approval-channel-denial.json."
       ],
       "failure_rollback_behavior": [
         "Disable mutation adapter on any bypass."
       ],
       "destructive": true,
       "secret_risk": true,
-      "mandatory": true
+      "mandatory": true,
+      "authoritative_evidence": [
+        "Declared Mac authority fixture authoritative observer output at evidence/{run_id}/laptop/approval-channel-denial.json"
+      ]
     },
     {
       "id": "LAP-007",
@@ -1663,14 +2702,17 @@
         "evidence/{run_id}/laptop/mutation-races.json"
       ],
       "pass_criteria": [
-        "Fingerprint change yields zero writes; concurrent consumers yield at most one write and exactly one durable grant consumption."
+        "Fingerprint change yields zero writes; concurrent consumers yield at most one write and exactly one durable grant consumption. Observable: authoritative result fields; expected comparator: every stated value and threshold equals or satisfies this criterion. Artifact reference: evidence/{run_id}/laptop/mutation-races.json."
       ],
       "failure_rollback_behavior": [
         "Quarantine ambiguous operation, inspect state, and require fresh local approval."
       ],
       "destructive": true,
       "secret_risk": false,
-      "mandatory": true
+      "mandatory": true,
+      "authoritative_evidence": [
+        "Declared Mac mutation race fixture authoritative observer output at evidence/{run_id}/laptop/mutation-races.json"
+      ]
     },
     {
       "id": "LAP-008",
@@ -1688,14 +2730,17 @@
         "evidence/{run_id}/laptop/fail-closed.json"
       ],
       "pass_criteria": [
-        "Every mutation leaves fixture unchanged; availability changes to laptop_unavailable within 60 seconds; no remote fallback occurs."
+        "Every mutation leaves fixture unchanged; availability changes to laptop_unavailable within 60 seconds; no remote fallback occurs. Observable: authoritative result fields; expected comparator: every stated value and threshold equals or satisfies this criterion. Artifact reference: evidence/{run_id}/laptop/fail-closed.json."
       ],
       "failure_rollback_behavior": [
         "Restore local prerequisites manually; require fresh approval after recovery."
       ],
       "destructive": true,
       "secret_risk": false,
-      "mandatory": true
+      "mandatory": true,
+      "authoritative_evidence": [
+        "Declared Mac offline fixtures authoritative observer output at evidence/{run_id}/laptop/fail-closed.json"
+      ]
     },
     {
       "id": "LAP-009",
@@ -1713,14 +2758,17 @@
         "evidence/{run_id}/laptop/reconnect.json"
       ],
       "pass_criteria": [
-        "Reachability and task ledger reconcile within 5 minutes; stale grants remain invalid; reads may resume; every mutation requires fresh local approval."
+        "Reachability and task ledger reconcile within 5 minutes; stale grants remain invalid; reads may resume; every mutation requires fresh local approval. Observable: authoritative result fields; expected comparator: every stated value and threshold equals or satisfies this criterion. Artifact reference: evidence/{run_id}/laptop/reconnect.json."
       ],
       "failure_rollback_behavior": [
         "Keep laptop-worker unavailable and reconcile manually if ledger identity is uncertain."
       ],
       "destructive": true,
       "secret_risk": false,
-      "mandatory": true
+      "mandatory": true,
+      "authoritative_evidence": [
+        "Declared Mac reconnect fixture authoritative observer output at evidence/{run_id}/laptop/reconnect.json"
+      ]
     },
     {
       "id": "BKP-001",
@@ -1739,14 +2787,17 @@
         "evidence/{run_id}/backup/freshness.json"
       ],
       "pass_criteria": [
-        "Each Bot has a checksum-valid manifest and encrypted private restore point age <=24h; failed/missing job alerts."
+        "Each Bot has a checksum-valid manifest and encrypted private restore point age <=24h; failed/missing job alerts. Observable: authoritative result fields; expected comparator: every stated value and threshold equals or satisfies this criterion. Artifact reference: evidence/{run_id}/backup/freshness.json."
       ],
       "failure_rollback_behavior": [
         "Pause release; run approved backup after diagnosing cause; never substitute an unverified point."
       ],
       "destructive": false,
       "secret_risk": true,
-      "mandatory": true
+      "mandatory": true,
+      "authoritative_evidence": [
+        "Declared Bot R1 backups authoritative observer output at evidence/{run_id}/backup/freshness.json"
+      ]
     },
     {
       "id": "BKP-002",
@@ -1764,14 +2815,17 @@
         "evidence/{run_id}/backup/browser-snapshot-freshness.json"
       ],
       "pass_criteria": [
-        "Each Browser Profile has an encrypted same-Bot restore point age <=24h captured under proven consistency protocol."
+        "Each Browser Profile has an encrypted same-Bot restore point age <=24h captured under proven consistency protocol. Observable: authoritative result fields; expected comparator: every stated value and threshold equals or satisfies this criterion. Artifact reference: evidence/{run_id}/backup/browser-snapshot-freshness.json."
       ],
       "failure_rollback_behavior": [
         "Disable browser automation until a valid snapshot exists."
       ],
       "destructive": false,
       "secret_risk": true,
-      "mandatory": true
+      "mandatory": true,
+      "authoritative_evidence": [
+        "Declared Bot R2 snapshots authoritative observer output at evidence/{run_id}/backup/browser-snapshot-freshness.json"
+      ]
     },
     {
       "id": "BKP-003",
@@ -1789,14 +2843,17 @@
         "evidence/{run_id}/backup/export-boundary.json"
       ],
       "pass_criteria": [
-        "Backup principal sees only prepared read-only R1 tree; every excluded canary and cross-Bot path is absent; write is limited to one Bot prefix."
+        "Backup principal sees only prepared read-only R1 tree; every excluded canary and cross-Bot path is absent; write is limited to one Bot prefix. Observable: authoritative result fields; expected comparator: every stated value and threshold equals or satisfies this criterion. Artifact reference: evidence/{run_id}/backup/export-boundary.json."
       ],
       "failure_rollback_behavior": [
         "Revoke backup principal, delete unsafe staged copy, rotate exposed credentials, and fail release."
       ],
       "destructive": true,
       "secret_risk": true,
-      "mandatory": true
+      "mandatory": true,
+      "authoritative_evidence": [
+        "Declared backup namespace fixture authoritative observer output at evidence/{run_id}/backup/export-boundary.json"
+      ]
     },
     {
       "id": "BKP-004",
@@ -1816,14 +2873,17 @@
         "evidence/{run_id}/restore/isolation.json"
       ],
       "pass_criteria": [
-        "Restore completes within RTO 4 hours; checksums, ownership, modes, DB/WAL health, one-gateway/one-serve contract, identity/persona, memory/session, skills/routines, browser state, and service smoke tests pass; chief before/after digests match."
+        "Restore completes within RTO 4 hours; checksums, ownership, modes, DB/WAL health, one-gateway/one-serve contract, identity/persona, memory/session, skills/routines, browser state, and service smoke tests pass; chief before/after digests match. Observable: authoritative result fields; expected comparator: every stated value and threshold equals or satisfies this criterion. Artifact reference: evidence/{run_id}/restore/manifest.json."
       ],
       "failure_rollback_behavior": [
         "Destroy isolated target; keep production untouched; choose earlier verified point or fix runbook and repeat."
       ],
       "destructive": true,
       "secret_risk": true,
-      "mandatory": true
+      "mandatory": true,
+      "authoritative_evidence": [
+        "Declared isolated restore target authoritative observer output at evidence/{run_id}/restore/manifest.json"
+      ]
     },
     {
       "id": "BKP-005",
@@ -1841,14 +2901,17 @@
         "evidence/{run_id}/restore/browser-recovery.json"
       ],
       "pass_criteria": [
-        "Prior leases/takeover credentials fail; profile health, known tab/window, rotated nonce, and harmless probe pass before AUTOMATION."
+        "Prior leases/takeover credentials fail; profile health, known tab/window, rotated nonce, and harmless probe pass before AUTOMATION. Observable: authoritative result fields; expected comparator: every stated value and threshold equals or satisfies this criterion. Artifact reference: evidence/{run_id}/restore/browser-recovery.json."
       ],
       "failure_rollback_behavior": [
         "Keep restored browser disabled and repeat same-Bot restore or require fresh login."
       ],
       "destructive": true,
       "secret_risk": true,
-      "mandatory": true
+      "mandatory": true,
+      "authoritative_evidence": [
+        "Declared restored test-worker browser authoritative observer output at evidence/{run_id}/restore/browser-recovery.json"
+      ]
     },
     {
       "id": "BKP-006",
@@ -1866,12 +2929,50 @@
         "evidence/{run_id}/restore/rollback.json"
       ],
       "pass_criteria": [
-        "Failed canary deployment returns to pre-change identity/state with checksums and service health; unrelated Bot remains unchanged."
+        "Failed canary deployment returns to pre-change identity/state with checksums and service health; unrelated Bot remains unchanged. Observable: authoritative result fields; expected comparator: every stated value and threshold equals or satisfies this criterion. Artifact reference: evidence/{run_id}/restore/rollback.json."
       ],
       "failure_rollback_behavior": [
         "Keep affected Bot disabled and escalate to isolated restore; never perform in-place speculative repair."
       ],
       "destructive": true,
+      "secret_risk": true,
+      "mandatory": true,
+      "authoritative_evidence": [
+        "Declared rollback fixture authoritative observer output at evidence/{run_id}/restore/rollback.json"
+      ]
+    },
+    {
+      "id": "BKP-007",
+      "category": "backup-restore",
+      "requirement": "Inspect live Bot-scoped backup retention and prove at least 7 daily, 4 weekly, and 3 monthly restore points per Bot under the authoritative lifecycle policy, inventory, deletion authority, and holds.",
+      "prerequisites": [
+        "BKP-001",
+        "BKP-002"
+      ],
+      "target": {
+        "environment": "live-production",
+        "component": "live Bot-scoped R1/R2 backup retention"
+      },
+      "command_test_hook": "acceptance/hooks/run-requirement --id BKP-007 --target live-production",
+      "evidence_artifacts": [
+        "evidence/{run_id}/backup/retention-policy.json",
+        "evidence/{run_id}/backup/restore-point-inventory.json",
+        "evidence/{run_id}/backup/deletion-authority.json"
+      ],
+      "authoritative_evidence": [
+        "Azure Backup/Blob lifecycle policy export at evidence/{run_id}/backup/retention-policy.json",
+        "Storage control-plane immutable restore-point inventory at evidence/{run_id}/backup/restore-point-inventory.json",
+        "Azure RBAC/lifecycle deletion principals, authorization conditions, and legal-hold inventory at evidence/{run_id}/backup/deletion-authority.json"
+      ],
+      "pass_criteria": [
+        "For every live Bot, observed policy tiers in evidence/{run_id}/backup/retention-policy.json are >=7 daily, >=4 weekly, and >=3 monthly restore points and use a Bot-scoped encrypted private namespace.",
+        "For every live Bot, distinct checksum-valid restore-point counts in evidence/{run_id}/backup/restore-point-inventory.json are >=7 daily, >=4 weekly, and >=3 monthly and each inventory object maps to the authoritative policy tier without cross-Bot overlap.",
+        "Observed deletion principals and conditions in evidence/{run_id}/backup/deletion-authority.json equal the reviewed lifecycle/deletion authority: backup writers cannot delete, deletion requires expiry plus authorized lifecycle identity, and active hold count/state matches policy."
+      ],
+      "failure_rollback_behavior": [
+        "Fail release; block lifecycle deletion, preserve existing restore points, repair policy or inventory under reviewed human authority, and rerun."
+      ],
+      "destructive": false,
       "secret_risk": true,
       "mandatory": true
     },
@@ -1892,14 +2993,17 @@
         "evidence/{run_id}/monitoring/check-inventory.json"
       ],
       "pass_criteria": [
-        "Every required signal has owner, cadence, threshold, last success, and sanitized runbook link; stale/missing checks are unhealthy."
+        "Every required signal has owner, cadence, threshold, last success, and sanitized runbook link; stale/missing checks are unhealthy. Observable: authoritative result fields; expected comparator: every stated value and threshold equals or satisfies this criterion. Artifact reference: evidence/{run_id}/monitoring/check-inventory.json."
       ],
       "failure_rollback_behavior": [
         "Fail release and disable unattended work for unmonitored critical components."
       ],
       "destructive": false,
       "secret_risk": false,
-      "mandatory": true
+      "mandatory": true,
+      "authoritative_evidence": [
+        "Declared monitoring stack authoritative observer output at evidence/{run_id}/monitoring/check-inventory.json"
+      ]
     },
     {
       "id": "MON-002",
@@ -1918,14 +3022,17 @@
         "evidence/{run_id}/monitoring/telegram-alerts.json"
       ],
       "pass_criteria": [
-        "Every injected condition produces one correctly attributed Telegram alert within 5 minutes containing only event ID, Bot, safe reason code, and time."
+        "Every injected condition produces one correctly attributed Telegram alert within 5 minutes containing only event ID, Bot, safe reason code, and time. Observable: authoritative result fields; expected comparator: every stated value and threshold equals or satisfies this criterion. Artifact reference: evidence/{run_id}/monitoring/telegram-alerts.json."
       ],
       "failure_rollback_behavior": [
         "Use secondary human monitoring path, disable unattended work, and repair alerts before release."
       ],
       "destructive": true,
       "secret_risk": true,
-      "mandatory": true
+      "mandatory": true,
+      "authoritative_evidence": [
+        "Declared alert fixtures authoritative observer output at evidence/{run_id}/monitoring/telegram-alerts.json"
+      ]
     },
     {
       "id": "MON-003",
@@ -1945,14 +3052,17 @@
         "evidence/{run_id}/monitoring/chain-verification.json"
       ],
       "pass_criteria": [
-        "Production configuration retains encrypted evidence for 400 days; public access is off; secret canaries absent; daily/monthly verification and lifecycle authorization controls pass."
+        "Production configuration retains encrypted evidence for 400 days; public access is off; secret canaries absent; daily/monthly verification receipt counts equal the configured schedule and each deletion record contains expiry plus a valid verifier authorization. Observable: authoritative result fields; expected comparator: every stated value and threshold equals or satisfies this criterion. Artifact reference: evidence/{run_id}/monitoring/audit-retention.json."
       ],
       "failure_rollback_behavior": [
         "Block high-impact operations, quarantine unsafe evidence, repair chain/archive, and rotate exposed credentials."
       ],
       "destructive": false,
       "secret_risk": true,
-      "mandatory": true
+      "mandatory": true,
+      "authoritative_evidence": [
+        "Declared audit archive authoritative observer output at evidence/{run_id}/monitoring/audit-retention.json"
+      ]
     },
     {
       "id": "FIN-001",
@@ -1970,14 +3080,17 @@
         "evidence/{run_id}/failure/fin-001.json"
       ],
       "pass_criteria": [
-        "gateway stops side effects, recovers healthy within 120 seconds, and does not duplicate work."
+        "gateway stops side effects, recovers healthy within 120 seconds, and does not duplicate work. Observable: authoritative result fields; expected comparator: every stated value and threshold equals or satisfies this criterion. Artifact reference: evidence/{run_id}/failure/fin-001.json."
       ],
       "failure_rollback_behavior": [
         "Stop injection, restore last known-good state using component runbook, verify isolation/final health, and fail release on any unsafe or threshold-violating outcome."
       ],
       "destructive": true,
       "secret_risk": false,
-      "mandatory": true
+      "mandatory": true,
+      "authoritative_evidence": [
+        "Declared failure harness authoritative observer output at evidence/{run_id}/failure/fin-001.json"
+      ]
     },
     {
       "id": "FIN-002",
@@ -1995,14 +3108,17 @@
         "evidence/{run_id}/failure/fin-002.json"
       ],
       "pass_criteria": [
-        "Desktop becomes unavailable then authenticated healthy within 120 seconds without affecting gateway."
+        "Desktop becomes unavailable then authenticated healthy within 120 seconds without affecting gateway. Observable: authoritative result fields; expected comparator: every stated value and threshold equals or satisfies this criterion. Artifact reference: evidence/{run_id}/failure/fin-002.json."
       ],
       "failure_rollback_behavior": [
         "Stop injection, restore last known-good state using component runbook, verify isolation/final health, and fail release on any unsafe or threshold-violating outcome."
       ],
       "destructive": true,
       "secret_risk": false,
-      "mandatory": true
+      "mandatory": true,
+      "authoritative_evidence": [
+        "Declared failure harness authoritative observer output at evidence/{run_id}/failure/fin-002.json"
+      ]
     },
     {
       "id": "FIN-003",
@@ -2020,14 +3136,17 @@
         "evidence/{run_id}/failure/fin-003.json"
       ],
       "pass_criteria": [
-        "lease enters RECOVERING and non-browser Bot work remains available."
+        "lease enters RECOVERING and non-browser Bot work remains available. Observable: authoritative result fields; expected comparator: every stated value and threshold equals or satisfies this criterion. Artifact reference: evidence/{run_id}/failure/fin-003.json."
       ],
       "failure_rollback_behavior": [
         "Stop injection, restore last known-good state using component runbook, verify isolation/final health, and fail release on any unsafe or threshold-violating outcome."
       ],
       "destructive": true,
       "secret_risk": false,
-      "mandatory": true
+      "mandatory": true,
+      "authoritative_evidence": [
+        "Declared failure harness authoritative observer output at evidence/{run_id}/failure/fin-003.json"
+      ]
     },
     {
       "id": "FIN-004",
@@ -2045,14 +3164,17 @@
         "evidence/{run_id}/failure/fin-004.json"
       ],
       "pass_criteria": [
-        "CDP/noVNC input are denied, RECOVERING is recorded, and alert arrives within 5 minutes."
+        "CDP/noVNC input are denied, RECOVERING is recorded, and alert arrives within 5 minutes. Observable: authoritative result fields; expected comparator: every stated value and threshold equals or satisfies this criterion. Artifact reference: evidence/{run_id}/failure/fin-004.json."
       ],
       "failure_rollback_behavior": [
         "Stop injection, restore last known-good state using component runbook, verify isolation/final health, and fail release on any unsafe or threshold-violating outcome."
       ],
       "destructive": true,
       "secret_risk": false,
-      "mandatory": true
+      "mandatory": true,
+      "authoritative_evidence": [
+        "Declared failure harness authoritative observer output at evidence/{run_id}/failure/fin-004.json"
+      ]
     },
     {
       "id": "FIN-005",
@@ -2070,14 +3192,17 @@
         "evidence/{run_id}/failure/fin-005.json"
       ],
       "pass_criteria": [
-        "private UI/takeover fail unavailable without public fallback and recover within 120 seconds."
+        "private UI/takeover fail unavailable without public fallback and recover within 120 seconds. Observable: authoritative result fields; expected comparator: every stated value and threshold equals or satisfies this criterion. Artifact reference: evidence/{run_id}/failure/fin-005.json."
       ],
       "failure_rollback_behavior": [
         "Stop injection, restore last known-good state using component runbook, verify isolation/final health, and fail release on any unsafe or threshold-violating outcome."
       ],
       "destructive": true,
       "secret_risk": false,
-      "mandatory": true
+      "mandatory": true,
+      "authoritative_evidence": [
+        "Declared failure harness authoritative observer output at evidence/{run_id}/failure/fin-005.json"
+      ]
     },
     {
       "id": "FIN-006",
@@ -2095,14 +3220,17 @@
         "evidence/{run_id}/failure/fin-006.json"
       ],
       "pass_criteria": [
-        "turn and routine fail with no fallback and sanitized alert arrives within 5 minutes."
+        "turn and routine fail with no fallback and sanitized alert arrives within 5 minutes. Observable: authoritative result fields; expected comparator: every stated value and threshold equals or satisfies this criterion. Artifact reference: evidence/{run_id}/failure/fin-006.json."
       ],
       "failure_rollback_behavior": [
         "Stop injection, restore last known-good state using component runbook, verify isolation/final health, and fail release on any unsafe or threshold-violating outcome."
       ],
       "destructive": true,
       "secret_risk": true,
-      "mandatory": true
+      "mandatory": true,
+      "authoritative_evidence": [
+        "Declared failure harness authoritative observer output at evidence/{run_id}/failure/fin-006.json"
+      ]
     },
     {
       "id": "FIN-007",
@@ -2120,14 +3248,17 @@
         "evidence/{run_id}/failure/fin-007.json"
       ],
       "pass_criteria": [
-        "freshness becomes unhealthy, restore is blocked, and alert arrives within 5 minutes."
+        "freshness becomes unhealthy, restore is blocked, and alert arrives within 5 minutes. Observable: authoritative result fields; expected comparator: every stated value and threshold equals or satisfies this criterion. Artifact reference: evidence/{run_id}/failure/fin-007.json."
       ],
       "failure_rollback_behavior": [
         "Stop injection, restore last known-good state using component runbook, verify isolation/final health, and fail release on any unsafe or threshold-violating outcome."
       ],
       "destructive": true,
       "secret_risk": false,
-      "mandatory": true
+      "mandatory": true,
+      "authoritative_evidence": [
+        "Declared failure harness authoritative observer output at evidence/{run_id}/failure/fin-007.json"
+      ]
     },
     {
       "id": "FIN-008",
@@ -2145,14 +3276,17 @@
         "evidence/{run_id}/failure/fin-008.json"
       ],
       "pass_criteria": [
-        "side effects, approvals, secrets, Mac mutation, and takeover fail closed while bounded diagnostics remain."
+        "side effects, approvals, secrets, Mac mutation, and takeover fail closed while bounded diagnostics remain. Observable: authoritative result fields; expected comparator: every stated value and threshold equals or satisfies this criterion. Artifact reference: evidence/{run_id}/failure/fin-008.json."
       ],
       "failure_rollback_behavior": [
         "Stop injection, restore last known-good state using component runbook, verify isolation/final health, and fail release on any unsafe or threshold-violating outcome."
       ],
       "destructive": true,
       "secret_risk": true,
-      "mandatory": true
+      "mandatory": true,
+      "authoritative_evidence": [
+        "Declared failure harness authoritative observer output at evidence/{run_id}/failure/fin-008.json"
+      ]
     },
     {
       "id": "FIN-009",
@@ -2170,14 +3304,17 @@
         "evidence/{run_id}/failure/fin-009.json"
       ],
       "pass_criteria": [
-        "credential use and side effects stop with no value disclosure or bypass."
+        "credential use and side effects stop with no value disclosure or bypass. Observable: authoritative result fields; expected comparator: every stated value and threshold equals or satisfies this criterion. Artifact reference: evidence/{run_id}/failure/fin-009.json."
       ],
       "failure_rollback_behavior": [
         "Stop injection, restore last known-good state using component runbook, verify isolation/final health, and fail release on any unsafe or threshold-violating outcome."
       ],
       "destructive": true,
       "secret_risk": true,
-      "mandatory": true
+      "mandatory": true,
+      "authoritative_evidence": [
+        "Declared failure harness authoritative observer output at evidence/{run_id}/failure/fin-009.json"
+      ]
     },
     {
       "id": "FIN-010",
@@ -2195,14 +3332,17 @@
         "evidence/{run_id}/failure/fin-010.json"
       ],
       "pass_criteria": [
-        "retry is bounded and produces no duplicate outbound message."
+        "retry is bounded and produces no duplicate outbound message. Observable: authoritative result fields; expected comparator: every stated value and threshold equals or satisfies this criterion. Artifact reference: evidence/{run_id}/failure/fin-010.json."
       ],
       "failure_rollback_behavior": [
         "Stop injection, restore last known-good state using component runbook, verify isolation/final health, and fail release on any unsafe or threshold-violating outcome."
       ],
       "destructive": true,
       "secret_risk": false,
-      "mandatory": true
+      "mandatory": true,
+      "authoritative_evidence": [
+        "Declared failure harness authoritative observer output at evidence/{run_id}/failure/fin-010.json"
+      ]
     },
     {
       "id": "FIN-011",
@@ -2220,14 +3360,17 @@
         "evidence/{run_id}/failure/fin-011.json"
       ],
       "pass_criteria": [
-        "laptop_unavailable is reported within 60 seconds and reconciliation completes within 5 minutes without stale mutation."
+        "laptop_unavailable is reported within 60 seconds and reconciliation completes within 5 minutes without stale mutation. Observable: authoritative result fields; expected comparator: every stated value and threshold equals or satisfies this criterion. Artifact reference: evidence/{run_id}/failure/fin-011.json."
       ],
       "failure_rollback_behavior": [
         "Stop injection, restore last known-good state using component runbook, verify isolation/final health, and fail release on any unsafe or threshold-violating outcome."
       ],
       "destructive": true,
       "secret_risk": false,
-      "mandatory": true
+      "mandatory": true,
+      "authoritative_evidence": [
+        "Declared failure harness authoritative observer output at evidence/{run_id}/failure/fin-011.json"
+      ]
     },
     {
       "id": "FIN-012",
@@ -2245,14 +3388,17 @@
         "evidence/{run_id}/failure/fin-012.json"
       ],
       "pass_criteria": [
-        "entire fleet returns healthy within 10 minutes in safe start order."
+        "entire fleet returns healthy within 10 minutes in safe start order. Observable: authoritative result fields; expected comparator: every stated value and threshold equals or satisfies this criterion. Artifact reference: evidence/{run_id}/failure/fin-012.json."
       ],
       "failure_rollback_behavior": [
         "Stop injection, restore last known-good state using component runbook, verify isolation/final health, and fail release on any unsafe or threshold-violating outcome."
       ],
       "destructive": true,
       "secret_risk": false,
-      "mandatory": true
+      "mandatory": true,
+      "authoritative_evidence": [
+        "Declared failure harness authoritative observer output at evidence/{run_id}/failure/fin-012.json"
+      ]
     },
     {
       "id": "FIN-013",
@@ -2270,14 +3416,17 @@
         "evidence/{run_id}/failure/fin-013.json"
       ],
       "pass_criteria": [
-        "admin/takeover access stops and no public listener appears."
+        "admin/takeover access stops and no public listener appears. Observable: authoritative result fields; expected comparator: every stated value and threshold equals or satisfies this criterion. Artifact reference: evidence/{run_id}/failure/fin-013.json."
       ],
       "failure_rollback_behavior": [
         "Stop injection, restore last known-good state using component runbook, verify isolation/final health, and fail release on any unsafe or threshold-violating outcome."
       ],
       "destructive": true,
       "secret_risk": false,
-      "mandatory": true
+      "mandatory": true,
+      "authoritative_evidence": [
+        "Declared failure harness authoritative observer output at evidence/{run_id}/failure/fin-013.json"
+      ]
     },
     {
       "id": "FIN-014",
@@ -2295,14 +3444,17 @@
         "evidence/{run_id}/failure/fin-014.json"
       ],
       "pass_criteria": [
-        "both control paths fail closed to RECOVERING and transition completes within 60 seconds."
+        "both control paths fail closed to RECOVERING and transition completes within 60 seconds. Observable: authoritative result fields; expected comparator: every stated value and threshold equals or satisfies this criterion. Artifact reference: evidence/{run_id}/failure/fin-014.json."
       ],
       "failure_rollback_behavior": [
         "Stop injection, restore last known-good state using component runbook, verify isolation/final health, and fail release on any unsafe or threshold-violating outcome."
       ],
       "destructive": true,
       "secret_risk": false,
-      "mandatory": true
+      "mandatory": true,
+      "authoritative_evidence": [
+        "Declared failure harness authoritative observer output at evidence/{run_id}/failure/fin-014.json"
+      ]
     },
     {
       "id": "FIN-015",
@@ -2320,14 +3472,17 @@
         "evidence/{run_id}/failure/fin-015.json"
       ],
       "pass_criteria": [
-        "concurrent interfaces produce no corruption, duplicate, lost, or cross-attributed state."
+        "concurrent interfaces produce no corruption, duplicate, lost, or cross-attributed state. Observable: authoritative result fields; expected comparator: every stated value and threshold equals or satisfies this criterion. Artifact reference: evidence/{run_id}/failure/fin-015.json."
       ],
       "failure_rollback_behavior": [
         "Stop injection, restore last known-good state using component runbook, verify isolation/final health, and fail release on any unsafe or threshold-violating outcome."
       ],
       "destructive": true,
       "secret_risk": false,
-      "mandatory": true
+      "mandatory": true,
+      "authoritative_evidence": [
+        "Declared failure harness authoritative observer output at evidence/{run_id}/failure/fin-015.json"
+      ]
     },
     {
       "id": "FIN-016",
@@ -2345,14 +3500,17 @@
         "evidence/{run_id}/failure/fin-016.json"
       ],
       "pass_criteria": [
-        "checksum validation rejects point before cutover and production remains unchanged."
+        "checksum validation rejects point before cutover and production remains unchanged. Observable: authoritative result fields; expected comparator: every stated value and threshold equals or satisfies this criterion. Artifact reference: evidence/{run_id}/failure/fin-016.json."
       ],
       "failure_rollback_behavior": [
         "Stop injection, restore last known-good state using component runbook, verify isolation/final health, and fail release on any unsafe or threshold-violating outcome."
       ],
       "destructive": true,
       "secret_risk": false,
-      "mandatory": true
+      "mandatory": true,
+      "authoritative_evidence": [
+        "Declared failure harness authoritative observer output at evidence/{run_id}/failure/fin-016.json"
+      ]
     },
     {
       "id": "RUN-001",
@@ -2371,14 +3529,17 @@
         "evidence/{run_id}/runbook/additional-bot.json"
       ],
       "pass_criteria": [
-        "Unique profile/Unix user/container network/workspace/credentials/Browser Profile/ports/routes/backup prefix are created from reviewed manifests; default profile and existing Bots remain unchanged."
+        "Unique profile/Unix user/container network/workspace/credentials/Browser Profile/ports/routes/backup prefix are created from reviewed manifests; default profile and existing Bots remain unchanged. Observable: authoritative result fields; expected comparator: every stated value and threshold equals or satisfies this criterion. Artifact reference: evidence/{run_id}/runbook/additional-bot.json."
       ],
       "failure_rollback_behavior": [
         "Destroy additional Bot fixture with audited cleanup; repair runbook/manifests."
       ],
       "destructive": true,
       "secret_risk": true,
-      "mandatory": true
+      "mandatory": true,
+      "authoritative_evidence": [
+        "Declared additional Bot fixture authoritative observer output at evidence/{run_id}/runbook/additional-bot.json"
+      ]
     },
     {
       "id": "RUN-002",
@@ -2396,14 +3557,17 @@
         "evidence/{run_id}/runbook/retirement.json"
       ],
       "pass_criteria": [
-        "Services/routes are absent, credentials revoked, mutable state removed, retained evidence follows 400-day policy, and existing Bot health/digests are unchanged."
+        "Services/routes are absent, credentials revoked, mutable state removed, retained evidence follows 400-day policy, and existing Bot health/digests are unchanged. Observable: authoritative result fields; expected comparator: every stated value and threshold equals or satisfies this criterion. Artifact reference: evidence/{run_id}/runbook/retirement.json."
       ],
       "failure_rollback_behavior": [
         "Keep fixture disabled and complete approved cleanup manually; never delete immutable evidence early."
       ],
       "destructive": true,
       "secret_risk": true,
-      "mandatory": true
+      "mandatory": true,
+      "authoritative_evidence": [
+        "Declared additional Bot fixture authoritative observer output at evidence/{run_id}/runbook/retirement.json"
+      ]
     },
     {
       "id": "GAP-001",
@@ -2421,14 +3585,17 @@
         "evidence/{run_id}/gaps/capability-parity.json"
       ],
       "pass_criteria": [
-        "Every requested capability is classified native, implemented equivalent, or unsupported; each claim links evidence/version; no simulated/prototype behavior is presented as production."
+        "Every requested capability is classified native, implemented equivalent, or unsupported; each claim links evidence/version; no simulated/prototype behavior is presented as production. Observable: authoritative result fields; expected comparator: every stated value and threshold equals or satisfies this criterion. Artifact reference: evidence/{run_id}/gaps/capability-parity.json."
       ],
       "failure_rollback_behavior": [
         "Fail release for any unclassified, overstated, or stale claim."
       ],
       "destructive": false,
       "secret_risk": false,
-      "mandatory": true
+      "mandatory": true,
+      "authoritative_evidence": [
+        "Declared capability register authoritative observer output at evidence/{run_id}/gaps/capability-parity.json"
+      ]
     },
     {
       "id": "GAP-002",
@@ -2446,14 +3613,17 @@
         "evidence/{run_id}/gaps/unsupported.json"
       ],
       "pass_criteria": [
-        "Every named vendor-only capability is present in the gap register; each states user impact, safe degraded behavior, source/version, tracking issue/owner, and no silent substitute or parity claim."
+        "Every named vendor-only capability is present in the gap register; each states user impact, safe degraded behavior, source/version, tracking issue/owner, and no silent substitute or parity claim. Observable: authoritative result fields; expected comparator: every stated value and threshold equals or satisfies this criterion. Artifact reference: evidence/{run_id}/gaps/unsupported.json."
       ],
       "failure_rollback_behavior": [
         "Disable/label affected UI and documentation claim; do not waive the gate by skipping."
       ],
       "destructive": false,
       "secret_risk": false,
-      "mandatory": true
+      "mandatory": true,
+      "authoritative_evidence": [
+        "Declared operator documentation authoritative observer output at evidence/{run_id}/gaps/unsupported.json"
+      ]
     },
     {
       "id": "GAP-003",
@@ -2472,14 +3642,17 @@
         "evidence/{run_id}/gaps/deferred-absence.json"
       ],
       "pass_criteria": [
-        "No File Bridge listener/mount/general remote shell exists and UI/docs state delegation-only Mac access until separately accepted."
+        "No File Bridge listener/mount/general remote shell exists and UI/docs state delegation-only Mac access until separately accepted. Observable: authoritative result fields; expected comparator: every stated value and threshold equals or satisfies this criterion. Artifact reference: evidence/{run_id}/gaps/deferred-absence.json."
       ],
       "failure_rollback_behavior": [
         "Remove undeclared component and treat unexpected Mac exposure as incident."
       ],
       "destructive": false,
       "secret_risk": false,
-      "mandatory": true
+      "mandatory": true,
+      "authoritative_evidence": [
+        "Declared deferred components authoritative observer output at evidence/{run_id}/gaps/deferred-absence.json"
+      ]
     },
     {
       "id": "HLT-001",
@@ -2500,14 +3673,17 @@
         "evidence/{run_id}/final/junit.xml"
       ],
       "pass_criteria": [
-        "All required services, private access, Bot boundaries, gateways, schedulers, Channels, Desktop, Rooms, routines, browsers, laptop status, backups, monitoring, and alerts are healthy with no active recovery/incident state."
+        "All required services, private access, Bot boundaries, gateways, schedulers, Channels, Desktop, Rooms, routines, browsers, laptop status, backups, monitoring, and alerts are healthy with no active recovery/incident state. Observable: authoritative result fields; expected comparator: every stated value and threshold equals or satisfies this criterion. Artifact reference: evidence/{run_id}/final/health.json."
       ],
       "failure_rollback_behavior": [
         "Do not release; rollback affected change or restore affected Bot and repeat dependent requirements."
       ],
       "destructive": false,
       "secret_risk": true,
-      "mandatory": true
+      "mandatory": true,
+      "authoritative_evidence": [
+        "Declared entire fleet authoritative observer output at evidence/{run_id}/final/health.json"
+      ]
     },
     {
       "id": "HLT-002",
@@ -2526,14 +3702,103 @@
         "evidence/{run_id}/final/release-decision.json"
       ],
       "pass_criteria": [
-        "Every catalog ID has exactly one current PASS result, no BLOCKED/SKIPPED/FAIL result, all artifacts verify by digest, evidence is encrypted/redacted, and production decision is PASS."
+        "Every catalog ID has exactly one current PASS result, no BLOCKED/SKIPPED/FAIL result, all artifacts verify by digest, evidence is encrypted/redacted, and production decision is PASS. Observable: authoritative result fields; expected comparator: every stated value and threshold equals or satisfies this criterion. Artifact reference: evidence/{run_id}/final/evidence-manifest.json."
       ],
       "failure_rollback_behavior": [
         "Production decision is FAIL; unattended routines and production enablement remain blocked."
       ],
       "destructive": false,
       "secret_risk": true,
-      "mandatory": true
+      "mandatory": true,
+      "authoritative_evidence": [
+        "Declared release evidence bundle authoritative observer output at evidence/{run_id}/final/evidence-manifest.json"
+      ]
     }
-  ]
+  ],
+  "locked_source_crosswalk": {
+    "AUTH-01": [
+      "PSC-001"
+    ],
+    "AUTH-02": [
+      "PSC-002"
+    ],
+    "AUTH-03": [
+      "PSC-003"
+    ],
+    "AUTH-04": [
+      "PSC-004"
+    ],
+    "AUTH-05": [
+      "PSC-005"
+    ],
+    "AUTH-06": [
+      "PSC-006"
+    ],
+    "AUTH-07": [
+      "PSC-007"
+    ],
+    "AUTH-08": [
+      "PSC-008"
+    ],
+    "MAC-01": [
+      "PSC-009"
+    ],
+    "MAC-02": [
+      "PSC-010"
+    ],
+    "MAC-03": [
+      "PSC-011"
+    ],
+    "BROW-01": [
+      "PSC-012"
+    ],
+    "BROW-02": [
+      "PSC-013"
+    ],
+    "BROW-03": [
+      "PSC-014"
+    ],
+    "SEC-01": [
+      "PSC-015"
+    ],
+    "SEC-02": [
+      "PSC-016"
+    ],
+    "SEC-03": [
+      "PSC-017"
+    ],
+    "SEC-04": [
+      "PSC-018"
+    ],
+    "AUD-01": [
+      "PSC-019"
+    ],
+    "AUD-02": [
+      "PSC-020"
+    ],
+    "AUD-03": [
+      "PSC-021"
+    ],
+    "AUD-04": [
+      "PSC-022"
+    ],
+    "AUD-05": [
+      "PSC-023"
+    ],
+    "FAIL-01": [
+      "PSC-024"
+    ],
+    "FAIL-02": [
+      "PSC-025"
+    ],
+    "BG-01": [
+      "PSC-026"
+    ],
+    "ISO-01": [
+      "PSC-027"
+    ],
+    "SCAN-01": [
+      "PSC-028"
+    ]
+  }
 }

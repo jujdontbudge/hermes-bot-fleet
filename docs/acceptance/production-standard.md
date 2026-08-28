@@ -8,6 +8,8 @@ Locked inputs: [production topology](../architecture/production-topology.md), [a
 
 This document defines the binary production release contract. `acceptance/production-requirements.json` is the canonical machine-readable requirement catalog. Prose explains how to execute and judge that catalog; it does not waive, replace, reorder, or weaken a catalog item. If prose and catalog differ, release is blocked until both are corrected against the locked decisions.
 
+The catalog's top-level `locked_source_crosswalk` is normative. Its key set is exactly the locked security-policy matrix case set, and each source case maps to exactly one unique canonical `PSC-*` requirement. Removing, combining, or silently renaming a source case is catalog drift and blocks release.
+
 This ticket defines tests and hooks; it does not claim that the production fleet or live tests exist. `acceptance/hooks/run-requirement` is an exact future hook interface for the execution ticket. A hook that is absent, unimplemented, or unable to run returns `BLOCKED`, which fails release. Prototype, mock, CI-only, documentation, or prior-ticket evidence cannot substitute for evidence from the declared target.
 
 The production outcome includes the Server Runtime, `chief`, `test-worker`, the native `laptop-worker`, Hermes Desktop, Bot Rooms, Telegram, routines, persistent headed Browser Profiles and Browser Takeover, Azure/Tailscale, encrypted backup/restore, monitoring, the additional-Bot runbook, and honest unsupported-gap reporting. A Hermes profile is semantic isolation; Unix identities, rootless containers, mounts, networks, policy gates, and host controls are the security boundaries.
@@ -44,7 +46,7 @@ A fresh, isolated host/resource namespace with no inherited profile, database, b
 
 ### Live production
 
-The actual provisioned fleet. Only read-only inspection, non-destructive negative probes, and explicitly safe end-to-end messages/turns are allowed. A live requirement may not reboot, kill, corrupt, race, delete, restore over, or mutate production data merely because its catalog flag is false. If a live test needs destructive behavior, its design is wrong and the result is `BLOCKED` until moved to a disposable fixture without weakening the assertion.
+The actual provisioned fleet. Only read-only inspection, non-destructive negative probes, and explicitly safe end-to-end messages/turns are allowed. A live requirement may not reboot, kill, corrupt, race, delete, restore over, or mutate production data merely because its catalog flag is false. The sole exception is `SVC-005`: exactly one reboot of the actual provisioned Azure VM during the approved pre-activation execution window, while production activation is still false, with Azure resource-ID/Activity Log evidence binding the tested VM to the live inventory. Every other live destructive test is invalid and `BLOCKED` until moved to a disposable fixture without weakening the assertion.
 
 ### Disposable fixture
 
@@ -115,22 +117,23 @@ A partial or uncertain side effect is not blindly retried. Preserve the original
 Run from Johan's approved Mac using the pinned runner. The JSON `execution_order` array is the exact item-by-item order; prerequisites additionally enforce the DAG. Parallel execution is permitted only when prerequisite closure is complete, fixtures and targets are disjoint, observers can prove attribution, and evidence order remains deterministic. The default safe order is serial.
 
 1. Repository/documentation preflight and clean bootstrap (`REP-*`).
-2. Live Azure feasibility, cost, resource, encryption, NSG, diagnostics, and budget inspection (`AZR-*`).
-3. Listener/firewall/Tailscale/private-access gates and bounded tailnet-loss fixture (`NET-*`).
-4. Service inventory, process kills, component recovery, VM reboot, and maintenance quiescence (`SVC-*`).
-5. Gateway/scheduler ownership, pinned-version concurrency, provider pin, and cron semantics (`GAT-*`).
-6. Telegram inbound, outbound, admission, owner-routing, and retry assertions (`TEL-*`).
-7. Bot configuration/state/skill/credential/workspace/Unix/container/cross-Bot isolation (`BOT-*`).
-8. Desktop canonical chats, Rooms, mentions, and authority-preserving delegation (`DSK-*`).
-9. Routine execution with clients closed and Mac awake/off (`RTN-*`).
-10. Browser persistence, private visual access, raw CDP/VNC denial, takeover state/races/abandon/reboot, concurrency/leakage, and disposable login (`BRW-*`).
-11. Native laptop-worker inventory, delegation/read/deny/path controls, approvals/mutations/races/offline/reconnect (`LAP-*`).
-12. Encrypted backup freshness, snapshot consistency, backup-principal boundary, isolated restore, browser recovery, and rollback (`BKP-*`).
-13. Monitoring inventory, Telegram alert injections, and 400-day encrypted audit/evidence controls (`MON-*`).
-14. Every bounded failure injection, including gateway, serve, browser, lease, proxy, provider, backup, audit/storage, broker/gate, Telegram, Mac, VM, Tailscale, takeover, DB/WAL contention, and corrupt restore point (`FIN-*`).
-15. Additional disposable Bot creation and retirement through the runbook (`RUN-*`).
-16. Capability parity, repository/documentation honesty, Grok/vendor-only gaps, and deferred File Bridge absence (`GAP-*`).
-17. Post-cleanup whole-fleet health, evidence assembly, and binary decision (`HLT-*`).
+2. Locked security-policy acceptance cases and source crosswalk (`PSC-*`, preserving `AUTH-*`, `MAC-*`, `BROW-*`, `SEC-*`, `AUD-*`, `FAIL-*`, `BG-01`, `ISO-01`, and `SCAN-01`).
+3. Live Azure feasibility, cost, resource, encryption, NSG, diagnostics, and budget inspection (`AZR-*`).
+4. Listener/firewall/Tailscale/private-access gates and bounded tailnet-loss fixture (`NET-*`).
+5. Service inventory, disposable process/component recovery, the narrow actual-VM pre-activation reboot exception, and maintenance quiescence (`SVC-*`).
+6. Gateway/scheduler ownership, safe live exact-profile gateway/Desktop concurrency, destructive equivalent fixture contention/restart, provider pin, and cron semantics (`GAT-*`).
+7. Telegram inbound, outbound, admission, owner-routing, and retry assertions (`TEL-*`).
+8. Bot configuration/state/skill/credential/workspace/Unix/container/cross-Bot isolation (`BOT-*`).
+9. Desktop canonical chats, Rooms, mentions, and authority-preserving delegation (`DSK-*`).
+10. Routine execution with clients closed and Mac awake/off (`RTN-*`).
+11. Browser persistence, private visual access, raw CDP/VNC denial, takeover state/races/abandon/reboot, concurrency/leakage, and disposable login (`BRW-*`).
+12. Native laptop-worker inventory, delegation/read/deny/path controls, approvals/mutations/races/offline/reconnect (`LAP-*`).
+13. Encrypted backup freshness, snapshot consistency, live per-Bot retention (7 daily/4 weekly/3 monthly), deletion authority, backup-principal boundary, isolated restore, browser recovery, and rollback (`BKP-*`).
+14. Monitoring inventory, Telegram alert injections, and 400-day encrypted audit/evidence controls (`MON-*`).
+15. Every bounded failure injection, including gateway, serve, browser, lease, proxy, provider, backup, audit/storage, broker/gate, Telegram, Mac, VM, Tailscale, takeover, DB/WAL contention, and corrupt restore point (`FIN-*`).
+16. Additional disposable Bot creation and retirement through the runbook (`RUN-*`).
+17. Capability parity, repository/documentation honesty, Grok/vendor-only gaps, and deferred File Bridge absence (`GAP-*`).
+18. Post-cleanup whole-fleet health, evidence assembly, and binary decision (`HLT-*`).
 
 On the first unsafe `FAIL`, stop dependent execution, execute the declared cleanup/rollback, and mark all unrun dependents `BLOCKED`; the release is `FAIL`. Safe independent diagnostics may continue to establish cause. After correction, create a new run ID and rerun the failed item plus every transitive dependent. Do not overwrite failed evidence.
 
@@ -148,7 +151,7 @@ From repository root:
 tests/acceptance/run-production-catalog-validation.sh
 ```
 
-This is a static standard/catalog validator, not the production suite. It proves schema shape, mandatory fields, stable unique IDs, exact document coverage, target classes, default thresholds, prerequisite validity/acyclicity/order, required categories and failure cases, absence of skip-allowed semantics/stale markers, and absence of secret-shaped values. A passing static validator does not claim any live deployment requirement has passed.
+This is a static standard/catalog validator, not the production suite. It proves schema shape, mandatory fields, stable unique IDs, exact document coverage, target classes, default thresholds, prerequisite validity/acyclicity/order, required categories and failure cases, exact locked-case crosswalk coverage, the sole `SVC-005` live destructive exception, the live/fixture concurrency split, retention tiers and authorities, binary artifact-bound criteria, absence of vague criteria/skip-allowed semantics/stale markers, and absence of secret-shaped values. A passing static validator does not claim any live deployment requirement has passed.
 
 ## 10. Canonical catalog index
 
@@ -161,6 +164,34 @@ Every canonical ID is listed below so prose/catalog drift is machine-detectable.
 | `REP-002` | `repository` | `clean-environment` |
 | `REP-003` | `repository` | `clean-environment` |
 | `REP-004` | `repository` | `clean-environment` |
+| `PSC-001` | `policy-security` | `disposable-fixture` |
+| `PSC-002` | `policy-security` | `disposable-fixture` |
+| `PSC-003` | `policy-security` | `disposable-fixture` |
+| `PSC-004` | `policy-security` | `disposable-fixture` |
+| `PSC-005` | `policy-security` | `disposable-fixture` |
+| `PSC-006` | `policy-security` | `disposable-fixture` |
+| `PSC-007` | `policy-security` | `disposable-fixture` |
+| `PSC-008` | `policy-security` | `live-production` |
+| `PSC-009` | `policy-security` | `disposable-fixture` |
+| `PSC-010` | `policy-security` | `disposable-fixture` |
+| `PSC-011` | `policy-security` | `disposable-fixture` |
+| `PSC-012` | `policy-security` | `disposable-fixture` |
+| `PSC-013` | `policy-security` | `disposable-fixture` |
+| `PSC-014` | `policy-security` | `disposable-fixture` |
+| `PSC-015` | `policy-security` | `disposable-fixture` |
+| `PSC-016` | `policy-security` | `disposable-fixture` |
+| `PSC-017` | `policy-security` | `disposable-fixture` |
+| `PSC-018` | `policy-security` | `disposable-fixture` |
+| `PSC-019` | `policy-security` | `disposable-fixture` |
+| `PSC-020` | `policy-security` | `disposable-fixture` |
+| `PSC-021` | `policy-security` | `disposable-fixture` |
+| `PSC-022` | `policy-security` | `disposable-fixture` |
+| `PSC-023` | `policy-security` | `disposable-fixture` |
+| `PSC-024` | `policy-security` | `disposable-fixture` |
+| `PSC-025` | `policy-security` | `disposable-fixture` |
+| `PSC-026` | `policy-security` | `disposable-fixture` |
+| `PSC-027` | `policy-security` | `disposable-fixture` |
+| `PSC-028` | `policy-security` | `disposable-fixture` |
 | `AZR-001` | `azure` | `live-production` |
 | `AZR-002` | `azure` | `live-production` |
 | `AZR-003` | `azure` | `live-production` |
@@ -176,10 +207,11 @@ Every canonical ID is listed below so prose/catalog drift is machine-detectable.
 | `SVC-002` | `services` | `disposable-fixture` |
 | `SVC-003` | `services` | `disposable-fixture` |
 | `SVC-004` | `services` | `disposable-fixture` |
-| `SVC-005` | `services` | `disposable-fixture` |
+| `SVC-005` | `services` | `live-production` |
 | `SVC-006` | `services` | `disposable-fixture` |
 | `GAT-001` | `gateway-scheduler` | `live-production` |
-| `GAT-002` | `gateway-scheduler` | `disposable-fixture` |
+| `GAT-002` | `gateway-scheduler` | `live-production` |
+| `GAT-005` | `gateway-scheduler` | `disposable-fixture` |
 | `GAT-003` | `gateway-scheduler` | `live-production` |
 | `GAT-004` | `gateway-scheduler` | `disposable-fixture` |
 | `TEL-001` | `telegram` | `live-production` |
@@ -226,6 +258,7 @@ Every canonical ID is listed below so prose/catalog drift is machine-detectable.
 | `BKP-004` | `backup-restore` | `clean-environment` |
 | `BKP-005` | `backup-restore` | `clean-environment` |
 | `BKP-006` | `backup-restore` | `disposable-fixture` |
+| `BKP-007` | `backup-restore` | `live-production` |
 | `MON-001` | `monitoring` | `live-production` |
 | `MON-002` | `monitoring` | `disposable-fixture` |
 | `MON-003` | `monitoring` | `live-production` |
