@@ -100,7 +100,7 @@
     const errors = validationErrors(); if (!showValidation(errors)) return;
     const name = $('#botName').value.trim();
     const runtime = $('input[name=runtime]:checked').value;
-    const browser = $('#browserProfile').value === 'none' ? 'NONE' : 'RECOVERING';
+    const browser = $('#browserProfile').value === 'none' ? 'NONE' : (runtime === 'mac' ? 'MAC-OWNED' : 'RECOVERING');
     state.bots[name] = { title: $('#botTitle').value.trim(), runtime, browser, online: runtime === 'server' || state.macOnline };
     const row = document.createElement('button'); row.type = 'button'; row.className = 'bot-row'; row.dataset.bot = name;
     row.innerHTML = `<span class="avatar">${escapeHtml(name[0].toUpperCase())}</span><span><b>${escapeHtml(name)}</b><small>${escapeHtml(state.bots[name].title)} · ${runtime === 'mac' ? 'johan-mac' : 'server'}</small></span><i class="status ${state.bots[name].online ? 'online' : 'offline'}">${state.bots[name].online ? (browser === 'RECOVERING' ? 'recovering' : 'online') : 'laptop_unavailable'}</i>`;

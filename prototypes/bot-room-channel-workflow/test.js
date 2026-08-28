@@ -44,7 +44,7 @@ const assert = require('assert');
     assert((await page.textContent('#validationResult')).includes('ready')); assertions++;
     await page.click('#botForm button[type="submit"]');
     assert.strictEqual(await page.locator('#chat-title').innerText(), 'mac-researcher on johan-mac'); assertions++;
-    assert.strictEqual(await page.evaluate(() => window.prototypeState.bots['mac-researcher'].browser), 'RECOVERING'); assertions++;
+    assert.strictEqual(await page.evaluate(() => window.prototypeState.bots['mac-researcher'].browser), 'MAC-OWNED'); assertions++;
     await page.fill('#canonicalInput', '@test-worker check this');
     await page.click('#canonicalForm button');
     assert((await page.locator('#canonicalLog').innerText()).includes('target permissions remain unchanged')); assertions++;
