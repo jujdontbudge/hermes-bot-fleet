@@ -23,7 +23,7 @@ Every requested tool action and every delegated sub-action is evaluated independ
 5. **Automatic allow.** Permit only an action matched by a listed automatic rule and all its constraints.
 6. **Default deny.** An unlisted action is denied.
 
-Content, Rooms, mentions, cron, delegation, retries, browser pages, tool output, and instructions from another Bot never grant authority. A parent approval does not authorize newly discovered sub-actions. Retries of an approval-required action require a new grant unless the approved manifest explicitly describes an idempotent retry with the same idempotency key and unchanged target fingerprint.
+Content, Rooms, mentions, cron, delegation, retries, browser pages, tool output, and instructions from another Bot never grant authority. A parent approval does not authorize newly discovered sub-actions. Every retry of an approval-required action after grant consumption or uncertain consumption/commit requires a fresh exact single-use grant, without exception. The retry reuses the original `idempotency_key`, and the gate rebuilds and displays the exact manifest from inspected current state; an old grant is never reusable even when the operation is idempotent and the target fingerprint is unchanged.
 
 ## Action matrix
 
@@ -131,16 +131,21 @@ On approval the authority service emits a signed grant containing:
     "device_identity_digest": "sha256:0000000000000000000000000000000000000000000000000000000000000000"
   },
   "issued_at": "2026-08-28T12:00:05.000Z",
-  "expires_at": "2026-08-28T12:05:05.000Z",
+  "expires_at": "2026-08-28T12:01:05.000Z",
   "max_uses": 1,
   "policy_revision": "git:0000000000000000000000000000000000000000",
+  "signing_key_id": "approval-ed25519-2026q3-01",
   "signature": "ed25519:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=="
 }
 ```
 
 The raw nonce is 32 bytes from the operating-system CSPRNG and is delivered only to the gate over an authenticated local/private channel; logs store its SHA-256 digest. General grants expire after five minutes. Mac mutation grants expire after 60 seconds. Browser Takeover grants expire after 60 seconds if not consumed; an established HUMAN lease lasts at most ten minutes and cannot be extended without a new approval. Purchase, permission, account, publishing, destructive, and break-glass grants expire after five minutes.
 
-The gate verifies authority signature; exact `human:johan` identity; channel eligibility; channel-instance, approval-session, and applicable registered-device identity digests in `authority_context`; exact manifest digest; nonce; policy revision; expiry using both wall and monotonic clocks; `max_uses == 1`; and unchanged target fingerprint immediately before execution. A channel without a device identity uses `null` for `device_identity_digest`; the channel-instance and approval-session digests are always required. It atomically writes a durable `approval.consumed` event and a uniqueness record for `(grant_id, nonce_sha256)` before releasing the side effect. A duplicate, uncertain commit, changed payload/target, clock rollback, reboot, gate restart, expired grant, missing audit sink, or already consumed nonce is denied. Grants are Bot-, runtime-, action-, target-, payload-, credential-handle-, egress-, policy-revision-, authority-context-, and side-effect-bound. They are not bearer authorization for any other operation.
+Grant signatures use pure Ed25519 exactly as specified by RFC 8032 (not Ed25519ph or Ed25519ctx). Let `grant_without_signature` be the complete grant object with only the `signature` member omitted; `signing_key_id` remains inside it. The authority signs the exact bytes `UTF8("fleet-approval-grant-v1\0") || RFC8785(grant_without_signature)`, where RFC 8785 produces canonical UTF-8 JSON bytes, and encodes the 64-byte signature as standard padded base64 after the literal `ed25519:` prefix. Verification rejects a missing, extra, duplicated, unknown, expired, not-yet-valid, or revoked `signing_key_id`, a non-canonical reconstruction, any other domain separator/algorithm/mode, and any signature not exactly 64 decoded bytes.
+
+The grant-verification trust anchor is Johan's offline Ed25519 approval-root public-key fingerprint, pinned in both the reviewed policy deployment and each gate. The offline root signs canonical purpose-limited certificates for online grant-signing public keys containing `signing_key_id`, public key, environment, purpose `fleet-approval-grant-v1`, validity interval, and predecessor key ID; the root private key is never present on a fleet host. Online signing keys are non-exportable and rotate at least every 90 days. Rotation publishes and pins a root-signed successor certificate before activation, retains the predecessor only for verification, and never extends an issued grant's expiry. Suspected compromise causes an offline-root-signed revocation with an effective time, immediate signer removal, denial of grants whose signing time falls in the revoked interval, and activation of a newly certified key. Root rotation requires old/new cross-certification and a reviewed update of every pinned fingerprint; an unavailable old root requires Johan's out-of-band break-glass trust-anchor update and an audited discontinuity.
+
+The gate verifies the RFC 8032 signature and pinned `signing_key_id` trust chain/revocation state; exact `human:johan` identity; channel eligibility; channel-instance, approval-session, and applicable registered-device identity digests in `authority_context`; exact manifest digest; nonce; policy revision; expiry using both wall and monotonic clocks; `max_uses == 1`; and unchanged target fingerprint immediately before execution. A channel without a device identity uses `null` for `device_identity_digest`; the channel-instance and approval-session digests are always required. It atomically writes a durable `approval.consumed` event and a uniqueness record for `(grant_id, nonce_sha256)` before releasing the side effect. A duplicate, uncertain commit, changed payload/target, clock rollback, reboot, gate restart, expired grant, missing audit sink, or already consumed nonce is denied. Any later attempt uses the original idempotency key but requires state inspection, a newly displayed exact manifest, and a fresh single-use grant. Grants are Bot-, runtime-, action-, target-, payload-, credential-handle-, egress-, policy-revision-, authority-context-, and side-effect-bound. They are not bearer authorization for any other operation.
 
 Denial and timeout create audit events but no reusable negative token. Approval interfaces offer `deny` and `approve once`; there is no `always allow` control.
 
@@ -164,7 +169,7 @@ The permanent Mac deny set includes normal browser profiles, Keychain and `~/Lib
 
 ## Browser automation and takeover
 
-A project-built lease supervisor enforces the topology's `AUTOMATION -> DRAINING -> HUMAN -> RECOVERING -> AUTOMATION` state machine. Takeover approval binds the Bot, Browser Profile, Johan identity/device, current automation lease nonce, purpose, and duration. Consumption first drains new CDP work, applies bounded cancellation, verifies zero CDP clients, rotates/revokes the automation lease, and only then enables one authenticated noVNC input session. The takeover URL carries a separate random single-use token in a fragment or secure session bootstrap so it is not written to proxy access logs; logs retain only a digest.
+A project-built lease supervisor enforces the topology's `AUTOMATION -> DRAINING -> HUMAN -> RECOVERING -> AUTOMATION` state machine. Takeover approval binds the Bot, Browser Profile, Johan identity/device, current automation lease nonce, purpose, and duration. Consumption first drains new CDP work, applies bounded cancellation, verifies zero CDP clients, rotates/revokes the automation lease, and only then enables one authenticated noVNC input session. The takeover URL contains no credential, token, nonce, or secret in any component, including its fragment. After Johan authenticates from the approved Tailscale identity/device, a separate authenticated same-origin session bootstrap delivers the random single-use takeover credential outside URL/navigation data. The bootstrap response is `Cache-Control: no-store`, is never exposed to the agent/model or page JavaScript, and the supervisor/noVNC client keeps it out of browser history, logs, screenshots, CDP, crash reports, and any tool or model context; only its digest may be logged. If that isolation cannot be proved, takeover is denied.
 
 During `HUMAN`, CDP is disconnected and denied. Disconnect, ten-minute timeout, browser/supervisor/proxy restart, session conflict, or uncertain ownership revokes input and enters `RECOVERING`. Recovery revokes all takeover credentials, closes VNC/CDP clients, validates profile health, resets a known window/tab state, rotates the automation lease nonce, and passes a harmless probe before automation resumes. A takeover does not approve any purchase, publication, message, account/permission change, destructive operation, or use of an ungranted credential encountered in the browser.
 
@@ -233,7 +238,7 @@ Every policy decision, approval request/decision/consumption, broker access, cre
     "resource": {
       "type": "object", "additionalProperties": false,
       "required": ["type", "id_digest", "display_class"],
-      "properties": {"type": {"type": "string", "maxLength": 64}, "id_digest": {"type": ["string", "null"], "pattern": "^(sha256:[a-f0-9]{64})?$"}, "display_class": {"type": "string", "maxLength": 128}}
+      "properties": {"type": {"type": "string", "maxLength": 64}, "id_digest": {"type": ["string", "null"], "pattern": "^sha256:[a-f0-9]{64}$"}, "display_class": {"type": "string", "maxLength": 128}}
     },
     "decision": {"enum": ["allow", "deny", "require_approval", "approve", "consume", "error"]},
     "reason_code": {"type": ["string", "null"], "pattern": "^[A-Z0-9_]{3,64}$"},
@@ -243,9 +248,9 @@ Every policy decision, approval request/decision/consumption, broker access, cre
       "properties": {
         "request_id": {"type": "string", "maxLength": 128},
         "parent_event_id": {"type": ["string", "null"], "format": "uuid"},
-        "manifest_sha256": {"type": ["string", "null"], "pattern": "^(sha256:[a-f0-9]{64})?$"},
+        "manifest_sha256": {"type": ["string", "null"], "pattern": "^sha256:[a-f0-9]{64}$"},
         "grant_id": {"type": ["string", "null"], "maxLength": 128},
-        "nonce_sha256": {"type": ["string", "null"], "pattern": "^(sha256:[a-f0-9]{64})?$"},
+        "nonce_sha256": {"type": ["string", "null"], "pattern": "^sha256:[a-f0-9]{64}$"},
         "idempotency_key": {"type": ["string", "null"], "maxLength": 128}
       }
     },
@@ -284,7 +289,7 @@ The collector authenticates the producer, validates the producer envelope, appli
     "resource": {
       "type": "object", "additionalProperties": false,
       "required": ["type", "id_digest", "display_class"],
-      "properties": {"type": {"type": "string", "maxLength": 64}, "id_digest": {"type": ["string", "null"], "pattern": "^(sha256:[a-f0-9]{64})?$"}, "display_class": {"type": "string", "maxLength": 128}}
+      "properties": {"type": {"type": "string", "maxLength": 64}, "id_digest": {"type": ["string", "null"], "pattern": "^sha256:[a-f0-9]{64}$"}, "display_class": {"type": "string", "maxLength": 128}}
     },
     "decision": {"enum": ["allow", "deny", "require_approval", "approve", "consume", "error"]},
     "reason_code": {"type": ["string", "null"], "pattern": "^[A-Z0-9_]{3,64}$"},
@@ -294,9 +299,9 @@ The collector authenticates the producer, validates the producer envelope, appli
       "properties": {
         "request_id": {"type": "string", "maxLength": 128},
         "parent_event_id": {"type": ["string", "null"], "format": "uuid"},
-        "manifest_sha256": {"type": ["string", "null"], "pattern": "^(sha256:[a-f0-9]{64})?$"},
+        "manifest_sha256": {"type": ["string", "null"], "pattern": "^sha256:[a-f0-9]{64}$"},
         "grant_id": {"type": ["string", "null"], "maxLength": 128},
-        "nonce_sha256": {"type": ["string", "null"], "pattern": "^(sha256:[a-f0-9]{64})?$"},
+        "nonce_sha256": {"type": ["string", "null"], "pattern": "^sha256:[a-f0-9]{64}$"},
         "idempotency_key": {"type": ["string", "null"], "maxLength": 128}
       }
     },
@@ -335,7 +340,7 @@ Before hashing, the collector canonicalizes the finalized event with `integrity.
 
 HMAC rotation has an explicit sequence boundary. The collector first seals and signs a checkpoint through sequence `N` under key version `K`, activates `K+1` atomically for sequence `N+1`, and records both versions and the boundary in the first `K+1` event and checkpoint metadata. A key version therefore owns one contiguous, non-overlapping sequence interval; it cannot sign before its activation sequence or after its sealed terminal sequence. The first event under `K+1` keeps `previous_hash` equal to the terminal `K` event hash, so chain continuity does not depend on using the same HMAC key. Rotation never resets `stream_id` or `sequence`.
 
-Retired HMAC keys move to verification-only custody in the managed secret authority: collectors cannot request them for writes, and only the isolated verifier identity can use them. Each retired key is retained until every archive object and checkpoint containing its events has completed the 400-day immutable archive verification period, the object's lifecycle deletion is confirmed, and a final monthly end-to-end verification succeeds. The authority then cryptographically destroys all wrapped copies and backups, records the key-version fingerprint, covered sequence range, verification evidence, and destruction time in a checkpointed `audit.key_destroyed` event, and confirms that no recoverable copy remains. Early destruction or loss blocks verification and is a critical incident; archive retention cannot be extended without extending key custody by the same interval.
+Retired HMAC keys move to verification-only custody in the managed secret authority: collectors cannot request them for writes, and only the isolated verifier identity can use them. Each retired key remains available throughout every archive object and checkpoint containing its events' real 400-day immutable verification period. After that period expires, the isolated verifier performs and durably records one final end-to-end verification while the key and objects still exist; only a passing final verification authorizes lifecycle deletion. The collector then confirms every covered object's deletion from archive inventory and failed object reads. Only after that deletion confirmation may the authority cryptographically destroy all wrapped key copies and backups, record the key-version fingerprint, covered sequence range, final-verification evidence, deletion confirmation, and destruction time in a checkpointed `audit.key_destroyed` event, and confirm that no recoverable copy remains. Early deletion, destruction, or loss blocks verification and is a critical incident; archive retention cannot be extended without extending key custody by the same interval.
 
 Daily checkpoints contain schema version, stream ID, UTC day, first/last sequence, first/terminal event hash, all `(key_version, first_sequence, last_sequence)` intervals present, prior checkpoint digest, archive object SHA-256 digest, event count, and trusted timestamp. The checkpoint signer signs `UTF8("fleet-audit-checkpoint-v1\0") || RFC8785(checkpoint_payload)` with Ed25519 as specified by RFC 8032; `signature_algorithm`, `signing_key_id`, and the base64 signature are outside `checkpoint_payload` and therefore cannot be confused with signed fields. The trust anchor is Johan's offline Ed25519 audit root public-key fingerprint pinned both in this reviewed policy deployment and in the independent verifier. That offline root signs canonical, purpose-limited certificates for online checkpoint-signing public keys, including key ID, validity interval, environment, and predecessor key ID; the private root is never present on a fleet host.
 
@@ -363,14 +368,14 @@ Break-glass is for imminent loss of availability or data when normal approval in
 All controls fail closed:
 
 - policy gate unavailable, policy revision mismatch, malformed/ambiguous request, or no matching rule: deny;
-- approval timeout, channel loss, invalid signature, stale nonce, replay, target change, restart, or uncertain consumption: deny and require a new manifest;
+- approval timeout, channel loss, invalid signature, stale nonce, replay, target change, restart, or uncertain consumption/commit: deny; inspect current state and, for any retry, preserve the original idempotency key while requiring a newly displayed exact manifest and fresh single-use grant;
 - secret source/broker/egress firewall unavailable, scope mismatch, destination mismatch, rotation overdue, or revocation uncertain: do not inject and stop the operation;
 - audit collector unavailable, disk full, schema/redaction/integrity failure, or archive lag over 24 hours: deny approvals, secret use, Mac mutations, browser takeover, and other side effects; allow only bounded read-only diagnostics that generate a recoverable local event;
 - Mac asleep, locked, offline, gate/UI unavailable, or path identity uncertain: deny mutation; reads also stop if confinement cannot be proved;
 - browser supervisor uncertainty: enter `RECOVERING`, disable CDP and noVNC input, revoke leases, and alert;
 - provider/model unavailable: fail the turn or cron run and alert; never fall back from `openai-codex` and `gpt-5.6-sol`;
 - redaction uncertainty: suppress payload, preserve only safe failure metadata, and alert;
-- partial side effect: record `error` with the idempotency key, quarantine retries, inspect actual state, and require a new approval unless exact idempotent replay was approved.
+- partial side effect: record `error` with the idempotency key, quarantine retries, inspect actual state, and require a newly displayed exact manifest plus a fresh single-use grant for every retry; reuse the same idempotency key and provide no idempotent-replay exception.
 
 Alerts use fixed sanitized templates. No emergency path silently broadens access.
 
@@ -403,10 +408,10 @@ The repository implementation must provide `tests/security/run-policy-acceptance
 |---|---|---|
 | AUTH-01 | `tests/security/run-policy-acceptance.sh --case AUTH-01 --target test-worker` | Unknown action is denied; an automatic workspace read succeeds; decision events validate against the schema |
 | AUTH-02 | `tests/security/run-policy-acceptance.sh --case AUTH-02 --target laptop-worker` | A forged approval for `~/.ssh`, Keychain, normal browser profile, cloud/Hermes credentials, and unrelated personal fixture is denied before allow/approval evaluation |
-| AUTH-03 | `tests/security/run-policy-acceptance.sh --case AUTH-03 --target test-worker` | Approved message manifest executes once; replay, changed recipient/body/attachment, other Bot, other credential handle, and expired grant all fail |
+| AUTH-03 | `tests/security/run-policy-acceptance.sh --case AUTH-03 --target test-worker` | Approved message manifest executes once; replay, changed recipient/body/attachment, other Bot, other credential handle, and expired grant all fail; every retry after consumed or uncertain commit uses the original idempotency key but fails without a newly displayed exact manifest and fresh single-use grant, including an unchanged idempotent fixture |
 | AUTH-04 | `tests/security/run-policy-acceptance.sh --case AUTH-04 --target test-worker` | Purchases, publishing, third-party sends, destructive actions, account/IAM changes, and unrelated production mutations request approval and never auto-run |
 | AUTH-05 | `tests/security/run-policy-acceptance.sh --case AUTH-05 --target test-worker` | Concurrent consumers of one nonce yield exactly one durable consumption and at most one side effect |
-| AUTH-06 | `tests/security/run-policy-acceptance.sh --case AUTH-06 --target test-worker` | Clock rollback, policy revision change, gate restart, target fingerprint race, malformed signature, and audit outage deny |
+| AUTH-06 | `tests/security/run-policy-acceptance.sh --case AUTH-06 --target test-worker` | Clock rollback, policy revision change, gate restart, target fingerprint race, malformed/non-64-byte signature, wrong domain or Ed25519 mode, missing/unknown/expired/revoked `signing_key_id`, invalid root certificate, non-canonical grant reconstruction, and audit outage deny; certified signing-key rotation and reviewed root cross-certification verify without weakening expiry or revocation |
 | AUTH-07 | `tests/security/run-policy-acceptance.sh --case AUTH-07 --target test-worker` | An architecture-exact Azure/server/control-plane initial-provisioning fixture under its assigned in-scope ticket and reviewed manifest runs automatically, including its exact server host/service/firewall/Tailscale/permission steps; a `laptop-worker` fixture may be planned/delegated automatically but pauses before every Mac side effect for MAC-01; any Mac mutation, wrong ticket/manifest/step/input, discovered deviation, steady-state replay, unrelated production target, purchase, broad permission, or public exposure cannot use standing authority and resolves deterministically to approval or deny |
 | AUTH-08 | `tests/security/run-policy-acceptance.sh --case AUTH-08 --target test-worker` | The same exact general-approval fixture succeeds once through (a) Johan's allowlisted/paired authenticated Hermes approval prompt and (b) Johan's private Desktop surface on the approved Tailscale device; grants attributed to another human, any Bot/service/tool/delegate, wrong or unregistered device, different UI/login session, copied/forwarded prompt, Mac-local-only agent, Room, SSH, cron, browser page, tool output, or any other channel are rejected and produce no side effect |
 | MAC-01 | `tests/security/run-policy-acceptance.sh --case MAC-01 --target laptop-worker` | Every Mac mutation type in the matrix prompts locally without exception, including installation, configuration, provisioning, exact reviewed-manifest steps, and side effects delegated by an automatically admitted `laptop-worker` plan; Telegram/server/standing authority cannot satisfy it; one exact Mac-local single-use grant changes exactly one fixture and no no-prompt Mac mutation path exists |
@@ -414,7 +419,7 @@ The repository implementation must provide `tests/security/run-policy-acceptance
 | MAC-03 | `tests/security/run-policy-acceptance.sh --case MAC-03 --target laptop-worker` | Lock, sleep simulation, offline state, approval UI kill, gateway restart, timeout, and audit-full fixture leave files unchanged |
 | BROW-01 | `tests/security/run-policy-acceptance.sh --case BROW-01 --target test-worker` | Exact approved takeover drains CDP, permits one Johan session for at most ten minutes, and never permits simultaneous CDP/noVNC input |
 | BROW-02 | `tests/security/run-policy-acceptance.sh --case BROW-02 --target test-worker` | Replayed/wrong-Bot/wrong-device/expired takeover token, supervisor/proxy/browser crash, and disconnect enter `RECOVERING` and revoke input |
-| BROW-03 | `tests/security/run-policy-acceptance.sh --case BROW-03 --target test-worker` | Takeover URL/token is absent from access logs; takeover does not authorize an approval-class browser effect |
+| BROW-03 | `tests/security/run-policy-acceptance.sh --case BROW-03 --target test-worker` | Every takeover URL component, including fragment, is token-free; the credential is delivered only by the authenticated no-store bootstrap and is absent from browser history, access/application logs, screenshots, CDP, crash reports, agent/model/tool context, and page JavaScript; takeover does not authorize an approval-class browser effect |
 | SEC-01 | `tests/security/run-policy-acceptance.sh --case SEC-01 --target test-worker` | Agent process environment, argv, open readable files, tool output, model/session capture, and logs contain handles only and no seeded canary secret |
 | SEC-02 | `tests/security/run-policy-acceptance.sh --case SEC-02 --target test-worker` | Broker accepts the exact Bot/handle/method/destination and rejects cross-Bot use, redirect, DNS rebinding fixture, alternate port/path, direct egress, and response reflection |
 | SEC-03 | `tests/security/run-policy-acceptance.sh --case SEC-03 --target test-worker` | Rotation canary succeeds, old version is revoked and fails, inventory updates, and simulated expiry/overdue rotation disables the handle |
@@ -422,8 +427,8 @@ The repository implementation must provide `tests/security/run-policy-acceptance
 | AUD-01 | `tests/security/run-policy-acceptance.sh --case AUD-01 --target test-worker` | All required event classes first validate as authenticated safe producer envelopes with no collector-owned sequence/hash fields, then validate as finalized collector events with assigned observation/redaction/sequence/integrity fields; extra fields, identity mismatch, incomplete correlation, and raw values are rejected |
 | AUD-02 | `tests/security/run-policy-acceptance.sh --case AUD-02 --target test-worker` | Seeded password/token/cookie/header/query canaries are omitted or redacted from local, journal, archive, alert, and JUnit evidence |
 | AUD-03 | `tests/security/run-policy-acceptance.sh --case AUD-03 --target test-worker` | Edit/delete/reorder/duplicate/gap/key-version mutations break chain verification; HMAC rotation occurs at the declared sequence boundary with cross-key continuity; daily Ed25519 checkpoint signature/certificate/object digest and cross-checkpoint link detect replacement or an unknown/revoked signing key |
-| AUD-04 | `tests/security/run-policy-acceptance.sh --case AUD-04 --target test-worker` | Collector create-only archive rights, private encryption, 400-day immutability/lifecycle, Bot separation, 30-day local rotation, and 24-hour lag alarm match policy |
-| AUD-05 | `tests/security/run-policy-acceptance.sh --case AUD-05 --target test-worker` | A retired HMAC key cannot sign new events, remains verifier-only through its last object's archive-verification period, and is destroyed only after lifecycle deletion plus final verification; signing-key rotation/revocation and root cross-certification preserve or explicitly mark trust continuity |
+| AUD-04 | `tests/security/run-policy-acceptance.sh --case AUD-04 --target test-worker` | Collector create-only archive rights, private encryption, Bot separation, 30-day local rotation, and 24-hour lag alarm match policy; live configuration inspection proves the deployed immutable retention and lifecycle values are exactly 400 days, while separately retained recurring daily/monthly evidence proves scheduled verification runs and alerts on skipped/failed runs |
+| AUD-05 | `tests/security/run-policy-acceptance.sh --case AUD-05 --target test-worker --destructive-fixture` | An accelerated disposable retirement fixture proves a retired HMAC key cannot sign, remains verifier-only until expiry, performs and records final verification before deletion, confirms object deletion next, and destroys all key copies only last; the test also inspects the real 400-day production configuration without shortening it, and signing-key rotation/revocation and root cross-certification preserve or explicitly mark trust continuity |
 | FAIL-01 | `tests/security/run-policy-acceptance.sh --case FAIL-01 --target test-worker` | Kill each gate/broker/audit/lease component and fill disposable log storage; side effects stop, safe diagnostics remain bounded, sanitized alert arrives |
 | FAIL-02 | `tests/security/run-policy-acceptance.sh --case FAIL-02 --target test-worker` | Induced `openai-codex`/`gpt-5.6-sol` failure produces no fallback call and emits a sanitized failure event/alert |
 | BG-01 | `tests/security/run-policy-acceptance.sh --case BG-01 --target laptop-worker` | Bot cannot invoke break-glass; one human fixture grant is scope/time limited, disables autonomy, preserves permanent denies, expires, and requires recovery checks |
