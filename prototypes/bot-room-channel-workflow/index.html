@@ -49,7 +49,7 @@
                 <label class="choice"><input type="radio" name="runtime" value="server" checked><span><b>Server Runtime</b><small>fleet-server · always on · isolated Unix identity + containers</small></span></label>
                 <label class="choice"><input type="radio" name="runtime" value="mac"><span><b>Mac Laptop Runtime</b><small>johan-mac · intermittent · every mutation needs local approval</small></span></label>
               </div>
-              <label>Browser Profile<select id="browserProfile" name="browser"><option value="dedicated">Create dedicated persistent Chromium profile</option><option value="none">No browser capability</option></select><small id="browserHint">Bot-scoped profile; never cloned or shared. Starts in RECOVERING.</small></label>
+              <label>Browser Profile<select id="browserProfile" name="browser"><option value="dedicated">Dedicated browser authority</option><option value="none">None — no browser capability</option></select><small id="browserHint">Dedicated: Bot-scoped server profile; never cloned or shared; starts in RECOVERING.</small></label>
             </fieldset>
 
             <fieldset><legend>2 · Mind and profile state</legend>

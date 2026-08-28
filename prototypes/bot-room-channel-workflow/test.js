@@ -26,6 +26,69 @@ const assert = require('assert');
       await page.close();
     }
 
+    // Browser Profile and cap=browser are one authority, synchronized in both directions.
+    {
+      const page = await browser.newPage();
+      await page.goto(`${base}?variant=guided`);
+      const browserCap = 'input[name="cap"][value="browser"]';
+      assert.strictEqual(await page.inputValue('#browserProfile'), 'dedicated'); assertions++;
+      assert.strictEqual(await page.isChecked(browserCap), true); assertions++;
+      assert((await page.textContent('#browserHint')).includes('server profile')); assertions++;
+
+      await page.selectOption('#browserProfile', 'none');
+      assert.strictEqual(await page.isChecked(browserCap), false); assertions++;
+      assert((await page.textContent('#browserHint')).includes('no server Browser Profile')); assertions++;
+      await page.check(browserCap);
+      assert.strictEqual(await page.inputValue('#browserProfile'), 'dedicated'); assertions++;
+      await page.uncheck(browserCap);
+      assert.strictEqual(await page.inputValue('#browserProfile'), 'none'); assertions++;
+
+      // Validation still denies a contradiction introduced without a UI change event.
+      await page.evaluate(() => { document.querySelector('#browserProfile').value = 'dedicated'; });
+      await page.check('#reviewConfirm');
+      await page.click('#validateBot');
+      assert((await page.textContent('#validationResult')).includes('must agree')); assertions++;
+
+      // Disabled creation has neither browser state nor browser capability.
+      await page.selectOption('#browserProfile', 'none');
+      await page.fill('#botName', 'no-browser-worker');
+      await page.click('#botForm button[type="submit"]');
+      const disabledBot = await page.evaluate(() => window.prototypeState.bots['no-browser-worker']);
+      assert.strictEqual(disabledBot.browser, 'NONE'); assertions++;
+      assert(!disabledBot.capabilities.includes('browser')); assertions++;
+      await page.close();
+    }
+
+    // A dedicated server profile starts fail-closed in RECOVERING with browser capability.
+    {
+      const page = await browser.newPage();
+      await page.goto(`${base}?variant=guided`);
+      await page.fill('#botName', 'server-browser-worker');
+      await page.check('#reviewConfirm');
+      await page.click('#botForm button[type="submit"]');
+      const serverBot = await page.evaluate(() => window.prototypeState.bots['server-browser-worker']);
+      assert.strictEqual(serverBot.browser, 'RECOVERING'); assertions++;
+      assert(serverBot.capabilities.includes('browser')); assertions++;
+      assert((await page.locator('#liveState').innerText()).includes('Browser\nRECOVERING')); assertions++;
+      await page.close();
+    }
+
+    // Dedicated browser authority on Mac is explicitly Mac-owned, never a server profile.
+    {
+      const page = await browser.newPage();
+      await page.goto(`${base}?variant=guided`);
+      await page.fill('#botName', 'mac-browser-worker');
+      await page.check('input[name="runtime"][value="mac"]');
+      assert((await page.textContent('#browserHint')).includes('MAC-OWNED')); assertions++;
+      assert((await page.textContent('#implications')).includes('no server Browser Profile is created')); assertions++;
+      await page.check('#reviewConfirm');
+      await page.click('#botForm button[type="submit"]');
+      const macBot = await page.evaluate(() => window.prototypeState.bots['mac-browser-worker']);
+      assert.strictEqual(macBot.browser, 'MAC-OWNED'); assertions++;
+      assert(macBot.capabilities.includes('browser')); assertions++;
+      await page.close();
+    }
+
     const page = await browser.newPage();
     const errors = [];
     page.on('console', msg => { if (msg.type() === 'error') errors.push(msg.text()); });
@@ -47,6 +110,9 @@ const assert = require('assert');
     await page.selectOption('#memoryMode', 'reviewed-non-secret-brief');
     await page.uncheck('input[name="cap"][value="web"]');
     await page.uncheck('input[name="cap"][value="browser"]');
+    assert.strictEqual(await page.inputValue('#browserProfile'), 'none'); assertions++;
+    assert((await page.textContent('#browserHint')).includes('no Mac-owned browser authority')); assertions++;
+    assert((await page.textContent('#implications')).includes('no browser capability or browser authority')); assertions++;
     await page.uncheck('input[name="cap"][value="kanban"]');
     await page.check('input[name="cap"][value="terminal"]');
     await page.check('input[name="cap"][value="files"]');
@@ -59,7 +125,7 @@ const assert = require('assert');
     assert((await page.textContent('#validationResult')).includes('ready')); assertions++;
     await page.click('#botForm button[type="submit"]');
     assert.strictEqual(await page.locator('#chat-title').innerText(), 'mac-researcher on johan-mac'); assertions++;
-    assert.strictEqual(await page.evaluate(() => window.prototypeState.bots['mac-researcher'].browser), 'MAC-OWNED'); assertions++;
+    assert.strictEqual(await page.evaluate(() => window.prototypeState.bots['mac-researcher'].browser), 'NONE'); assertions++;
     const createdBot = await page.evaluate(() => window.prototypeState.bots['mac-researcher']);
     assert.strictEqual(createdBot.memoryMode, 'reviewed-non-secret-brief'); assertions++;
     assert.deepStrictEqual(createdBot.capabilities, ['terminal', 'files']); assertions++;

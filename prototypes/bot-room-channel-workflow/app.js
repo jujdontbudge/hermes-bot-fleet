@@ -12,8 +12,8 @@
   const state = {
     variant, view: 'create', selectedBot: 'chief', macOnline: false,
     bots: {
-      chief: { title: 'Coordinator', runtime: 'server', browser: 'AUTOMATION', online: true, memoryMode: 'independent-empty', capabilities: ['delegation'], provider: 'openai-codex', model: 'gpt-5.6-sol' },
-      'test-worker': { title: 'Safe tester', runtime: 'server', browser: 'RECOVERING', online: true, memoryMode: 'independent-empty', capabilities: ['terminal'], provider: 'openai-codex', model: 'gpt-5.6-sol' },
+      chief: { title: 'Coordinator', runtime: 'server', browser: 'AUTOMATION', online: true, memoryMode: 'independent-empty', capabilities: ['delegation', 'browser'], provider: 'openai-codex', model: 'gpt-5.6-sol' },
+      'test-worker': { title: 'Safe tester', runtime: 'server', browser: 'RECOVERING', online: true, memoryMode: 'independent-empty', capabilities: ['terminal', 'browser'], provider: 'openai-codex', model: 'gpt-5.6-sol' },
       'laptop-worker': { title: 'Mac operator', runtime: 'mac', browser: 'NONE', online: false, memoryMode: 'independent-empty', capabilities: ['files'], provider: 'openai-codex', model: 'gpt-5.6-sol' }
     },
     room: ['chief', 'test-worker'], channel: null,
@@ -69,15 +69,33 @@
   $$('.bot-row').forEach(row => row.addEventListener('click', () => selectBot(row.dataset.bot)));
 
   const runtimeInputs = $$('input[name=runtime]');
+  const browserProfile = $('#browserProfile');
+  const browserCapability = $('input[name="cap"][value="browser"]');
   function updateImplications() {
     const runtime = $('input[name=runtime]:checked').value;
-    const browser = $('#browserProfile').value;
+    const browser = browserProfile.value;
     const mac = runtime === 'mac';
-    $('#implications').innerHTML = `<ul><li><b>${mac ? 'Mac Laptop Runtime' : 'Server Runtime'}:</b> ${mac ? 'intermittent; offline work pauses and every mutation requires a Mac-local, single-use approval.' : 'always-on; separate Unix identity and Bot-scoped containers, not merely a Hermes profile.'}</li><li><b>Browser:</b> ${browser === 'none' ? 'no browser authority is granted.' : `${mac ? 'Mac-owned browser; no server Browser Profile is created.' : 'dedicated persistent profile; starts RECOVERING and must pass a harmless probe.'}`}</li><li><b>Credentials:</b> handles are broker references; messages, Rooms, and delegation never increase authority.</li></ul>`;
-    $('#browserHint').textContent = mac ? 'Mac-owned browser state; unavailable while the laptop is offline.' : 'Bot-scoped profile; never cloned or shared. Starts in RECOVERING.';
+    const disabled = browser === 'none';
+    const browserImplication = disabled
+      ? `no browser capability or browser authority is granted; ${mac ? 'no Mac-owned browser is assigned.' : 'no server Browser Profile is created.'}`
+      : (mac
+        ? 'browser capability uses Mac-owned browser state; no server Browser Profile is created, and browser work is unavailable while the laptop is offline.'
+        : 'browser capability uses a dedicated persistent Bot-scoped profile; it starts RECOVERING and must pass a harmless probe.');
+    const browserHint = disabled
+      ? (mac ? 'Disabled: no browser capability and no Mac-owned browser authority.' : 'Disabled: no browser capability and no server Browser Profile.')
+      : (mac ? 'Dedicated: Mac-owned browser state (MAC-OWNED); unavailable while the laptop is offline.' : 'Dedicated: Bot-scoped server profile; never cloned or shared; starts in RECOVERING.');
+    $('#implications').innerHTML = `<ul><li><b>${mac ? 'Mac Laptop Runtime' : 'Server Runtime'}:</b> ${mac ? 'intermittent; offline work pauses and every mutation requires a Mac-local, single-use approval.' : 'always-on; separate Unix identity and Bot-scoped containers, not merely a Hermes profile.'}</li><li><b>Browser:</b> ${browserImplication}</li><li><b>Credentials:</b> handles are broker references; messages, Rooms, and delegation never increase authority.</li></ul>`;
+    $('#browserHint').textContent = browserHint;
   }
   runtimeInputs.forEach(input => input.addEventListener('change', updateImplications));
-  $('#browserProfile').addEventListener('change', updateImplications);
+  browserProfile.addEventListener('change', () => {
+    browserCapability.checked = browserProfile.value === 'dedicated';
+    updateImplications();
+  });
+  browserCapability.addEventListener('change', () => {
+    browserProfile.value = browserCapability.checked ? 'dedicated' : 'none';
+    updateImplications();
+  });
   updateImplications();
 
   let credentialManuallyOverridden = false;
@@ -101,6 +119,8 @@
     const credentialMatch = credential.match(/^secret:\/\/([a-z0-9-]+)\/[a-z0-9/_-]+$/);
     if (!credentialMatch) errors.push('Credential must be an opaque secret:// handle, never a token value.');
     else if (credentialMatch[1] !== name) errors.push(`Credential owner must exactly match Bot/profile name ${name}.`);
+    const dedicatedBrowser = browserProfile.value === 'dedicated';
+    if (dedicatedBrowser !== browserCapability.checked) errors.push('Browser Profile and browser capability must agree: dedicated requires browser capability; none forbids it.');
     if (!$('#reviewConfirm').checked) errors.push('Review and confirm runtime, isolation, credentials, and approval implications.');
     return errors;
   }
