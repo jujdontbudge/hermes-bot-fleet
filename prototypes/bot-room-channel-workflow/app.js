@@ -53,7 +53,10 @@
     if (!$('#view-' + name)) return;
     state.view = name;
     $$('.view').forEach(v => v.classList.toggle('active', v.id === `view-${name}`));
-    $$('[data-view]').forEach(b => b.toggleAttribute('aria-current', b.dataset.view === name));
+    $$('[data-view]').forEach(button => {
+      if (button.dataset.view === name) button.setAttribute('aria-current', 'page');
+      else button.removeAttribute('aria-current');
+    });
     renderState();
   }
   $$('[data-view]').forEach(button => button.addEventListener('click', () => openView(button.dataset.view)));

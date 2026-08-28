@@ -22,6 +22,8 @@ const assert = require('assert');
       assert.strictEqual(await page.locator(`[data-variant="${variant}"]`).getAttribute('class'), 'active'); assertions++;
       await page.click('[data-view="chat"]');
       assert(await page.locator('#view-chat').evaluate(el => el.classList.contains('active'))); assertions++;
+      assert.strictEqual(await page.locator('.journey [data-view="chat"]').getAttribute('aria-current'), 'page'); assertions++;
+      assert.strictEqual(await page.locator('.journey [data-view="create"]').getAttribute('aria-current'), null); assertions++;
       assert.deepStrictEqual(errors, [], `${variant} browser errors: ${errors.join('; ')}`); assertions++;
       await page.close();
     }
