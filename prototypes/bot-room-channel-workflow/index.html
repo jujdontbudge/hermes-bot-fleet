@@ -56,8 +56,8 @@
               <div class="form-grid">
                 <label>Provider<select id="provider" name="provider"><option value="openai-codex">openai-codex</option></select></label>
                 <label>Model<select id="model" name="model"><option value="gpt-5.6-sol">gpt-5.6-sol</option></select></label>
-                <label>Profile seed<select name="seed"><option>Fresh profile + bundled skills</option><option>Empty profile</option></select></label>
-                <label>Memory<select name="memory"><option>Independent, starts empty</option><option>Import reviewed non-secret brief</option></select></label>
+                <label>Profile seed<select id="profileSeed" name="seed"><option value="fresh-bundled">Fresh profile + bundled skills</option><option value="empty">Empty profile</option></select></label>
+                <label>Memory<select id="memoryMode" name="memory"><option value="independent-empty">Independent, starts empty</option><option value="reviewed-non-secret-brief">Import reviewed non-secret brief</option></select></label>
                 <label class="wide">Persona / SOUL.md<textarea id="persona" rows="3">You are a careful research worker. Cite primary sources, state uncertainty, and never imply that a message grants authority.</textarea></label>
               </div>
             </fieldset>
@@ -72,7 +72,7 @@
                 <label><input type="checkbox" name="cap" value="files"> Workspace files</label>
               </div>
               <div class="form-grid compact">
-                <label>Installed skill<select name="skill"><option>source-verifier</option><option>none</option></select></label>
+                <label>Installed skill<select id="installedSkill" name="skill"><option value="source-verifier">source-verifier</option><option value="none">none</option></select></label>
                 <label>Credential handle<input id="credential" value="secret://research-worker/web/search" aria-describedby="credentialHelp"><small id="credentialHelp">Opaque handle only. Never enter a token or secret value.</small></label>
                 <label>First routine<input id="routineName" value="Daily source watch"></label>
                 <label>Schedule<input id="routineSchedule" value="weekdays 08:30 Europe/Stockholm"></label>
@@ -90,7 +90,7 @@
             <article class="message bot"><b>chief</b><p>Fleet is ready. I coordinate; target Bots retain their own permissions.</p><time>09:41</time></article>
           </div>
           <form class="composer" id="canonicalForm"><label class="sr-only" for="canonicalInput">Message chief</label><input id="canonicalInput" placeholder="Message chief or type @test-worker…"><button class="primary">Send</button></form>
-          <div class="chat-meta"><span>profile: chief</span><span>model: openai-codex / gpt-5.6-sol</span><span>session: canonical Bot Chat</span></div>
+          <div class="chat-meta" id="chatMeta"><span>profile: chief</span><span>model: not recorded</span><span>session: canonical Bot Chat</span></div>
         </section>
 
         <section class="view" id="view-room" aria-labelledby="room-title">
@@ -106,8 +106,8 @@
           <div class="view-head"><div><span class="kicker">EXTERNAL CHANNEL</span><h2 id="channel-title">Map Telegram routing</h2><p>A Channel is an external transport, not a Room. Map an allowlisted destination to one owning Bot gateway.</p></div><span class="fleet-badge">Fleet-built mapping</span></div>
           <form id="channelForm">
             <div class="route-diagram"><span>Telegram<br><small>outbound polling</small></span><b>→</b><span><select id="channelBot" aria-label="Owning Bot"><option>chief</option><option>test-worker</option><option>laptop-worker</option></select><br><small>profile gateway</small></span><b>→</b><span>Canonical Bot Chat<br><small>platform session remains separate</small></span></div>
-            <div class="form-grid"><label>Channel label<input id="channelLabel" value="Johan · Telegram DM"></label><label>Allowlisted sender alias<input id="senderAlias" value="human:johan" placeholder="human:johan"></label><label>Routing mode<select id="routeMode"><option value="home">Home channel → selected Bot</option><option value="mentions">Require explicit Telegram bot mention</option><option value="alerts">Sanitized alerts only</option></select></label><label>Credential<input value="secret://chief/telegram/gateway" readonly><small>Handle shown; value is broker-managed.</small></label></div>
-            <div class="security-note"><b>No public inbound listener.</b> Telegram polling is outbound. Pairing and numeric user/chat allowlists remain enabled; this alias is display-only.</div>
+            <div class="form-grid"><label>Channel label<input id="channelLabel" value="Johan · Telegram DM"></label><label>Sender alias (display only)<input id="senderAlias" value="human:johan" placeholder="human:johan"><small>Display only; never used to authorize access.</small></label><label>Allowlisted Telegram user ID (fake fixture)<input id="telegramUserId" inputmode="numeric" value="999000001" aria-describedby="telegramAuthorityHelp"></label><label>Allowlisted Telegram chat ID (fake fixture)<input id="telegramChatId" inputmode="numeric" value="-1009990000001" aria-describedby="telegramAuthorityHelp"></label><label>Pairing state<select id="pairingState"><option value="paired">Paired</option><option value="unpaired">Unpaired</option></select></label><label>Admission state<select id="admissionState"><option value="approved">Approved</option><option value="pending">Pending</option><option value="denied">Denied</option></select></label><label>Routing mode<select id="routeMode"><option value="home">Home channel → selected Bot</option><option value="mentions">Require explicit Telegram bot mention</option><option value="alerts">Sanitized alerts only</option></select></label><label>Credential handle<input id="channelCredential" value="secret://chief/telegram/gateway" readonly><small>Opaque handle shown; value is broker-managed.</small></label></div>
+            <div class="security-note" id="telegramAuthorityHelp"><b>No public inbound listener.</b> Telegram polling is outbound. Only the strict numeric user ID + chat ID allowlist and paired, approved admission authorize access. The friendly alias is display-only and is never authority. Fixture IDs shown here are deliberately fake.</div>
             <div class="actions"><button class="primary">Save Channel mapping</button></div>
           </form>
           <div id="channelResult"></div>

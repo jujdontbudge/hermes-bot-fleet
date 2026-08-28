@@ -12,9 +12,9 @@
   const state = {
     variant, view: 'create', selectedBot: 'chief', macOnline: false,
     bots: {
-      chief: { title: 'Coordinator', runtime: 'server', browser: 'AUTOMATION', online: true },
-      'test-worker': { title: 'Safe tester', runtime: 'server', browser: 'RECOVERING', online: true },
-      'laptop-worker': { title: 'Mac operator', runtime: 'mac', browser: 'NONE', online: false }
+      chief: { title: 'Coordinator', runtime: 'server', browser: 'AUTOMATION', online: true, memoryMode: 'independent-empty', capabilities: ['delegation'], provider: 'openai-codex', model: 'gpt-5.6-sol' },
+      'test-worker': { title: 'Safe tester', runtime: 'server', browser: 'RECOVERING', online: true, memoryMode: 'independent-empty', capabilities: ['terminal'], provider: 'openai-codex', model: 'gpt-5.6-sol' },
+      'laptop-worker': { title: 'Mac operator', runtime: 'mac', browser: 'NONE', online: false, memoryMode: 'independent-empty', capabilities: ['files'], provider: 'openai-codex', model: 'gpt-5.6-sol' }
     },
     room: ['chief', 'test-worker'], channel: null,
     routines: { 'Daily fleet brief': 'success', 'Acceptance smoke': 'failed', 'Agent Inbox review': 'paused offline' },
@@ -34,10 +34,13 @@
   }
   function stateMarkup() {
     const bot = state.bots[state.selectedBot];
-    return `<dl><dt>Variant</dt><dd>${escapeHtml(state.variant)}</dd><dt>View</dt><dd>${escapeHtml(state.view)}</dd><dt>Selected Bot</dt><dd>${escapeHtml(state.selectedBot)}</dd><dt>Runtime</dt><dd>${escapeHtml(bot.runtime)}</dd><dt>Browser</dt><dd>${escapeHtml(bot.browser)}</dd><dt>Room members</dt><dd>${state.room.map(escapeHtml).join(', ')}</dd><dt>Mac</dt><dd>${state.macOnline ? 'connected' : 'unavailable'}</dd><dt>Channel</dt><dd>${state.channel ? escapeHtml(`${state.channel.label} → ${state.channel.bot}`) : 'not mapped'}</dd></dl>`;
+    const channel = state.channel ? `${state.channel.label} → ${state.channel.ownerBot}; user ${state.channel.allowlistedUserId}; chat ${state.channel.allowlistedChatId}; ${state.channel.pairingState}/${state.channel.admissionState}` : 'not mapped';
+    return `<dl><dt>Variant</dt><dd>${escapeHtml(state.variant)}</dd><dt>View</dt><dd>${escapeHtml(state.view)}</dd><dt>Selected Bot</dt><dd>${escapeHtml(state.selectedBot)}</dd><dt>Runtime</dt><dd>${escapeHtml(bot.runtime)}</dd><dt>Browser</dt><dd>${escapeHtml(bot.browser)}</dd><dt>Memory</dt><dd>${escapeHtml(bot.memoryMode || 'not recorded')}</dd><dt>Capabilities</dt><dd>${bot.capabilities?.length ? bot.capabilities.map(escapeHtml).join(', ') : 'none'}</dd><dt>Room members</dt><dd>${state.room.map(escapeHtml).join(', ')}</dd><dt>Mac</dt><dd>${state.macOnline ? 'connected' : 'unavailable'}</dd><dt>Channel</dt><dd>${escapeHtml(channel)}</dd></dl>`;
   }
   function renderState() {
     $('#liveState').innerHTML = stateMarkup();
+    const bot = state.bots[state.selectedBot];
+    $('#chatMeta').innerHTML = `<span>profile: ${escapeHtml(state.selectedBot)}</span><span>model: ${escapeHtml(`${bot.provider || 'not recorded'} / ${bot.model || 'not recorded'}`)}</span><span>memory: ${escapeHtml(bot.memoryMode || 'not recorded')}</span><span>capabilities: ${bot.capabilities?.length ? bot.capabilities.map(escapeHtml).join(', ') : 'none'}</span><span>seed: ${escapeHtml(bot.profileSeed || 'not recorded')}</span><span>skill: ${escapeHtml(bot.installedSkill || 'not recorded')}</span><span>session: canonical Bot Chat</span>`;
     $('#activityLog').innerHTML = state.activity.map((item, i) => `<li><time>${i ? 'earlier' : 'now'}</time> ${escapeHtml(item)}</li>`).join('');
     $('#botCount').textContent = Object.keys(state.bots).length;
     $('#roomRosterMeta').textContent = `${state.room.length} bots · ready`;
@@ -101,7 +104,14 @@
     const name = $('#botName').value.trim();
     const runtime = $('input[name=runtime]:checked').value;
     const browser = $('#browserProfile').value === 'none' ? 'NONE' : (runtime === 'mac' ? 'MAC-OWNED' : 'RECOVERING');
-    state.bots[name] = { title: $('#botTitle').value.trim(), runtime, browser, online: runtime === 'server' || state.macOnline };
+    state.bots[name] = {
+      title: $('#botTitle').value.trim(), description: $('#botDescription').value.trim(), runtime, browser,
+      online: runtime === 'server' || state.macOnline, provider: $('#provider').value, model: $('#model').value,
+      profileSeed: $('#profileSeed').value, memoryMode: $('#memoryMode').value, persona: $('#persona').value.trim(),
+      capabilities: $$('input[name="cap"]:checked').map(input => input.value), installedSkill: $('#installedSkill').value,
+      credentialHandle: $('#credential').value.trim(),
+      firstRoutine: { name: $('#routineName').value.trim(), schedule: $('#routineSchedule').value.trim() }
+    };
     const row = document.createElement('button'); row.type = 'button'; row.className = 'bot-row'; row.dataset.bot = name;
     row.innerHTML = `<span class="avatar">${escapeHtml(name[0].toUpperCase())}</span><span><b>${escapeHtml(name)}</b><small>${escapeHtml(state.bots[name].title)} · ${runtime === 'mac' ? 'johan-mac' : 'server'}</small></span><i class="status ${state.bots[name].online ? 'online' : 'offline'}">${state.bots[name].online ? (browser === 'RECOVERING' ? 'recovering' : 'online') : 'laptop_unavailable'}</i>`;
     row.addEventListener('click', () => selectBot(name)); $('#newBotRows').append(row);
@@ -151,10 +161,21 @@
 
   $('#channelForm').addEventListener('submit', event => {
     event.preventDefault(); const label = $('#channelLabel').value.trim(); const alias = $('#senderAlias').value.trim();
-    if (!label || !/^human:[a-z0-9_-]+$/i.test(alias)) { $('#channelResult').innerHTML = '<div class="security-note validation-error">Enter a label and a human:name display alias. Numeric Telegram user/chat allowlists still enforce access.</div>'; toast('Mapping needs attention'); return; }
-    state.channel = { label, alias, bot: $('#channelBot').value, mode: $('#routeMode').value };
-    $('#channelResult').innerHTML = `<div class="security-note validation-ok"><b>Mapped.</b> ${escapeHtml(label)} routes by outbound polling to ${escapeHtml(state.channel.bot)}. Telegram session remains separate from canonical Bot Chat.</div>`;
-    activity(`Saved Telegram mapping to ${state.channel.bot}`); toast('Channel mapping saved');
+    const userIdText = $('#telegramUserId').value.trim(); const chatIdText = $('#telegramChatId').value.trim();
+    const strictInteger = text => /^-?(?:0|[1-9][0-9]*)$/.test(text) && Number.isSafeInteger(Number(text));
+    const pairingState = $('#pairingState').value; const admissionState = $('#admissionState').value;
+    const problems = [];
+    if (!label) problems.push('Enter a channel label.');
+    if (!/^human:[a-z0-9_-]+$/i.test(alias)) problems.push('Enter a human:name display alias.');
+    if (!strictInteger(userIdText) || Number(userIdText) <= 0) problems.push('Telegram user ID must be a strict positive integer.');
+    if (!strictInteger(chatIdText) || Number(chatIdText) === 0) problems.push('Telegram chat ID must be a strict non-zero integer.');
+    if (pairingState !== 'paired' || admissionState !== 'approved') problems.push('Mapping requires paired and approved admission state.');
+    if (problems.length) { $('#channelResult').innerHTML = `<div class="security-note validation-error">${escapeHtml(problems.join(' '))} Alias is display-only and cannot authorize this mapping.</div>`; toast('Mapping needs attention'); return; }
+    state.channel = { label, displayAlias: alias, ownerBot: $('#channelBot').value, mode: $('#routeMode').value,
+      allowlistedUserId: Number(userIdText), allowlistedChatId: Number(chatIdText), pairingState, admissionState,
+      credentialHandle: $('#channelCredential').value };
+    $('#channelResult').innerHTML = `<div class="security-note validation-ok"><b>Mapped.</b> ${escapeHtml(label)} routes by outbound polling to ${escapeHtml(state.channel.ownerBot)}. Numeric user ${state.channel.allowlistedUserId} and chat ${state.channel.allowlistedChatId} are paired and approved. Alias is display-only. Telegram session remains separate from canonical Bot Chat.</div>`;
+    activity(`Saved Telegram mapping to ${state.channel.ownerBot}`); toast('Channel mapping saved');
   });
 
   $('#toggleLaptop').addEventListener('click', () => {
