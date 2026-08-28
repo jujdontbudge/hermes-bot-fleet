@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Throwaway operator-experience prototype for Hermes Bot Fleet issue 8">
+  <title>Fleet Workshop — throwaway workflow prototype</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <a class="skip" href="#main">Skip to workflow</a>
+  <header class="topbar">
+    <div><span class="eyebrow">THROWAWAY PROTOTYPE · ISSUE 8</span><h1>Fleet Workshop</h1></div>
+    <div class="connection"><span class="dot ok"></span><span>fleet-server via Tailscale</span><span class="dot warn"></span><span id="macConnection">johan-mac unavailable</span></div>
+  </header>
+
+  <main id="main" tabindex="-1">
+    <nav class="journey" aria-label="Operator workflow">
+      <button data-view="create" aria-current="page"><b>1</b><span>Create Bot</span></button>
+      <button data-view="chat"><b>2</b><span>Canonical chat</span></button>
+      <button data-view="room"><b>3</b><span>Room</span></button>
+      <button data-view="channel"><b>4</b><span>Channel</span></button>
+      <button data-view="operate"><b>5</b><span>Operate</span></button>
+    </nav>
+
+    <section class="workspace">
+      <aside class="roster panel" aria-label="Bot roster">
+        <div class="panel-title"><span>Bots</span><span class="count" id="botCount">3</span></div>
+        <button class="bot-row selected" data-bot="chief"><span class="avatar chief">C</span><span><b>chief</b><small>Coordinator · server</small></span><i class="status online">online</i></button>
+        <button class="bot-row" data-bot="test-worker"><span class="avatar test">T</span><span><b>test-worker</b><small>Safe tester · server</small></span><i class="status online">online</i></button>
+        <button class="bot-row" data-bot="laptop-worker"><span class="avatar laptop">L</span><span><b>laptop-worker</b><small>Mac operator · johan-mac</small></span><i class="status offline">laptop_unavailable</i></button>
+        <div id="newBotRows"></div>
+        <hr>
+        <button class="room-row" data-view="room"><span class="stack">C T</span><span><b>Launch room</b><small id="roomRosterMeta">2 bots · ready</small></span></button>
+      </aside>
+
+      <div class="stage">
+        <section class="view active" id="view-create" aria-labelledby="create-title">
+          <div class="view-head"><div><span class="kicker">BOT BUILDER</span><h2 id="create-title">Create an independently owned Bot</h2><p>Start with identity and destination, then make authority visible before creation.</p></div><span class="native-badge">Fleet-assisted</span></div>
+          <form id="botForm" novalidate>
+            <div class="form-grid">
+              <label>Profile name <span aria-hidden="true">*</span><input id="botName" name="name" value="research-worker" pattern="[a-z][a-z0-9-]{2,31}" aria-describedby="nameHelp" required><small id="nameHelp">Lowercase profile and Bot identity; 3–32 characters.</small></label>
+              <label>Operator title <input id="botTitle" name="title" value="Research worker"></label>
+              <label class="wide">Role / description <textarea id="botDescription" name="description" rows="2">Reads official sources, records citations, and hands verified findings to chief.</textarea></label>
+            </div>
+
+            <fieldset><legend>1 · Runtime and Browser Profile</legend>
+              <div class="choice-grid">
+                <label class="choice"><input type="radio" name="runtime" value="server" checked><span><b>Server Runtime</b><small>fleet-server · always on · isolated Unix identity + containers</small></span></label>
+                <label class="choice"><input type="radio" name="runtime" value="mac"><span><b>Mac Laptop Runtime</b><small>johan-mac · intermittent · every mutation needs local approval</small></span></label>
+              </div>
+              <label>Browser Profile<select id="browserProfile" name="browser"><option value="dedicated">Create dedicated persistent Chromium profile</option><option value="none">No browser capability</option></select><small id="browserHint">Bot-scoped profile; never cloned or shared. Starts in RECOVERING.</small></label>
+            </fieldset>
+
+            <fieldset><legend>2 · Mind and profile state</legend>
+              <div class="form-grid">
+                <label>Provider<select id="provider" name="provider"><option value="openai-codex">openai-codex</option></select></label>
+                <label>Model<select id="model" name="model"><option value="gpt-5.6-sol">gpt-5.6-sol</option></select></label>
+                <label>Profile seed<select name="seed"><option>Fresh profile + bundled skills</option><option>Empty profile</option></select></label>
+                <label>Memory<select name="memory"><option>Independent, starts empty</option><option>Import reviewed non-secret brief</option></select></label>
+                <label class="wide">Persona / SOUL.md<textarea id="persona" rows="3">You are a careful research worker. Cite primary sources, state uncertainty, and never imply that a message grants authority.</textarea></label>
+              </div>
+            </fieldset>
+
+            <fieldset><legend>3 · Skills, credentials, routines, and capabilities</legend>
+              <div class="cap-grid">
+                <label><input type="checkbox" name="cap" value="web" checked> Web research</label>
+                <label><input type="checkbox" name="cap" value="browser" checked> Browser automation</label>
+                <label><input type="checkbox" name="cap" value="terminal"> Terminal</label>
+                <label><input type="checkbox" name="cap" value="kanban" checked> Kanban tools</label>
+                <label><input type="checkbox" name="cap" value="delegation"> Delegation</label>
+                <label><input type="checkbox" name="cap" value="files"> Workspace files</label>
+              </div>
+              <div class="form-grid compact">
+                <label>Installed skill<select name="skill"><option>source-verifier</option><option>none</option></select></label>
+                <label>Credential handle<input id="credential" value="secret://research-worker/web/search" aria-describedby="credentialHelp"><small id="credentialHelp">Opaque handle only. Never enter a token or secret value.</small></label>
+                <label>First routine<input id="routineName" value="Daily source watch"></label>
+                <label>Schedule<input id="routineSchedule" value="weekdays 08:30 Europe/Stockholm"></label>
+              </div>
+            </fieldset>
+
+            <section class="review" aria-labelledby="review-title"><h3 id="review-title">Isolation & approval review</h3><div id="implications"></div><label class="confirm"><input id="reviewConfirm" type="checkbox" required> I reviewed the runtime, isolation, credentials, and approval implications.</label></section>
+            <div class="actions"><button type="button" class="ghost" id="validateBot">Validate draft</button><button type="submit" class="primary">Create Bot & open canonical chat</button></div>
+          </form>
+        </section>
+
+        <section class="view" id="view-chat" aria-labelledby="chat-title">
+          <div class="view-head"><div><span class="kicker">CANONICAL BOT CHAT</span><h2 id="chat-title">chief <small>on fleet-server</small></h2><p>Persistent Bot Chat; bot-to-bot DMs arrive here with attribution.</p></div><span class="native-badge">Native Hermes</span></div>
+          <div class="chat-log" id="canonicalLog" aria-live="polite">
+            <article class="message bot"><b>chief</b><p>Fleet is ready. I coordinate; target Bots retain their own permissions.</p><time>09:41</time></article>
+          </div>
+          <form class="composer" id="canonicalForm"><label class="sr-only" for="canonicalInput">Message chief</label><input id="canonicalInput" placeholder="Message chief or type @test-worker…"><button class="primary">Send</button></form>
+          <div class="chat-meta"><span>profile: chief</span><span>model: openai-codex / gpt-5.6-sol</span><span>session: canonical Bot Chat</span></div>
+        </section>
+
+        <section class="view" id="view-room" aria-labelledby="room-title">
+          <div class="view-head"><div><span class="kicker">BOT ROOM</span><h2 id="room-title">Launch room</h2><p>Shared room transcript; each member acts on its owning machine and authority.</p></div><span class="native-badge">Native Hermes</span></div>
+          <div class="member-strip" id="members"><span data-member="chief">C chief <button aria-label="Remove chief from room" disabled>×</button></span><span data-member="test-worker">T test-worker <button aria-label="Remove test-worker from room">×</button></span></div>
+          <button id="addLaptop" class="ghost">+ Add laptop-worker from johan-mac</button>
+          <div class="chat-log room-log" id="roomLog" aria-live="polite"><article class="system-line">Room ready · 2 Bots · messages route serially for up to 3 rounds</article></div>
+          <form class="composer" id="roomForm"><label class="sr-only" for="roomInput">Message Launch room</label><input id="roomInput" value="@test-worker verify the release checklist, then ask @chief what to prioritize." list="mentions"><datalist id="mentions"><option value="@chief"><option value="@test-worker"><option value="@laptop-worker"></datalist><button class="primary">Send to room</button></form>
+          <p class="hint">Mention specific Bots to scope routing. With no mention, each member may reply or pass; hard caps prevent loops.</p>
+        </section>
+
+        <section class="view" id="view-channel" aria-labelledby="channel-title">
+          <div class="view-head"><div><span class="kicker">EXTERNAL CHANNEL</span><h2 id="channel-title">Map Telegram routing</h2><p>A Channel is an external transport, not a Room. Map an allowlisted destination to one owning Bot gateway.</p></div><span class="fleet-badge">Fleet-built mapping</span></div>
+          <form id="channelForm">
+            <div class="route-diagram"><span>Telegram<br><small>outbound polling</small></span><b>→</b><span><select id="channelBot" aria-label="Owning Bot"><option>chief</option><option>test-worker</option><option>laptop-worker</option></select><br><small>profile gateway</small></span><b>→</b><span>Canonical Bot Chat<br><small>platform session remains separate</small></span></div>
+            <div class="form-grid"><label>Channel label<input id="channelLabel" value="Johan · Telegram DM"></label><label>Allowlisted sender alias<input id="senderAlias" value="human:johan" placeholder="human:johan"></label><label>Routing mode<select id="routeMode"><option value="home">Home channel → selected Bot</option><option value="mentions">Require explicit Telegram bot mention</option><option value="alerts">Sanitized alerts only</option></select></label><label>Credential<input value="secret://chief/telegram/gateway" readonly><small>Handle shown; value is broker-managed.</small></label></div>
+            <div class="security-note"><b>No public inbound listener.</b> Telegram polling is outbound. Pairing and numeric user/chat allowlists remain enabled; this alias is display-only.</div>
+            <div class="actions"><button class="primary">Save Channel mapping</button></div>
+          </form>
+          <div id="channelResult"></div>
+        </section>
+
+        <section class="view" id="view-operate" aria-labelledby="operate-title">
+          <div class="view-head"><div><span class="kicker">OPERATIONS</span><h2 id="operate-title">Health, routines & ownership</h2><p>Inspect execution state before retrying or approving work.</p></div><span class="fleet-badge">Mixed boundary</span></div>
+          <div class="ops-grid">
+            <article class="op-card"><header><div><span class="avatar chief">C</span><b>chief</b></div><i class="status online">online</i></header><dl><dt>Routine</dt><dd>Daily fleet brief · next 08:30</dd><dt>Last run</dt><dd class="good">Delivered to bot-chat + Telegram</dd><dt>Browser</dt><dd><strong id="chiefBrowser" class="state automation">AUTOMATION</strong></dd></dl><button class="ghost browserAction" data-bot="chief">Request human takeover</button></article>
+            <article class="op-card"><header><div><span class="avatar test">T</span><b>test-worker</b></div><i class="status online">online</i></header><dl><dt>Routine</dt><dd>Acceptance smoke · every 6h</dd><dt>Last run</dt><dd class="bad">Failed · provider unavailable · no fallback</dd><dt>Browser</dt><dd><strong id="testBrowser" class="state recovering">RECOVERING</strong></dd></dl><button class="ghost browserAction" data-bot="test-worker">Run safe recovery probe</button></article>
+            <article class="op-card"><header><div><span class="avatar laptop">L</span><b>laptop-worker</b></div><i id="laptopStatus" class="status offline">laptop_unavailable</i></header><dl><dt>Routine</dt><dd>Agent Inbox review · paused offline</dd><dt>Mutation</dt><dd>Mac-local single-use approval required</dd><dt>Browser</dt><dd>No server Browser Profile</dd></dl><button class="ghost" id="toggleLaptop">Simulate Mac reconnect</button></article>
+          </div>
+          <section class="routine-table" aria-labelledby="routine-heading"><h3 id="routine-heading">Routine status</h3><table><thead><tr><th>Routine</th><th>Owner</th><th>Schedule</th><th>Last result</th><th></th></tr></thead><tbody><tr><td>Daily fleet brief</td><td>chief</td><td>08:30 daily</td><td><span class="status online">success</span></td><td><button class="text-button runRoutine" data-routine="Daily fleet brief">Inspect</button></td></tr><tr><td>Acceptance smoke</td><td>test-worker</td><td>every 6h</td><td><span class="status error">failed</span></td><td><button class="text-button runRoutine" data-routine="Acceptance smoke">Inspect</button></td></tr><tr><td>Agent Inbox review</td><td>laptop-worker</td><td>09:00 weekdays</td><td><span class="status offline">paused offline</span></td><td><button class="text-button runRoutine" data-routine="Agent Inbox review">Inspect</button></td></tr></tbody></table></section>
+        </section>
+      </div>
+
+      <aside class="state-rail panel" aria-labelledby="state-heading">
+        <div class="panel-title"><span id="state-heading">Current state</span><button id="copyState" class="text-button">Copy</button></div>
+        <div id="liveState"></div>
+        <div class="activity"><h3>Activity</h3><ol id="activityLog"><li><time>now</time> Prototype state loaded</li></ol></div>
+      </aside>
+    </section>
+  </main>
+
+  <div id="toast" class="toast" role="status" aria-live="polite" aria-atomic="true"></div>
+  <nav class="variant-switcher" aria-label="Prototype variant">
+    <span>View</span><a data-variant="guided" href="?variant=guided">A · Guided</a><a data-variant="canvas" href="?variant=canvas">B · Canvas</a><a data-variant="console" href="?variant=console">C · Console</a>
+  </nav>
+  <script src="app.js"></script>
+</body>
+</html>
