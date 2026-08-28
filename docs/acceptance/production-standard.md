@@ -8,7 +8,7 @@ Locked inputs: [production topology](../architecture/production-topology.md), [a
 
 This document defines the binary production release contract. `acceptance/production-requirements.json` is the canonical machine-readable requirement catalog. Prose explains how to execute and judge that catalog; it does not waive, replace, reorder, or weaken a catalog item. If prose and catalog differ, release is blocked until both are corrected against the locked decisions.
 
-The catalog's top-level `locked_source_crosswalk` is normative. Its key set is exactly the locked security-policy matrix case set, and each source case maps to exactly one unique canonical `PSC-*` requirement. Removing, combining, or silently renaming a source case is catalog drift and blocks release.
+The catalog's top-level `locked_source_crosswalk` is normative. Its key set is exactly the locked security-policy matrix case set, and each source case maps to a nonempty list of one or more unique canonical `PSC-*` requirements. A case is split when live configuration inspection and destructive disposable verification require different targets; `AUD-04` and `AUD-05` each map to exactly one live inspection and one disposable fixture requirement. Removing, combining across source cases, or silently renaming a source case is catalog drift and blocks release.
 
 This ticket defines tests and hooks; it does not claim that the production fleet or live tests exist. `acceptance/hooks/run-requirement` is an exact future hook interface for the execution ticket. A hook that is absent, unimplemented, or unable to run returns `BLOCKED`, which fails release. Prototype, mock, CI-only, documentation, or prior-ticket evidence cannot substitute for evidence from the declared target.
 
@@ -46,7 +46,7 @@ A fresh, isolated host/resource namespace with no inherited profile, database, b
 
 ### Live production
 
-The actual provisioned fleet. Only read-only inspection, non-destructive negative probes, and explicitly safe end-to-end messages/turns are allowed. A live requirement may not reboot, kill, corrupt, race, delete, restore over, or mutate production data merely because its catalog flag is false. The sole exception is `SVC-005`: exactly one reboot of the actual provisioned Azure VM during the approved pre-activation execution window, while production activation is still false, with Azure resource-ID/Activity Log evidence binding the tested VM to the live inventory. Every other live destructive test is invalid and `BLOCKED` until moved to a disposable fixture without weakening the assertion.
+The actual provisioned fleet. Only read-only inspection, non-destructive negative probes, explicitly safe end-to-end messages/turns, and the bounded test-owned state in `GAT-002` are allowed. `GAT-002` runs only while production activation is false: it writes one test-owned session marker, memory marker, and cron tick per exact deployed profile, performs a controlled gateway/serve restart, reconciles commits, checks DB/WAL integrity, and removes every marker; unrelated state must remain digest-identical. A live requirement may not reboot, kill, corrupt, race, delete, restore over, or mutate non-test production data merely because its catalog flag is false. The sole destructive exception is `SVC-005`: exactly one reboot of the actual provisioned Azure VM during the approved pre-activation execution window, while production activation is still false, with Azure resource-ID/Activity Log evidence binding the tested VM to the live inventory. Every other live destructive test is invalid and `BLOCKED` until moved to a disposable fixture without weakening the assertion.
 
 ### Disposable fixture
 
@@ -64,7 +64,8 @@ Each execution creates `evidence/<run_id>/` and a canonical manifest. Every requ
 - prerequisite result digests;
 - exact hook and sanitized argument digest;
 - declared artifact paths, SHA-256 digests, artifact media types, collection source, and collector identity;
-- each pass criterion with observed value, unit, threshold, and artifact reference;
+- a nonempty `assertions` array for every hook; every row has exactly `{assertion_id, observed_field, operator, expected, actual, source_artifact, passed}`, `operator` is one of `eq`, `ne`, `lt`, `lte`, `gt`, `gte`, `in`, `not_in`, `contains`, `not_contains`, `matches`, or `exists`, and `source_artifact` is a declared artifact path;
+- each pass criterion with exact observed field, typed comparator/operator, expected value or threshold, actual value, pass Boolean, and artifact reference;
 - fixture identifier, approved blast radius, pre/post state digests, cleanup result, and rollback result when applicable;
 - sanitized audit/event correlation IDs and operator/approver identity digest where required;
 - terminal status and a safe reason code.
@@ -117,18 +118,18 @@ A partial or uncertain side effect is not blindly retried. Preserve the original
 Run from Johan's approved Mac using the pinned runner. The JSON `execution_order` array is the exact item-by-item order; prerequisites additionally enforce the DAG. Parallel execution is permitted only when prerequisite closure is complete, fixtures and targets are disjoint, observers can prove attribution, and evidence order remains deterministic. The default safe order is serial.
 
 1. Repository/documentation preflight and clean bootstrap (`REP-*`).
-2. Locked security-policy acceptance cases and source crosswalk (`PSC-*`, preserving `AUTH-*`, `MAC-*`, `BROW-*`, `SEC-*`, `AUD-*`, `FAIL-*`, `BG-01`, `ISO-01`, and `SCAN-01`).
+2. Locked security-policy acceptance cases and source crosswalk (`PSC-*`, preserving `AUTH-*`, `MAC-*`, `BROW-*`, `SEC-*`, `AUD-*`, `FAIL-*`, `BG-01`, `ISO-01`, and `SCAN-01`); inspect live `AUD-04`/`AUD-05` controls separately from their destructive accelerated lifecycle/key fixtures.
 3. Live Azure feasibility, cost, resource, encryption, NSG, diagnostics, and budget inspection (`AZR-*`).
 4. Listener/firewall/Tailscale/private-access gates and bounded tailnet-loss fixture (`NET-*`).
 5. Service inventory, disposable process/component recovery, the narrow actual-VM pre-activation reboot exception, and maintenance quiescence (`SVC-*`).
-6. Gateway/scheduler ownership, safe live exact-profile gateway/Desktop concurrency, destructive equivalent fixture contention/restart, provider pin, and cron semantics (`GAT-*`).
+6. Gateway/scheduler ownership, safe-but-stateful live pre-activation exact-profile session/memory/cron writes plus controlled gateway/serve restart and cleanup, destructive equivalent fixture contention/restart, provider pin, and cron semantics (`GAT-*`).
 7. Telegram inbound, outbound, admission, owner-routing, and retry assertions (`TEL-*`).
 8. Bot configuration/state/skill/credential/workspace/Unix/container/cross-Bot isolation (`BOT-*`).
 9. Desktop canonical chats, Rooms, mentions, and authority-preserving delegation (`DSK-*`).
 10. Routine execution with clients closed and Mac awake/off (`RTN-*`).
 11. Browser persistence, private visual access, raw CDP/VNC denial, takeover state/races/abandon/reboot, concurrency/leakage, and disposable login (`BRW-*`).
 12. Native laptop-worker inventory, delegation/read/deny/path controls, approvals/mutations/races/offline/reconnect (`LAP-*`).
-13. Encrypted backup freshness, snapshot consistency, live per-Bot retention (7 daily/4 weekly/3 monthly), deletion authority, backup-principal boundary, isolated restore, browser recovery, and rollback (`BKP-*`).
+13. Encrypted backup freshness, snapshot consistency, Azure server-Bot (`chief` and `test-worker`) R1/R2 retention (7 daily/4 weekly/3 monthly), separate Mac-local R5 proof and Azure-count exclusion for `laptop-worker`, deletion authority, backup-principal boundary, isolated restore, browser recovery, and rollback (`BKP-*`).
 14. Monitoring inventory, Telegram alert injections, and 400-day encrypted audit/evidence controls (`MON-*`).
 15. Every bounded failure injection, including gateway, serve, browser, lease, proxy, provider, backup, audit/storage, broker/gate, Telegram, Mac, VM, Tailscale, takeover, DB/WAL contention, and corrupt restore point (`FIN-*`).
 16. Additional disposable Bot creation and retirement through the runbook (`RUN-*`).
@@ -151,7 +152,7 @@ From repository root:
 tests/acceptance/run-production-catalog-validation.sh
 ```
 
-This is a static standard/catalog validator, not the production suite. It proves schema shape, mandatory fields, stable unique IDs, exact document coverage, target classes, default thresholds, prerequisite validity/acyclicity/order, required categories and failure cases, exact locked-case crosswalk coverage, the sole `SVC-005` live destructive exception, the live/fixture concurrency split, retention tiers and authorities, binary artifact-bound criteria, absence of vague criteria/skip-allowed semantics/stale markers, and absence of secret-shaped values. A passing static validator does not claim any live deployment requirement has passed.
+This is a static standard/catalog validator, not the production suite. It proves schema shape, mandatory fields, stable unique IDs, exact document coverage, target classes, default thresholds, prerequisite validity/acyclicity/order, required categories and failure cases, exact one-or-more locked-case crosswalk coverage and `AUD-04`/`AUD-05` target composition, the sole `SVC-005` live destructive exception, the safe-stateful live/destructive-fixture concurrency split, Azure server-Bot retention plus laptop-worker R5 exclusion, the structured assertion-row contract, concrete artifact-bound comparator criteria, rejection of self-referential/vague umbrella criteria, absence of skip-allowed semantics/stale markers, and absence of secret-shaped values. A passing static validator does not claim any live deployment requirement has passed.
 
 ## 10. Canonical catalog index
 
@@ -185,8 +186,10 @@ Every canonical ID is listed below so prose/catalog drift is machine-detectable.
 | `PSC-019` | `policy-security` | `disposable-fixture` |
 | `PSC-020` | `policy-security` | `disposable-fixture` |
 | `PSC-021` | `policy-security` | `disposable-fixture` |
-| `PSC-022` | `policy-security` | `disposable-fixture` |
-| `PSC-023` | `policy-security` | `disposable-fixture` |
+| `PSC-022` | `policy-security` | `live-production` |
+| `PSC-023` | `policy-security` | `live-production` |
+| `PSC-029` | `policy-security` | `disposable-fixture` |
+| `PSC-030` | `policy-security` | `disposable-fixture` |
 | `PSC-024` | `policy-security` | `disposable-fixture` |
 | `PSC-025` | `policy-security` | `disposable-fixture` |
 | `PSC-026` | `policy-security` | `disposable-fixture` |

@@ -72,6 +72,15 @@ REQUIRED_IDS = {
     "LAP-006", "LAP-007", "LAP-008", "LAP-009", "BKP-001", "BKP-002",
     "BKP-003", "BKP-004", "BKP-005", "MON-001", "MON-002", "MON-003",
     "RUN-001", "GAP-001", "GAP-002", "GAP-003", "HLT-001", "HLT-002",
+    "PSC-029", "PSC-030",
+}
+ASSERTION_FIELDS = {
+    "assertion_id", "observed_field", "operator", "expected", "actual",
+    "source_artifact", "passed",
+}
+ALLOWED_OPERATORS = {
+    "eq", "ne", "lt", "lte", "gt", "gte", "in", "not_in", "contains",
+    "not_contains", "matches", "exists",
 }
 FAILURE_CASES = {
     "gateway kill": {"gateway", "kill"},
@@ -142,6 +151,15 @@ class ProductionCatalogTest(unittest.TestCase):
         self.assertIn("skipped", release_text)
         self.assertIn("fail", release_text)
 
+    def test_every_hook_has_a_typed_structured_assertion_contract(self):
+        contract = self.catalog["semantics"]["assertion_row_contract"]
+        self.assertEqual(set(contract), {"required_fields", "allowed_operators", "rules"})
+        self.assertEqual(set(contract["required_fields"]), ASSERTION_FIELDS)
+        self.assertEqual(set(contract["allowed_operators"]), ALLOWED_OPERATORS)
+        rules = contract["rules"].lower()
+        for phrase in ("every hook", "nonempty assertions array", "exactly the required fields", "source_artifact", "passed", "pass impossible"):
+            self.assertIn(phrase, rules)
+
     def test_requirement_shape_types_and_mandatory_fields(self):
         self.assertGreaterEqual(len(self.requirements), 80)
         for item in self.requirements:
@@ -171,37 +189,77 @@ class ProductionCatalogTest(unittest.TestCase):
                     self.assertEqual(item["id"], "SVC-005")
 
     def test_criteria_are_binary_artifact_bound_and_not_vague(self):
-        comparator = re.compile(r"(?:equals?|==|<=|>=|less than|greater than|at most|at least|zero|exactly|absent|denied|fails?|matches?)", re.I)
+        comparator = re.compile(r"(?:\bequals?\b|==|<=|>=|\bis (?:less|greater) than(?: or equal to)?\b|\bless than or equal to\b|\bgreater than or equal to\b|\bat most\b|\bat least\b|\bzero\b|\bexactly\b|\babsent\b|\bdenied\b|\bfails?\b|\bmatches?\b|\boperator\s+(?:eq|ne|lt|lte|gt|gte|in|not_in|contains|not_contains|matches|exists)\b)", re.I)
         artifact = re.compile(r"evidence/\{run_id\}/")
         vague = re.compile(r"^\s*(?:all\s+)?(?:controls?|checks?|gates?)\s+pass(?:ed)?[.!]?\s*$", re.I)
+        forbidden_umbrella = (
+            "authoritative result fields",
+            "every stated value and threshold equals or satisfies this criterion",
+            "criterion itself",
+            "this criterion is satisfied",
+        )
         for item in self.requirements:
             with self.subTest(item=item["id"]):
                 for criterion in item["pass_criteria"]:
-                    self.assertRegex(criterion, comparator, "criterion lacks an observable/expected comparator")
+                    self.assertRegex(criterion, comparator, "criterion lacks an explicit comparator/operator")
                     self.assertRegex(criterion, artifact, "criterion lacks an artifact reference")
+                    criterion_paths = set(re.findall(r"evidence/\{run_id\}/[A-Za-z0-9_/{}/-]+\.(?:json|log|xml)", criterion))
+                    self.assertTrue(criterion_paths, "criterion has no concrete artifact path")
+                    self.assertTrue(
+                        criterion_paths.issubset(set(item["evidence_artifacts"])),
+                        f"criterion references undeclared artifact(s): {sorted(criterion_paths - set(item['evidence_artifacts']))}",
+                    )
                     self.assertIsNone(vague.fullmatch(criterion))
                     self.assertNotIn("controls pass", criterion.lower())
+                    for forbidden in forbidden_umbrella:
+                        self.assertNotIn(forbidden, criterion.lower())
                 for evidence in item["authoritative_evidence"]:
                     self.assertRegex(evidence, artifact)
 
-    def test_exact_locked_source_crosswalk_and_one_requirement_per_case(self):
+    def test_exact_locked_source_crosswalk_and_one_or_more_requirements_per_case(self):
         crosswalk = self.catalog["locked_source_crosswalk"]
         self.assertEqual(set(crosswalk), LOCKED_SOURCE_CASES)
         flattened = []
         for case, requirement_ids in crosswalk.items():
             with self.subTest(case=case):
                 self.assertIsInstance(requirement_ids, list)
-                self.assertEqual(len(requirement_ids), 1)
-                rid = requirement_ids[0]
-                self.assertIn(rid, self.by_id)
-                requirement = self.by_id[rid]
-                self.assertEqual(requirement["category"], "policy-security")
-                self.assertIn(case, requirement["requirement"])
-                self.assertTrue(requirement["authoritative_evidence"])
-                flattened.append(rid)
+                self.assertGreaterEqual(len(requirement_ids), 1)
+                self.assertEqual(len(requirement_ids), len(set(requirement_ids)))
+                for rid in requirement_ids:
+                    self.assertIn(rid, self.by_id)
+                    requirement = self.by_id[rid]
+                    self.assertEqual(requirement["category"], "policy-security")
+                    self.assertIn(case, requirement["requirement"])
+                    self.assertTrue(requirement["authoritative_evidence"])
+                    flattened.append(rid)
         self.assertEqual(len(flattened), len(set(flattened)))
         policy_ids = {item["id"] for item in self.requirements if item["category"] == "policy-security"}
         self.assertEqual(policy_ids, set(flattened))
+
+    def test_aud04_and_aud05_have_exact_live_and_disposable_composition(self):
+        expected = {
+            "AUD-04": {"PSC-022": ("live-production", False), "PSC-029": ("disposable-fixture", True)},
+            "AUD-05": {"PSC-023": ("live-production", False), "PSC-030": ("disposable-fixture", True)},
+        }
+        for case, composition in expected.items():
+            self.assertEqual(set(self.catalog["locked_source_crosswalk"][case]), set(composition))
+            for rid, (environment, destructive) in composition.items():
+                self.assertEqual(self.by_id[rid]["target"]["environment"], environment)
+                self.assertIs(self.by_id[rid]["destructive"], destructive)
+
+    def test_reviewer_locked_policy_cases_have_all_exact_adversarial_parts(self):
+        expected_terms = {
+            "PSC-003": ("uncertain-commit retry", "original idempotency_key", "unchanged_idempotent_fixture", "fresh single-use grant"),
+            "PSC-021": ("archive-object digest mutation", "broken previous-checkpoint/cross-checkpoint link", "invalid"),
+            "PSC-022": ("400", "collector_rights", "daily_verification_schedule", "monthly_verification_schedule"),
+            "PSC-029": ("accelerated", "tampered_object", "wrong/malformed tags", "cleanup_remaining_object_count"),
+            "PSC-023": ("distinct-key", "revoked_key", "root cross-certificate", "unknown_root"),
+            "PSC-030": ("retired_key", "multi-key", "missing, malformed, forged", "incomplete-key-set", "extra-key-set", "key_destroyed", "post_cleanup_fixture_key_count"),
+        }
+        for rid, terms in expected_terms.items():
+            text = " ".join(all_strings(self.by_id[rid])).lower()
+            for term in terms:
+                self.assertIn(term.lower(), text, f"{rid} omits {term}")
 
     def test_only_exact_svc005_live_destructive_pre_activation_exception(self):
         live_destructive = [item for item in self.requirements if item["destructive"] and item["target"]["environment"] == "live-production"]
@@ -217,7 +275,7 @@ class ProductionCatalogTest(unittest.TestCase):
         self.assertEqual(live["target"]["environment"], "live-production")
         self.assertIs(live["destructive"], False)
         live_text = " ".join(all_strings(live)).lower()
-        for phrase in ("chief", "test-worker", "laptop-worker", "gateway", "desktop", "pinned", "argv", "db", "wal", "integrity_check"):
+        for phrase in ("chief", "test-worker", "laptop-worker", "gateway", "serve", "pre-activation", "session_write", "memory_write", "cron_tick", "restart order", "correlation_id", "commit_receipt", "db", "wal", "integrity_check", "cleanup"):
             self.assertIn(phrase, live_text)
         fixture = self.by_id["GAT-005"]
         self.assertEqual(fixture["target"]["environment"], "disposable-fixture")
@@ -231,7 +289,7 @@ class ProductionCatalogTest(unittest.TestCase):
         self.assertEqual(item["target"]["environment"], "live-production")
         self.assertIs(item["destructive"], False)
         text = " ".join(all_strings(item)).lower()
-        for phrase in ("7 daily", "4 weekly", "3 monthly", "retention-policy.json", "restore-point-inventory.json", "deletion-authority.json", "every live bot"):
+        for phrase in ("7 daily", "4 weekly", "3 monthly", "chief", "test-worker", "laptop-worker", "r5", "mac-local", "excluded", "retention-policy.json", "restore-point-inventory.json", "deletion-authority.json", "laptop-worker-r5.json"):
             self.assertIn(phrase, text)
 
     def test_unique_stable_ids_and_complete_execution_order(self):

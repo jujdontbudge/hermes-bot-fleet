@@ -10,7 +10,33 @@
       "SKIPPED"
     ],
     "release_pass": "Every mandatory requirement has current PASS evidence from its declared target and all evidence checks pass.",
-    "release_fail": "Any FAIL, BLOCKED, or SKIPPED mandatory requirement makes the binary release decision FAIL."
+    "release_fail": "Any FAIL, BLOCKED, or SKIPPED mandatory requirement makes the binary release decision FAIL.",
+    "assertion_row_contract": {
+      "required_fields": [
+        "assertion_id",
+        "observed_field",
+        "operator",
+        "expected",
+        "actual",
+        "source_artifact",
+        "passed"
+      ],
+      "allowed_operators": [
+        "eq",
+        "ne",
+        "lt",
+        "lte",
+        "gt",
+        "gte",
+        "in",
+        "not_in",
+        "contains",
+        "not_contains",
+        "matches",
+        "exists"
+      ],
+      "rules": "Every hook emits a nonempty assertions array. Each row has exactly the required fields; operator is allowlisted; source_artifact is one declared evidence/{run_id}/ path; passed is the typed evaluation of actual against expected under operator. Missing, duplicate, unevaluated, or failed rows make PASS impossible."
+    }
   },
   "defaults": {
     "process_recovery_seconds_max": 120,
@@ -63,6 +89,8 @@
     "PSC-021",
     "PSC-022",
     "PSC-023",
+    "PSC-029",
+    "PSC-030",
     "PSC-024",
     "PSC-025",
     "PSC-026",
@@ -177,7 +205,7 @@
         "evidence/{run_id}/inventory/release.json"
       ],
       "pass_criteria": [
-        "All revisions and digests are immutable, non-empty, mutually consistent, and map to reviewed artifacts. Observable: authoritative result fields; expected comparator: every stated value and threshold equals or satisfies this criterion. Artifact reference: evidence/{run_id}/inventory/release.json."
+        "In evidence/{run_id}/inventory/release.json, revision_nonempty_count equals revision_count, immutable_digest_count equals digest_count, cross_manifest_mismatch_count equals 0, and reviewed_artifact_mapping_count equals artifact_count."
       ],
       "failure_rollback_behavior": [
         "Fail release; make no infrastructure change."
@@ -205,7 +233,7 @@
         "evidence/{run_id}/scans/secret-scan.json"
       ],
       "pass_criteria": [
-        "All configured scanners report zero unresolved secret findings and evidence uses only opaque handles/digests. Observable: authoritative result fields; expected comparator: every stated value and threshold equals or satisfies this criterion. Artifact reference: evidence/{run_id}/scans/secret-scan.json."
+        "All configured scanners report zero unresolved secret findings and evidence uses only opaque handles/digests. Artifact reference: evidence/{run_id}/scans/secret-scan.json."
       ],
       "failure_rollback_behavior": [
         "Quarantine evidence, rotate any exposed credential outside agent context, remove the exposure, and rerun from REP-001."
@@ -233,7 +261,7 @@
         "evidence/{run_id}/documentation/consistency.json"
       ],
       "pass_criteria": [
-        "No contradictory topology, policy, UX, port, identity, isolation, or authority statement; every gap has owner, tracking issue, impact, and blocked capability. Observable: authoritative result fields; expected comparator: every stated value and threshold equals or satisfies this criterion. Artifact reference: evidence/{run_id}/documentation/consistency.json."
+        "In evidence/{run_id}/documentation/consistency.json, contradiction_count equals 0 and gap_records_with_owner_issue_impact_blocked_capability equals gap_record_count."
       ],
       "failure_rollback_behavior": [
         "Fail release; correct docs or implementation without weakening locked decisions."
@@ -263,7 +291,7 @@
         "evidence/{run_id}/clean/inventory.json"
       ],
       "pass_criteria": [
-        "Fresh host reaches pre-service readiness with no undeclared manual step, inherited state, or agent-visible secret. Observable: authoritative result fields; expected comparator: every stated value and threshold equals or satisfies this criterion. Artifact reference: evidence/{run_id}/clean/bootstrap.log."
+        "In evidence/{run_id}/clean/bootstrap.log, readiness_state equals PRE_SERVICE_READY and undeclared_manual_step_count, inherited_state_count, and agent_visible_secret_count each equal 0."
       ],
       "failure_rollback_behavior": [
         "Destroy the clean fixture, repair automation/runbook, and repeat."
@@ -350,7 +378,7 @@
         "Grant store consumption ledger, exact manifest canonical digest, broker receipt, and side-effect system receipt recorded in evidence/{run_id}/policy-security/auth-03.json"
       ],
       "pass_criteria": [
-        "Observed Exact approved manifest commits once; replay or changed recipient/body/attachment/Bot/handle and expired grant produce DENY and zero additional receipts; retries preserve original idempotency key but require a new exact manifest digest and fresh single-use grant. Authoritative artifact: evidence/{run_id}/policy-security/auth-03.json; any missing observation or comparator mismatch is FAIL."
+        "In evidence/{run_id}/policy-security/auth-03.json, exact approved manifest commit_count equals 1; replay, changed recipient/body/attachment/Bot/handle, and expired-grant receipt_count each equal 0 and decision each equals DENY; an uncertain-commit retry preserves the original idempotency_key, reconciles the authoritative receipt before retry, uses a new exact manifest digest and fresh single-use grant, and leaves unchanged_idempotent_fixture_receipt_count equal 1 with side_effect_digest equal its pre-retry digest."
       ],
       "failure_rollback_behavior": [
         "Stop affected authority or capability, preserve sanitized evidence, restore the reviewed fail-closed policy, and rerun this exact source case."
@@ -854,7 +882,7 @@
         "HMAC chain verifier, key-boundary inventory, daily Ed25519 checkpoint certificate/signature/object digest, and cross-checkpoint link verifier recorded in evidence/{run_id}/policy-security/aud-03.json"
       ],
       "pass_criteria": [
-        "Observed Edit/delete/reorder/duplicate/gap/key-version mutations each make verification equal INVALID; K-to-K+1 boundary continuity equals VALID; checkpoint replacement and unknown/revoked signing key each equal INVALID. Authoritative artifact: evidence/{run_id}/policy-security/aud-03.json; any missing observation or comparator mismatch is FAIL."
+        "In evidence/{run_id}/policy-security/aud-03.json, edit/delete/reorder/duplicate/gap/key-version mutation, archive-object digest mutation, checkpoint replacement, unknown/revoked signing key, and broken previous-checkpoint/cross-checkpoint link verification_result each equals INVALID; unmodified K-to-K+1 boundary continuity and intact cross-checkpoint links each equal VALID."
       ],
       "failure_rollback_behavior": [
         "Stop affected authority or capability, preserve sanitized evidence, restore the reviewed fail-closed policy, and rerun this exact source case."
@@ -866,23 +894,23 @@
     {
       "id": "PSC-022",
       "category": "policy-security",
-      "requirement": "Execute locked security-policy case AUD-04: Audit archive rights, immutable retention, deletion authority, and recurring verification.",
+      "requirement": "Execute the live-production inspection part of locked security-policy case AUD-04: archive configuration, collector/verifier/deletion rights, 400-day immutable retention, and recurring verification schedules.",
       "prerequisites": [
         "REP-004"
       ],
       "target": {
-        "environment": "disposable-fixture",
-        "component": "locked policy acceptance case AUD-04"
+        "environment": "live-production",
+        "component": "AUD-04 live archive controls and schedules"
       },
-      "command_test_hook": "acceptance/hooks/run-requirement --id PSC-022 --target disposable-fixture",
+      "command_test_hook": "acceptance/hooks/run-requirement --id PSC-022 --target live-production",
       "evidence_artifacts": [
-        "evidence/{run_id}/policy-security/aud-04.json"
+        "evidence/{run_id}/policy-security/aud-04-live.json"
       ],
       "authoritative_evidence": [
-        "Archive RBAC/encryption/Bot-prefix policy, local rotation and lag monitor, live lifecycle policy, verifier authorization tags, and daily/monthly scheduler receipts recorded in evidence/{run_id}/policy-security/aud-04.json"
+        "Live storage control-plane RBAC, encryption/public-access/Bot-prefix policy, immutable lifecycle retention, deletion conditions, and scheduler definitions at evidence/{run_id}/policy-security/aud-04-live.json"
       ],
       "pass_criteria": [
-        "Observed Collector rights equal create-only, public access equals false, encryption/Bot separation equal enabled, local rotation equals 30 days, lag alarm threshold <=24 hours, immutable retention >=400 days, deletion requires expiry AND valid verifier-only exact-digest tag, and daily/monthly verification receipt counts equal schedule with skipped/failed runs alerted. Authoritative artifact: evidence/{run_id}/policy-security/aud-04.json; any missing observation or comparator mismatch is FAIL."
+        "In evidence/{run_id}/policy-security/aud-04-live.json, collector_rights equal exactly create-only, verifier_rights equal the reviewed read/verify/tag set, public_access equals false, encryption and Bot-prefix separation equal enabled, local_rotation_days equals 30, lag_alarm_hours is less than or equal to 24, immutable_retention_days is greater than or equal to 400, deletion_condition equals expiry AND verifier-only exact-digest authorization, daily_verification_schedule equals enabled once per day, and monthly_verification_schedule equals enabled once per month."
       ],
       "failure_rollback_behavior": [
         "Stop affected authority or capability, preserve sanitized evidence, restore the reviewed fail-closed policy, and rerun this exact source case."
@@ -894,26 +922,82 @@
     {
       "id": "PSC-023",
       "category": "policy-security",
-      "requirement": "Execute locked security-policy case AUD-05: Audit retirement, multi-key deletion, and key destruction ordering.",
+      "requirement": "Execute the live-production inspection part of locked security-policy case AUD-05: signing trust, distinct signing-key rotation and revocation, and root cross-certification configuration.",
       "prerequisites": [
         "REP-004"
       ],
       "target": {
-        "environment": "disposable-fixture",
-        "component": "locked policy acceptance case AUD-05"
+        "environment": "live-production",
+        "component": "AUD-05 live signing trust and key lifecycle configuration"
       },
-      "command_test_hook": "acceptance/hooks/run-requirement --id PSC-023 --target disposable-fixture",
+      "command_test_hook": "acceptance/hooks/run-requirement --id PSC-023 --target live-production",
       "evidence_artifacts": [
-        "evidence/{run_id}/policy-security/aud-05.json"
+        "evidence/{run_id}/policy-security/aud-05-live.json"
       ],
       "authoritative_evidence": [
-        "Disposable object/tag inventory, verifier ledger, archive deletion receipts, HSM/KMS key-state receipts, and live 400-day policy inspection recorded in evidence/{run_id}/policy-security/aud-05.json"
+        "Live signing trust store, active/retired/revoked key metadata, rotation/revocation policy, root cross-certification chain, and verifier policy at evidence/{run_id}/policy-security/aud-05-live.json"
       ],
       "pass_criteria": [
-        "Observed Retired HMAC key signing equals DENY and remains verifier-only until covered expiry; shared K/K+1 object is ineligible after K alone and eligible only after both exact-digest authorizations; malformed tags/key sets equal DENY; covered-object deletion confirmations precede each key-destroyed receipt; live retention remains >=400 days and signing trust continuity is valid or explicitly marked. Authoritative artifact: evidence/{run_id}/policy-security/aud-05.json; any missing observation or comparator mismatch is FAIL."
+        "In evidence/{run_id}/policy-security/aud-05-live.json, active_signing_key_count is greater than or equal to 1, signing_key_rotation_policy equals the reviewed distinct-key schedule, revoked_key_signing_permission equals DENY, revoked_key_verification_scope equals covered historical checkpoints only, trusted_root_set equals the reviewed root set, every configured root cross-certificate signature_result equals VALID, and unknown_root_trust_result equals DENY."
       ],
       "failure_rollback_behavior": [
         "Stop affected authority or capability, preserve sanitized evidence, restore the reviewed fail-closed policy, and rerun this exact source case."
+      ],
+      "destructive": false,
+      "secret_risk": true,
+      "mandatory": true
+    },
+    {
+      "id": "PSC-029",
+      "category": "policy-security",
+      "requirement": "Execute the disposable accelerated-lifecycle and tamper-injection part of locked security-policy case AUD-04 without substituting accelerated retention for the live 400-day inspection.",
+      "prerequisites": [
+        "PSC-022"
+      ],
+      "target": {
+        "environment": "disposable-fixture",
+        "component": "AUD-04 accelerated archive lifecycle and tamper fixture"
+      },
+      "command_test_hook": "acceptance/hooks/run-requirement --id PSC-029 --target disposable-fixture",
+      "evidence_artifacts": [
+        "evidence/{run_id}/policy-security/aud-04-fixture.json"
+      ],
+      "authoritative_evidence": [
+        "Disposable archive object versions, accelerated lifecycle receipts, tamper verifier results, exact-digest tags, scheduler receipts, alerts, and cleanup receipt at evidence/{run_id}/policy-security/aud-04-fixture.json"
+      ],
+      "pass_criteria": [
+        "In evidence/{run_id}/policy-security/aud-04-fixture.json, pre_expiry_delete_result equals DENY; post_expiry deletion without a valid verifier-only exact-digest tag and deletion with stale/wrong/malformed tags each equal DENY; post_expiry deletion with the valid tag equals ALLOW; tampered_object_verification equals INVALID; daily/monthly accelerated_due_run_receipt_count equals scheduled_due_count; skipped_or_failed_run_alert_count equals skipped_or_failed_run_count; cleanup_remaining_object_count equals 0."
+      ],
+      "failure_rollback_behavior": [
+        "Stop the accelerated lifecycle, preserve immutable sanitized receipts, destroy only the named disposable fixture, verify cleanup count equals zero, and leave live archive configuration unchanged."
+      ],
+      "destructive": true,
+      "secret_risk": true,
+      "mandatory": true
+    },
+    {
+      "id": "PSC-030",
+      "category": "policy-security",
+      "requirement": "Execute the disposable key-retirement, multi-key authorization/tag, archive deletion, and key-destruction part of locked security-policy case AUD-05.",
+      "prerequisites": [
+        "PSC-023"
+      ],
+      "target": {
+        "environment": "disposable-fixture",
+        "component": "AUD-05 disposable key retirement, deletion, and destruction fixture"
+      },
+      "command_test_hook": "acceptance/hooks/run-requirement --id PSC-030 --target disposable-fixture",
+      "evidence_artifacts": [
+        "evidence/{run_id}/policy-security/aud-05-fixture.json"
+      ],
+      "authoritative_evidence": [
+        "Disposable object/key/tag inventory, verifier ledger, archive deletion receipts, HSM/KMS key-state receipts, and cleanup receipt at evidence/{run_id}/policy-security/aud-05-fixture.json"
+      ],
+      "pass_criteria": [
+        "In evidence/{run_id}/policy-security/aud-05-fixture.json, retired_key_new_signature_result and revoked_key_new_signature_result each equal DENY; valid historical verification under a verifier-only retired key equals VALID until covered-object expiry; shared K/K+1 object eligibility after K-only authorization equals DENY and after both exact-digest authorizations equals ALLOW; missing, malformed, forged, wrong-digest, unknown-key, incomplete-key-set, and extra-key-set tag cases each equal DENY; covered_object_delete_confirmation_time is less than each corresponding key_destroyed_time; key destruction before covered deletion equals DENY; post_cleanup_object_count and post_cleanup_fixture_key_count each equal 0."
+      ],
+      "failure_rollback_behavior": [
+        "Disable the disposable verifier/deletion principal, preserve sanitized ordering receipts, destroy only remaining fixture objects and keys in policy order, verify zero fixture residue, and leave live trust roots and signing keys unchanged."
       ],
       "destructive": true,
       "secret_risk": true,
@@ -1076,7 +1160,7 @@
         "evidence/{run_id}/azure/cost-selection.json"
       ],
       "pass_criteria": [
-        "Selected region/SKU is available, Ubuntu-compatible, within quota and remaining credit, and is the cheaper feasible option; hourly/monthly estimates and observation time are recorded. Observable: authoritative result fields; expected comparator: every stated value and threshold equals or satisfies this criterion. Artifact reference: evidence/{run_id}/azure/feasibility.json."
+        "In evidence/{run_id}/azure/feasibility.json, selected_sku_available, ubuntu_compatible, within_quota, and within_remaining_credit each equal true; selected_monthly_cost is less than or equal to every other feasible candidate cost; hourly_estimate, monthly_estimate, and observed_at are nonempty."
       ],
       "failure_rollback_behavior": [
         "Fail before provisioning; select no assumed or unavailable SKU."
@@ -1104,7 +1188,7 @@
         "evidence/{run_id}/azure/resources.json"
       ],
       "pass_criteria": [
-        "Exactly the reviewed resources exist with expected ownership/tags/region and no orphaned fleet resource. Observable: authoritative result fields; expected comparator: every stated value and threshold equals or satisfies this criterion. Artifact reference: evidence/{run_id}/azure/resources.json."
+        "Exactly the reviewed resources exist with expected ownership/tags/region and no orphaned fleet resource. Artifact reference: evidence/{run_id}/azure/resources.json."
       ],
       "failure_rollback_behavior": [
         "Fail release; reconcile only through reviewed manifest or remove orphan with approval."
@@ -1132,7 +1216,7 @@
         "evidence/{run_id}/azure/encryption.json"
       ],
       "pass_criteria": [
-        "Encryption at rest is enabled everywhere; Blob public access is disabled; transport requires TLS; backup namespaces are Bot-scoped. Observable: authoritative result fields; expected comparator: every stated value and threshold equals or satisfies this criterion. Artifact reference: evidence/{run_id}/azure/encryption.json."
+        "In evidence/{run_id}/azure/encryption.json, unencrypted_resource_count, blob_public_access_enabled_count, tls_noncompliant_endpoint_count, and cross_bot_backup_namespace_count each equal 0."
       ],
       "failure_rollback_behavior": [
         "Disable affected service, deny backup/restore, revert exposure, and repair encryption before rerun."
@@ -1161,7 +1245,7 @@
         "evidence/{run_id}/network/external-scan.json"
       ],
       "pass_criteria": [
-        "Effective Internet-to-VM probes fail for all TCP/UDP ports and Azure shows no public inbound path. Observable: authoritative result fields; expected comparator: every stated value and threshold equals or satisfies this criterion. Artifact reference: evidence/{run_id}/azure/effective-nsg.json."
+        "Effective Internet-to-VM probes fail for all TCP/UDP ports and Azure shows no public inbound path. Artifact reference: evidence/{run_id}/azure/effective-nsg.json."
       ],
       "failure_rollback_behavior": [
         "Immediately remove exposure using reviewed rollback; stop exposed services and fail release."
@@ -1190,7 +1274,7 @@
         "evidence/{run_id}/azure/diagnostic-scan.json"
       ],
       "pass_criteria": [
-        "Zero prohibited values or payload classes are present. Observable: authoritative result fields; expected comparator: every stated value and threshold equals or satisfies this criterion. Artifact reference: evidence/{run_id}/azure/diagnostic-scan.json."
+        "Zero prohibited values or payload classes are present. Artifact reference: evidence/{run_id}/azure/diagnostic-scan.json."
       ],
       "failure_rollback_behavior": [
         "Disable unsafe diagnostic sink, quarantine artifacts, rotate exposed credentials, and fail release."
@@ -1219,7 +1303,7 @@
         "evidence/{run_id}/azure/budget.json"
       ],
       "pass_criteria": [
-        "Budget/credit alerts are enabled, recipients are correct, and estimate does not exceed approved available credit. Observable: authoritative result fields; expected comparator: every stated value and threshold equals or satisfies this criterion. Artifact reference: evidence/{run_id}/azure/budget.json."
+        "In evidence/{run_id}/azure/budget.json, budget_alert_enabled and credit_alert_enabled each equal true, observed_recipient_set equals approved_recipient_set, and estimated_cost is less than or equal to available_approved_credit."
       ],
       "failure_rollback_behavior": [
         "Fail release; stop optional resources and obtain explicit approval for any cost change."
@@ -1247,7 +1331,7 @@
         "evidence/{run_id}/network/listeners.json"
       ],
       "pass_criteria": [
-        "Only SSH 22 and private proxy 443 bind the Tailscale address; 8701,8702,6081,6082 bind host loopback; 5900 and 9222 are browser-container loopback only; 9223 is Bot-private; 8642 and File Bridge are absent. Observable: authoritative result fields; expected comparator: every stated value and threshold equals or satisfies this criterion. Artifact reference: evidence/{run_id}/network/listeners.json."
+        "Only SSH 22 and private proxy 443 bind the Tailscale address; 8701,8702,6081,6082 bind host loopback; 5900 and 9222 are browser-container loopback only; 9223 is Bot-private; 8642 and File Bridge are absent. Artifact reference: evidence/{run_id}/network/listeners.json."
       ],
       "failure_rollback_behavior": [
         "Stop the unexpected listener, restore reviewed bind configuration, and fail release."
@@ -1275,7 +1359,7 @@
         "evidence/{run_id}/network/nftables.json"
       ],
       "pass_criteria": [
-        "Ruleset exactly implements locked policy and direct probes to all VM non-loopback addresses on backend/control ports fail. Observable: authoritative result fields; expected comparator: every stated value and threshold equals or satisfies this criterion. Artifact reference: evidence/{run_id}/network/nftables.json."
+        "Ruleset exactly implements locked policy and direct probes to all VM non-loopback addresses on backend/control ports fail. Artifact reference: evidence/{run_id}/network/nftables.json."
       ],
       "failure_rollback_behavior": [
         "Apply reviewed deny-first rules through private console; stop services if safe rollback cannot be proved."
@@ -1304,7 +1388,7 @@
         "evidence/{run_id}/network/tailscale-negative.json"
       ],
       "pass_criteria": [
-        "Johan approved device reaches only TCP 22/443; unauthorized principal reaches neither; Funnel, public Serve/share, Tailscale SSH, exit node, and subnet routing are disabled. Observable: authoritative result fields; expected comparator: every stated value and threshold equals or satisfies this criterion. Artifact reference: evidence/{run_id}/network/tailscale-policy.json."
+        "In evidence/{run_id}/network/tailscale-policy.json, Johan approved-device reachable TCP ports equal exactly [22,443], unauthorized reachable TCP port count equals 0, and Funnel, public Serve/share, Tailscale SSH, exit-node, and subnet-route enabled counts each equal 0."
       ],
       "failure_rollback_behavior": [
         "Revoke node/routes, disable proxy and SSH until policy is corrected, and fail release."
@@ -1332,7 +1416,7 @@
         "evidence/{run_id}/network/private-access.json"
       ],
       "pass_criteria": [
-        "Approved device succeeds with application authentication; unauthenticated requests fail; each Bot origin maps only to its own loopback backend. Observable: authoritative result fields; expected comparator: every stated value and threshold equals or satisfies this criterion. Artifact reference: evidence/{run_id}/network/private-access.json."
+        "Approved device succeeds with application authentication; unauthenticated requests fail; each Bot origin maps only to its own loopback backend. Artifact reference: evidence/{run_id}/network/private-access.json."
       ],
       "failure_rollback_behavior": [
         "Disable incorrect route/auth configuration and restore last known-good proxy policy."
@@ -1360,7 +1444,7 @@
         "evidence/{run_id}/failure/tailscale-loss.json"
       ],
       "pass_criteria": [
-        "SSH/Desktop/takeover become unavailable, public probes remain denied, and existing safe Telegram/routine processing behavior matches policy. Observable: authoritative result fields; expected comparator: every stated value and threshold equals or satisfies this criterion. Artifact reference: evidence/{run_id}/failure/tailscale-loss.json."
+        "SSH/Desktop/takeover become unavailable, public probes remain denied, and existing safe Telegram/routine processing behavior matches policy. Artifact reference: evidence/{run_id}/failure/tailscale-loss.json."
       ],
       "failure_rollback_behavior": [
         "Restore tailnet path through provider console; never open public fallback; fail release on exposure."
@@ -1388,7 +1472,7 @@
         "evidence/{run_id}/services/unit-inventory.json"
       ],
       "pass_criteria": [
-        "Each server Bot has one non-root gateway and one serve --isolated; laptop-worker has one launchd gateway and one Desktop-managed isolated serve only while Desktop is open; no duplicate writer exists. Observable: authoritative result fields; expected comparator: every stated value and threshold equals or satisfies this criterion. Artifact reference: evidence/{run_id}/services/unit-inventory.json."
+        "In evidence/{run_id}/services/unit-inventory.json, each of chief and test-worker has gateway_pid_count equals 1, isolated_serve_pid_count equals 1, and uid equals its non-root reviewed UID; laptop-worker launchd_gateway_pid_count equals 1 and Desktop_isolated_serve_pid_count equals 1 only while Desktop_open equals true; duplicate_writer_count equals 0."
       ],
       "failure_rollback_behavior": [
         "Stop duplicates, disable affected Bot, restore reviewed units, and fail release."
@@ -1416,7 +1500,7 @@
         "evidence/{run_id}/services/gateway-kill.json"
       ],
       "pass_criteria": [
-        "Each gateway returns healthy with one PID and resumes polling/scheduling in 120 seconds or less without duplicate turns. Observable: authoritative result fields; expected comparator: every stated value and threshold equals or satisfies this criterion. Artifact reference: evidence/{run_id}/services/gateway-kill.json."
+        "In evidence/{run_id}/services/gateway-kill.json, each gateway healthy_pid_count equals 1, recovery_seconds is less than or equal to 120, polling_and_scheduling_resumed equals true, and duplicate_turn_count equals 0."
       ],
       "failure_rollback_behavior": [
         "Disable crash-looping unit, preserve state/evidence, and restore last known-good unit/image."
@@ -1444,7 +1528,7 @@
         "evidence/{run_id}/services/serve-kill.json"
       ],
       "pass_criteria": [
-        "Each serve returns authenticated and healthy with one PID in 120 seconds or less and profile integrity passes. Observable: authoritative result fields; expected comparator: every stated value and threshold equals or satisfies this criterion. Artifact reference: evidence/{run_id}/services/serve-kill.json."
+        "In evidence/{run_id}/services/serve-kill.json, each serve authenticated_healthy_pid_count equals 1, recovery_seconds is less than or equal to 120, and profile_integrity_check equals ok."
       ],
       "failure_rollback_behavior": [
         "Disable affected Desktop route and restore last known-good unit/image."
@@ -1472,7 +1556,7 @@
         "evidence/{run_id}/services/component-kill.json"
       ],
       "pass_criteria": [
-        "Affected component recovers in 120 seconds or less where safe; browser ownership enters RECOVERING; no cross-Bot restart or unsafe control occurs. Observable: authoritative result fields; expected comparator: every stated value and threshold equals or satisfies this criterion. Artifact reference: evidence/{run_id}/services/component-kill.json."
+        "In evidence/{run_id}/services/component-kill.json, each safely recoverable component recovery_seconds is less than or equal to 120, browser_ownership_state equals RECOVERING, and cross_bot_restart_count and unsafe_control_count each equal 0."
       ],
       "failure_rollback_behavior": [
         "Keep browser control disabled, isolate failed Bot, and restore component from pinned artifact."
@@ -1533,7 +1617,7 @@
         "evidence/{run_id}/services/quiescence.json"
       ],
       "pass_criteria": [
-        "New work drains/rejects, gateway and serve stop, no profile DB/WAL descriptor remains, maintenance runs, then gateway health passes before serve starts. Observable: authoritative result fields; expected comparator: every stated value and threshold equals or satisfies this criterion. Artifact reference: evidence/{run_id}/services/quiescence.json."
+        "In evidence/{run_id}/services/quiescence.json, accepted_new_work_count equals 0 after drain, gateway_pid_count and serve_pid_count equal 0 before maintenance, open_profile_db_wal_descriptor_count equals 0, maintenance_exit_code equals 0, and startup_order equals [gateway,gateway-health,serve]."
       ],
       "failure_rollback_behavior": [
         "Abort maintenance before writes or restore pre-maintenance snapshot; keep both processes stopped if state is uncertain."
@@ -1561,7 +1645,7 @@
         "evidence/{run_id}/gateway/ownership.json"
       ],
       "pass_criteria": [
-        "No multiplex gateway, standalone cron, second gateway, CLI/chat writer, or messaging-enabled serve exists. Observable: authoritative result fields; expected comparator: every stated value and threshold equals or satisfies this criterion. Artifact reference: evidence/{run_id}/gateway/ownership.json."
+        "In evidence/{run_id}/gateway/ownership.json, multiplex_gateway_count, standalone_cron_count, second_gateway_count, cli_chat_writer_count, and messaging_enabled_serve_count each equal 0."
       ],
       "failure_rollback_behavior": [
         "Stop all writers for affected profile, repair ownership, run DB integrity check, then start gateway before serve."
@@ -1576,35 +1660,38 @@
     {
       "id": "GAT-002",
       "category": "gateway-scheduler",
-      "requirement": "Run safe non-mutating live concurrency probes against the exact chief, test-worker, and laptop-worker gateway/Desktop process pairs using pinned versions and recorded commands, then verify canonical DB/WAL integrity.",
+      "requirement": "Run a bounded, intentional, safe-but-stateful live pre-activation test against the exact deployed chief, test-worker, and laptop-worker gateway/serve profile pairs: write test-owned sessions and memories, trigger test-owned cron ticks, perform controlled gateway then serve restart, reconcile correlation and commit outcomes, verify post-restart DB/WAL integrity, and clean up all markers.",
       "prerequisites": [
         "GAT-001"
       ],
       "target": {
         "environment": "live-production",
-        "component": "exact chief, test-worker, and laptop-worker gateway/Desktop pairs"
+        "component": "exact deployed chief, test-worker, and laptop-worker gateway/serve pairs during pre-activation"
       },
       "command_test_hook": "acceptance/hooks/run-requirement --id GAT-002 --target live-production",
       "evidence_artifacts": [
         "evidence/{run_id}/gateway/live-pair-inventory.json",
-        "evidence/{run_id}/gateway/live-safe-concurrency.json",
-        "evidence/{run_id}/gateway/live-db-wal-integrity.json"
+        "evidence/{run_id}/gateway/live-stateful-restart.json",
+        "evidence/{run_id}/gateway/live-db-wal-integrity.json",
+        "evidence/{run_id}/gateway/live-stateful-cleanup.json"
       ],
       "pass_criteria": [
-        "Observed profile set in evidence/{run_id}/gateway/live-pair-inventory.json equals exactly chief, test-worker, and laptop-worker; each has exactly one gateway and one Desktop serve process, and each observed version and argv equals REP-001 pins and SVC-001 commands.",
-        "For each exact live pair, observed harmless read-only correlation count in evidence/{run_id}/gateway/live-safe-concurrency.json equals one correctly attributed result per probe with zero state mutation, lost/cross-attributed turn, duplicate handling, busy error, or corruption error.",
-        "For each exact live profile, DB integrity_check in evidence/{run_id}/gateway/live-db-wal-integrity.json equals ok, WAL/checkpoint status equals healthy, and pre/post canonical DB/WAL content digests equal expected no-mutation digests."
+        "In evidence/{run_id}/gateway/live-pair-inventory.json, production_activation equals false, deployed profile set equals exactly [chief,test-worker,laptop-worker], each profile_id and data_path equals its reviewed deployment value, each has gateway_pid_count equals 1 and serve_pid_count equals 1, and observed version and argv equal REP-001 pins and SVC-001 commands.",
+        "In evidence/{run_id}/gateway/live-stateful-restart.json, each exact profile has test-owned bounded session_write_count equals 1, memory_write_count equals 1, and cron_tick_count equals 1; every accepted operation has one unique correlation_id and commit_receipt_count equals 1; lost, cross-profile, duplicate, uncertain_unreconciled, and non_test_owned_write counts each equal 0; controlled restart order equals [gateway-stop,gateway-start,gateway-healthy,serve-stop,serve-start,serve-healthy] and every recovery_seconds is less than or equal to 120.",
+        "In evidence/{run_id}/gateway/live-db-wal-integrity.json after restart, each profile integrity_check equals ok, foreign_key_check_error_count equals 0, WAL/checkpoint state equals healthy, committed test marker set equals the accepted correlation set, and unrelated canonical row/content digests equal their pre-test values.",
+        "In evidence/{run_id}/gateway/live-stateful-cleanup.json, deleted test-owned session/memory/cron marker count equals created test-owned marker count, remaining test marker count equals 0, unrelated row/content digests equal their pre-test values, integrity_check equals ok, and each profile returns gateway_pid_count and serve_pid_count equal 1."
       ],
       "failure_rollback_behavior": [
-        "Reject pinned version/pairing; disable affected Desktop backend and restore fixture state."
+        "Stop further test writes; reconcile uncertain commits by correlation ID without blind retry; restore exactly one healthy gateway then one healthy serve per affected profile; remove only test-owned markers; if cleanup, integrity_check, WAL, or unrelated digest comparison fails, keep production activation false and fail release."
       ],
       "destructive": false,
       "secret_risk": false,
       "mandatory": true,
       "authoritative_evidence": [
-        "OS process inventory and pinned Hermes/Desktop package manifests with exact argv at evidence/{run_id}/gateway/live-pair-inventory.json",
-        "Gateway/Desktop correlation receipts at evidence/{run_id}/gateway/live-safe-concurrency.json",
-        "Canonical profile database integrity_check, WAL checkpoint status, and pre/post digests at evidence/{run_id}/gateway/live-db-wal-integrity.json"
+        "OS process inventory, deployment/profile identity, pinned Hermes/Desktop manifests, and exact argv at evidence/{run_id}/gateway/live-pair-inventory.json",
+        "Gateway/serve supervisor events, bounded test session/memory/cron correlation ledger, commit receipts, and controlled restart timeline at evidence/{run_id}/gateway/live-stateful-restart.json",
+        "Post-restart SQLite integrity_check, WAL/checkpoint state, committed marker inventory, and unrelated-state digests at evidence/{run_id}/gateway/live-db-wal-integrity.json",
+        "Deletion receipts and post-cleanup marker/cron inventory at evidence/{run_id}/gateway/live-stateful-cleanup.json"
       ]
     },
     {
@@ -1657,7 +1744,7 @@
         "evidence/{run_id}/gateway/provider-pin.json"
       ],
       "pass_criteria": [
-        "Only openai-codex with gpt-5.6-sol is configured and observed; no fallback provider/model is enabled. Observable: authoritative result fields; expected comparator: every stated value and threshold equals or satisfies this criterion. Artifact reference: evidence/{run_id}/gateway/provider-pin.json."
+        "In evidence/{run_id}/gateway/provider-pin.json, configured_provider equals openai-codex, configured_model equals gpt-5.6-sol, observed_provider/model equals configured_provider/model, and fallback_count equals 0."
       ],
       "failure_rollback_behavior": [
         "Disable turns/routines until exact pin is restored."
@@ -1685,7 +1772,7 @@
         "evidence/{run_id}/routines/scheduler.json"
       ],
       "pass_criteria": [
-        "Each due occurrence runs at most once under its owner, records outcome/correlation, and restart causes neither silent loss nor duplicate execution. Observable: authoritative result fields; expected comparator: every stated value and threshold equals or satisfies this criterion. Artifact reference: evidence/{run_id}/routines/scheduler.json."
+        "Each due occurrence runs at most once under its owner, records outcome/correlation, and restart causes neither silent loss nor duplicate execution. Artifact reference: evidence/{run_id}/routines/scheduler.json."
       ],
       "failure_rollback_behavior": [
         "Pause affected schedule, reconcile from durable ledger, and require approval for uncertain side-effect retry."
@@ -1714,7 +1801,7 @@
         "evidence/{run_id}/telegram/roundtrip.json"
       ],
       "pass_criteria": [
-        "Allowlisted numeric user/chat receives exactly one attributed reply from mapped owner; no public webhook/listener exists. Observable: authoritative result fields; expected comparator: every stated value and threshold equals or satisfies this criterion. Artifact reference: evidence/{run_id}/telegram/roundtrip.json."
+        "Allowlisted numeric user/chat receives exactly one attributed reply from mapped owner; no public webhook/listener exists. Artifact reference: evidence/{run_id}/telegram/roundtrip.json."
       ],
       "failure_rollback_behavior": [
         "Disable mapping, preserve sanitized IDs/digests only, and repair gateway admission."
@@ -1742,7 +1829,7 @@
         "evidence/{run_id}/telegram/negative-routing.json"
       ],
       "pass_criteria": [
-        "Every unauthorized fixture yields no Bot turn, no side effect, and a sanitized deny event. Observable: authoritative result fields; expected comparator: every stated value and threshold equals or satisfies this criterion. Artifact reference: evidence/{run_id}/telegram/negative-routing.json."
+        "In evidence/{run_id}/telegram/negative-routing.json, unauthorized_fixture_count equals sanitized_deny_event_count, and unauthorized_bot_turn_count and unauthorized_side_effect_count each equal 0."
       ],
       "failure_rollback_behavior": [
         "Disable affected gateway and revoke mapping until admission is repaired."
@@ -1770,7 +1857,7 @@
         "evidence/{run_id}/telegram/owner-routing.json"
       ],
       "pass_criteria": [
-        "Messages route only to selected owner; cross-owner handle and nonnumeric authority identifiers are rejected. Observable: authoritative result fields; expected comparator: every stated value and threshold equals or satisfies this criterion. Artifact reference: evidence/{run_id}/telegram/owner-routing.json."
+        "In evidence/{run_id}/telegram/owner-routing.json, correctly_selected_owner_count equals accepted_message_count, cross_owner_delivery_count equals 0, and cross_owner_handle_rejection_count plus nonnumeric_authority_rejection_count equals invalid_fixture_count."
       ],
       "failure_rollback_behavior": [
         "Rollback mapping atomically to prior owner; do not copy credentials."
@@ -1798,7 +1885,7 @@
         "evidence/{run_id}/telegram/outbound-retry.json"
       ],
       "pass_criteria": [
-        "A bounded outage yields either one confirmed outbound message or a failed outcome; never more than one; alert/evidence is sanitized. Observable: authoritative result fields; expected comparator: every stated value and threshold equals or satisfies this criterion. Artifact reference: evidence/{run_id}/telegram/outbound-retry.json."
+        "In evidence/{run_id}/telegram/outbound-retry.json, bounded_outage_final_outcome is in exactly [CONFIRMED,FAILED], confirmed_outbound_message_count is less than or equal to 1, duplicate_outbound_message_count equals 0, retry_count is less than or equal to configured_retry_max, and secret_shaped_evidence_field_count equals 0."
       ],
       "failure_rollback_behavior": [
         "Stop retry after bound, retain original idempotency key, and require state inspection before fresh approval where applicable."
@@ -1826,7 +1913,7 @@
         "evidence/{run_id}/bots/config-persistence.json"
       ],
       "pass_criteria": [
-        "Each Bot returns its own expected non-secret configuration after restart with no default-profile fallback. Observable: authoritative result fields; expected comparator: every stated value and threshold equals or satisfies this criterion. Artifact reference: evidence/{run_id}/bots/config-persistence.json."
+        "In evidence/{run_id}/bots/config-persistence.json, each Bot post_restart_config_digest equals its pre_restart_expected_digest and default_profile_fallback_count equals 0."
       ],
       "failure_rollback_behavior": [
         "Disable mismatched Bot and restore its Bot-scoped R1 backup."
@@ -1854,7 +1941,7 @@
         "evidence/{run_id}/bots/memory-session.json"
       ],
       "pass_criteria": [
-        "Seeded non-secret marker remains only in owning Bot memory/session and replies preserve Bot/session attribution. Observable: authoritative result fields; expected comparator: every stated value and threshold equals or satisfies this criterion. Artifact reference: evidence/{run_id}/bots/memory-session.json."
+        "In evidence/{run_id}/bots/memory-session.json, owning_bot_marker_count equals 1, nonowning_bot_marker_count equals 0, and reply_bot_id/session_id equals the seeded Bot/session attribution."
       ],
       "failure_rollback_behavior": [
         "Stop both processes, run integrity checks, restore owning Bot only, and investigate leakage as incident."
@@ -1882,7 +1969,7 @@
         "evidence/{run_id}/bots/skills-tools.json"
       ],
       "pass_criteria": [
-        "Assigned harmless skill succeeds; unassigned and cross-Bot capability invocation fails before execution. Observable: authoritative result fields; expected comparator: every stated value and threshold equals or satisfies this criterion. Artifact reference: evidence/{run_id}/bots/skills-tools.json."
+        "Assigned harmless skill succeeds; unassigned and cross-Bot capability invocation fails before execution. Artifact reference: evidence/{run_id}/bots/skills-tools.json."
       ],
       "failure_rollback_behavior": [
         "Disable capability broker for affected Bot and restore reviewed allowlist."
@@ -1910,7 +1997,7 @@
         "evidence/{run_id}/bots/credential-boundary.json"
       ],
       "pass_criteria": [
-        "Owner operation succeeds through broker; cross-Bot/scope/destination/direct-egress attempts fail; seeded canary is absent from environment, argv, files, outputs, logs, sessions, and evidence. Observable: authoritative result fields; expected comparator: every stated value and threshold equals or satisfies this criterion. Artifact reference: evidence/{run_id}/bots/credential-boundary.json."
+        "Owner operation succeeds through broker; cross-Bot/scope/destination/direct-egress attempts fail; seeded canary is absent from environment, argv, files, outputs, logs, sessions, and evidence. Artifact reference: evidence/{run_id}/bots/credential-boundary.json."
       ],
       "failure_rollback_behavior": [
         "Disable/revoke handle, quarantine evidence, rotate seeded credential, and fail release."
@@ -1938,7 +2025,7 @@
         "evidence/{run_id}/bots/mounts-paths.json"
       ],
       "pass_criteria": [
-        "Every resolved path and mount matches locked topology; another Bot root, host home/admin socket, and installation default profile are absent. Observable: authoritative result fields; expected comparator: every stated value and threshold equals or satisfies this criterion. Artifact reference: evidence/{run_id}/bots/mounts-paths.json."
+        "Every resolved path and mount matches locked topology; another Bot root, host home/admin socket, and installation default profile are absent. Artifact reference: evidence/{run_id}/bots/mounts-paths.json."
       ],
       "failure_rollback_behavior": [
         "Stop affected container and rebuild mounts from reviewed manifest."
@@ -1966,7 +2053,7 @@
         "evidence/{run_id}/bots/os-container-isolation.json"
       ],
       "pass_criteria": [
-        "Cross-Bot filesystem/network/DNS/process/audit-write probes fail; containers are non-root/unprivileged, sandboxed, capability-dropped, socket-free, and bounded. Observable: authoritative result fields; expected comparator: every stated value and threshold equals or satisfies this criterion. Artifact reference: evidence/{run_id}/bots/os-container-isolation.json."
+        "Cross-Bot filesystem/network/DNS/process/audit-write probes fail; containers are non-root/unprivileged, sandboxed, capability-dropped, socket-free, and bounded. Artifact reference: evidence/{run_id}/bots/os-container-isolation.json."
       ],
       "failure_rollback_behavior": [
         "Stop compromised boundary, preserve metadata, rebuild Bot container set and rotate its credentials."
@@ -1995,7 +2082,7 @@
         "evidence/{run_id}/bots/cross-bot-leakage.json"
       ],
       "pass_criteria": [
-        "Every owner-tagged canary is visible only to its owner and every cross-owner read/write fails. Observable: authoritative result fields; expected comparator: every stated value and threshold equals or satisfies this criterion. Artifact reference: evidence/{run_id}/bots/cross-bot-leakage.json."
+        "Every owner-tagged canary is visible only to its owner and every cross-owner read/write fails. Artifact reference: evidence/{run_id}/bots/cross-bot-leakage.json."
       ],
       "failure_rollback_behavior": [
         "Treat any leak as security incident; disable both Bots, rotate affected credentials, restore from known-clean points."
@@ -2023,7 +2110,7 @@
         "evidence/{run_id}/bots/test-worker-scope.json"
       ],
       "pass_criteria": [
-        "No production credential/account/data reference is configured or resolvable. Observable: authoritative result fields; expected comparator: every stated value and threshold equals or satisfies this criterion. Artifact reference: evidence/{run_id}/bots/test-worker-scope.json."
+        "In evidence/{run_id}/bots/test-worker-scope.json, production_credential_reference_count, production_account_reference_count, production_data_reference_count, and resolvable_production_reference_count each equal 0."
       ],
       "failure_rollback_behavior": [
         "Disable test-worker and revoke any excessive grant immediately."
@@ -2052,7 +2139,7 @@
         "evidence/{run_id}/desktop/canonical-chats.json"
       ],
       "pass_criteria": [
-        "Messages and replies remain in the owning canonical chat across reconnect/restart with no cross-profile attribution. Observable: authoritative result fields; expected comparator: every stated value and threshold equals or satisfies this criterion. Artifact reference: evidence/{run_id}/desktop/canonical-chats.json."
+        "In evidence/{run_id}/desktop/canonical-chats.json, every reply canonical_chat_id equals its request canonical_chat_id across reconnect/restart and cross_profile_attribution_count equals 0."
       ],
       "failure_rollback_behavior": [
         "Disable incorrect backend route and restore prior chat mapping."
@@ -2080,7 +2167,7 @@
         "evidence/{run_id}/desktop/rooms.json"
       ],
       "pass_criteria": [
-        "Only members receive eligible dispatch; transcript attributes every response; member data boundaries remain intact. Observable: authoritative result fields; expected comparator: every stated value and threshold equals or satisfies this criterion. Artifact reference: evidence/{run_id}/desktop/rooms.json."
+        "In evidence/{run_id}/desktop/rooms.json, recipient_set equals eligible_member_set, attributed_response_count equals response_count, and member_boundary_violation_count equals 0."
       ],
       "failure_rollback_behavior": [
         "Close fixture Room, revert membership, and fail on any state leakage."
@@ -2108,7 +2195,7 @@
         "evidence/{run_id}/desktop/mentions.json"
       ],
       "pass_criteria": [
-        "Mention reaches exactly named member; nonmember/offline Bot is not dispatched; unmentioned message terminates within configured bounded rounds without loop. Observable: authoritative result fields; expected comparator: every stated value and threshold equals or satisfies this criterion. Artifact reference: evidence/{run_id}/desktop/mentions.json."
+        "Mention reaches exactly named member; nonmember/offline Bot is not dispatched; unmentioned message terminates within configured bounded rounds without loop. Artifact reference: evidence/{run_id}/desktop/mentions.json."
       ],
       "failure_rollback_behavior": [
         "Stop Room routing and preserve transcript metadata for diagnosis."
@@ -2137,7 +2224,7 @@
         "evidence/{run_id}/desktop/delegation.json"
       ],
       "pass_criteria": [
-        "Target receives task/result correlation but gains no source authority; denied target action remains denied. Observable: authoritative result fields; expected comparator: every stated value and threshold equals or satisfies this criterion. Artifact reference: evidence/{run_id}/desktop/delegation.json."
+        "Target receives task/result correlation but gains no source authority; denied target action remains denied. Artifact reference: evidence/{run_id}/desktop/delegation.json."
       ],
       "failure_rollback_behavior": [
         "Cancel delegation and quarantine result if target identity/authority is ambiguous."
@@ -2165,7 +2252,7 @@
         "evidence/{run_id}/routines/desktop-off.json"
       ],
       "pass_criteria": [
-        "Due server routine completes once with Desktop closed and records owner/result. Observable: authoritative result fields; expected comparator: every stated value and threshold equals or satisfies this criterion. Artifact reference: evidence/{run_id}/routines/desktop-off.json."
+        "In evidence/{run_id}/routines/desktop-off.json, due_server_routine_completion_count equals 1 while desktop_open equals false, and recorded_owner/result fields equal the scheduled owner/expected result."
       ],
       "failure_rollback_behavior": [
         "Pause routine and repair gateway ownership; do not introduce a second scheduler."
@@ -2193,7 +2280,7 @@
         "evidence/{run_id}/routines/mac-off.json"
       ],
       "pass_criteria": [
-        "Server-only routine completes; Mac-bound delegation reports laptop_unavailable within 60 seconds and causes no Mac mutation. Observable: authoritative result fields; expected comparator: every stated value and threshold equals or satisfies this criterion. Artifact reference: evidence/{run_id}/routines/mac-off.json."
+        "In evidence/{run_id}/routines/mac-off.json, server_only_completion_count equals 1, mac_bound_status equals laptop_unavailable within 60 seconds, and mac_mutation_count equals 0."
       ],
       "failure_rollback_behavior": [
         "Keep Mac work queued/failed per declared policy and never redirect it to server filesystem authority."
@@ -2221,7 +2308,7 @@
         "evidence/{run_id}/routines/laptop-availability.json"
       ],
       "pass_criteria": [
-        "Launchd gateway owns cron with Desktop closed; safe read-only routine can run awake; sleep/offline mutation fails closed and records outcome. Observable: authoritative result fields; expected comparator: every stated value and threshold equals or satisfies this criterion. Artifact reference: evidence/{run_id}/routines/laptop-availability.json."
+        "Launchd gateway owns cron with Desktop closed; safe read-only routine can run awake; sleep/offline mutation fails closed and records outcome. Artifact reference: evidence/{run_id}/routines/laptop-availability.json."
       ],
       "failure_rollback_behavior": [
         "Pause laptop routine and require fresh local approval after recovery."
@@ -2251,7 +2338,7 @@
         "evidence/{run_id}/browser/cdp-vnc-denial.json"
       ],
       "pass_criteria": [
-        "Approved view shows current Bot browser; noVNC input is off outside HUMAN; raw ports fail from every non-container source. Observable: authoritative result fields; expected comparator: every stated value and threshold equals or satisfies this criterion. Artifact reference: evidence/{run_id}/browser/visual-private-access.json."
+        "Approved view shows current Bot browser; noVNC input is off outside HUMAN; raw ports fail from every non-container source. Artifact reference: evidence/{run_id}/browser/visual-private-access.json."
       ],
       "failure_rollback_behavior": [
         "Disable proxy/browser route and enter RECOVERING until exposure is removed."
@@ -2280,7 +2367,7 @@
         "evidence/{run_id}/browser/persistence.json"
       ],
       "pass_criteria": [
-        "Seeded disposable session survives restart only for its Bot; browser starts RECOVERING and later passes harmless probe. Observable: authoritative result fields; expected comparator: every stated value and threshold equals or satisfies this criterion. Artifact reference: evidence/{run_id}/browser/persistence.json."
+        "In evidence/{run_id}/browser/persistence.json, owning_bot_seeded_session_count equals 1 after restart, cross_bot_seeded_session_count equals 0, initial_ownership_state equals RECOVERING, and harmless_probe_result equals PASS before AUTOMATION."
       ],
       "failure_rollback_behavior": [
         "Keep automation disabled and restore same-Bot browser snapshot or require fresh login."
@@ -2308,7 +2395,7 @@
         "evidence/{run_id}/browser/takeover-transitions.json"
       ],
       "pass_criteria": [
-        "Each transition is audited; CDP clients reach zero before HUMAN; each transition completes within 60 seconds; one admin controls input; recovery rotates lease and passes probe. Observable: authoritative result fields; expected comparator: every stated value and threshold equals or satisfies this criterion. Artifact reference: evidence/{run_id}/browser/takeover-transitions.json."
+        "Each transition is audited; CDP clients reach zero before HUMAN; each transition completes within 60 seconds; one admin controls input; recovery rotates lease and passes probe. Artifact reference: evidence/{run_id}/browser/takeover-transitions.json."
       ],
       "failure_rollback_behavior": [
         "Revoke grant/input, close CDP/VNC, remain RECOVERING, and alert."
@@ -2336,7 +2423,7 @@
         "evidence/{run_id}/browser/control-races.json"
       ],
       "pass_criteria": [
-        "At every sample at most one control plane is enabled; one claimant wins or all fail closed; stale nonce and invalid transition fail. Observable: authoritative result fields; expected comparator: every stated value and threshold equals or satisfies this criterion. Artifact reference: evidence/{run_id}/browser/control-races.json."
+        "At every sample at most one control plane is enabled; one claimant wins or all fail closed; stale nonce and invalid transition fail. Artifact reference: evidence/{run_id}/browser/control-races.json."
       ],
       "failure_rollback_behavior": [
         "Revoke all leases and grants, enter RECOVERING, and alert."
@@ -2364,7 +2451,7 @@
         "evidence/{run_id}/browser/abandonment.json"
       ],
       "pass_criteria": [
-        "All cases deny CDP/noVNC input after event, revoke credential, and enter RECOVERING within 60 seconds. Observable: authoritative result fields; expected comparator: every stated value and threshold equals or satisfies this criterion. Artifact reference: evidence/{run_id}/browser/abandonment.json."
+        "In evidence/{run_id}/browser/abandonment.json, denied_cdp_input_count and denied_novnc_input_count each equal injected_case_count, revoked_credential_count equals injected_case_count, and each RECOVERING_transition_seconds is less than or equal to 60."
       ],
       "failure_rollback_behavior": [
         "Remain RECOVERING and require a new approved takeover after safe recovery."
@@ -2392,7 +2479,7 @@
         "evidence/{run_id}/browser/reboot-during-human.json"
       ],
       "pass_criteria": [
-        "After restart state is RECOVERING, all prior credentials/nonces fail, and both input paths remain denied until checklist passes. Observable: authoritative result fields; expected comparator: every stated value and threshold equals or satisfies this criterion. Artifact reference: evidence/{run_id}/browser/reboot-during-human.json."
+        "After restart state is RECOVERING, all prior credentials/nonces fail, and both input paths remain denied until checklist passes. Artifact reference: evidence/{run_id}/browser/reboot-during-human.json."
       ],
       "failure_rollback_behavior": [
         "Keep browser disabled and rebuild supervisor state if recovery cannot prove safety."
@@ -2420,7 +2507,7 @@
         "evidence/{run_id}/browser/takeover-redaction.json"
       ],
       "pass_criteria": [
-        "Credential arrives only through authenticated no-store bootstrap; seeded canary is absent from every inspected sink. Observable: authoritative result fields; expected comparator: every stated value and threshold equals or satisfies this criterion. Artifact reference: evidence/{run_id}/browser/takeover-redaction.json."
+        "Credential arrives only through authenticated no-store bootstrap; seeded canary is absent from every inspected sink. Artifact reference: evidence/{run_id}/browser/takeover-redaction.json."
       ],
       "failure_rollback_behavior": [
         "Deny takeover, quarantine sinks, rotate credential, and treat disclosure as incident."
@@ -2448,7 +2535,7 @@
         "evidence/{run_id}/browser/profile-concurrency.json"
       ],
       "pass_criteria": [
-        "Second owner fails before profile write; original remains healthy; stale-lock recovery enters RECOVERING and preserves integrity. Observable: authoritative result fields; expected comparator: every stated value and threshold equals or satisfies this criterion. Artifact reference: evidence/{run_id}/browser/profile-concurrency.json."
+        "Second owner fails before profile write; original remains healthy; stale-lock recovery enters RECOVERING and preserves integrity. Artifact reference: evidence/{run_id}/browser/profile-concurrency.json."
       ],
       "failure_rollback_behavior": [
         "Stop both processes, validate profile, restore same-Bot snapshot if damaged."
@@ -2477,7 +2564,7 @@
         "evidence/{run_id}/browser/cross-bot.json"
       ],
       "pass_criteria": [
-        "Cross-Bot filesystem/CDP/noVNC/account canaries all fail and neither profile changes. Observable: authoritative result fields; expected comparator: every stated value and threshold equals or satisfies this criterion. Artifact reference: evidence/{run_id}/browser/cross-bot.json."
+        "Cross-Bot filesystem/CDP/noVNC/account canaries all fail and neither profile changes. Artifact reference: evidence/{run_id}/browser/cross-bot.json."
       ],
       "failure_rollback_behavior": [
         "Disable both browsers, rotate affected sessions, and restore known-clean same-Bot snapshots."
@@ -2505,7 +2592,7 @@
         "evidence/{run_id}/browser/disposable-login.json"
       ],
       "pass_criteria": [
-        "Login persists for owning Bot, is unavailable cross-Bot, logout/revocation invalidates session, and evidence contains no credential/cookie content. Observable: authoritative result fields; expected comparator: every stated value and threshold equals or satisfies this criterion. Artifact reference: evidence/{run_id}/browser/disposable-login.json."
+        "In evidence/{run_id}/browser/disposable-login.json, owning_bot_authenticated_session_count equals 1, cross_bot_authenticated_session_count equals 0, post_logout_valid_session_count equals 0, and credential_or_cookie_content_count equals 0."
       ],
       "failure_rollback_behavior": [
         "Revoke fixture account/session, destroy fixture profile, and quarantine unsafe evidence."
@@ -2533,7 +2620,7 @@
         "evidence/{run_id}/laptop/runtime-inventory.json"
       ],
       "pass_criteria": [
-        "Configuration exactly matches locked Mac boundary and no second gateway/serve/general remote filesystem service exists. Observable: authoritative result fields; expected comparator: every stated value and threshold equals or satisfies this criterion. Artifact reference: evidence/{run_id}/laptop/runtime-inventory.json."
+        "Configuration exactly matches locked Mac boundary and no second gateway/serve/general remote filesystem service exists. Artifact reference: evidence/{run_id}/laptop/runtime-inventory.json."
       ],
       "failure_rollback_behavior": [
         "Stop laptop-worker service and restore reviewed Mac configuration using Mac-local approval."
@@ -2562,7 +2649,7 @@
         "evidence/{run_id}/laptop/approved-reads.json"
       ],
       "pass_criteria": [
-        "Read returns exact fixture digest with attribution and no mutation; unregistered Projects children are not readable. Observable: authoritative result fields; expected comparator: every stated value and threshold equals or satisfies this criterion. Artifact reference: evidence/{run_id}/laptop/approved-reads.json."
+        "In evidence/{run_id}/laptop/approved-reads.json, returned_fixture_digest equals expected_fixture_digest, mutation_count equals 0, attribution equals approved Bot/task, and unregistered_projects_child_read_count equals 0."
       ],
       "failure_rollback_behavior": [
         "Disable read adapter if confinement cannot be proved."
@@ -2590,7 +2677,7 @@
         "evidence/{run_id}/laptop/sensitive-denial.json"
       ],
       "pass_criteria": [
-        "Every direct and delegated read/write/list attempt is denied before content disclosure. Observable: authoritative result fields; expected comparator: every stated value and threshold equals or satisfies this criterion. Artifact reference: evidence/{run_id}/laptop/sensitive-denial.json."
+        "Every direct and delegated read/write/list attempt is denied before content disclosure. Artifact reference: evidence/{run_id}/laptop/sensitive-denial.json."
       ],
       "failure_rollback_behavior": [
         "Disable laptop-worker and investigate any disclosure as security incident."
@@ -2618,7 +2705,7 @@
         "evidence/{run_id}/laptop/path-confinement.json"
       ],
       "pass_criteria": [
-        "Every escape/race is denied and no out-of-root content or metadata is read or changed. Observable: authoritative result fields; expected comparator: every stated value and threshold equals or satisfies this criterion. Artifact reference: evidence/{run_id}/laptop/path-confinement.json."
+        "Every escape/race is denied and no out-of-root content or metadata is read or changed. Artifact reference: evidence/{run_id}/laptop/path-confinement.json."
       ],
       "failure_rollback_behavior": [
         "Disable adapter and preserve filesystem metadata for investigation."
@@ -2646,7 +2733,7 @@
         "evidence/{run_id}/laptop/mutation-approval.json"
       ],
       "pass_criteria": [
-        "Create/write/rename/copy/delete/metadata/process/install/config fixtures each pause locally; one grant authorizes exactly one unchanged target and replay fails. Observable: authoritative result fields; expected comparator: every stated value and threshold equals or satisfies this criterion. Artifact reference: evidence/{run_id}/laptop/mutation-approval.json."
+        "Create/write/rename/copy/delete/metadata/process/install/config fixtures each pause locally; one grant authorizes exactly one unchanged target and replay fails. Artifact reference: evidence/{run_id}/laptop/mutation-approval.json."
       ],
       "failure_rollback_behavior": [
         "Leave target unchanged or reconcile partial result; reuse idempotency key but require fresh manifest/grant for retry."
@@ -2674,7 +2761,7 @@
         "evidence/{run_id}/laptop/approval-channel-denial.json"
       ],
       "pass_criteria": [
-        "All nonlocal approval attempts yield no mutation and a sanitized deny event. Observable: authoritative result fields; expected comparator: every stated value and threshold equals or satisfies this criterion. Artifact reference: evidence/{run_id}/laptop/approval-channel-denial.json."
+        "In evidence/{run_id}/laptop/approval-channel-denial.json, nonlocal_attempt_count equals sanitized_deny_event_count and mutation_count equals 0."
       ],
       "failure_rollback_behavior": [
         "Disable mutation adapter on any bypass."
@@ -2702,7 +2789,7 @@
         "evidence/{run_id}/laptop/mutation-races.json"
       ],
       "pass_criteria": [
-        "Fingerprint change yields zero writes; concurrent consumers yield at most one write and exactly one durable grant consumption. Observable: authoritative result fields; expected comparator: every stated value and threshold equals or satisfies this criterion. Artifact reference: evidence/{run_id}/laptop/mutation-races.json."
+        "Fingerprint change yields zero writes; concurrent consumers yield at most one write and exactly one durable grant consumption. Artifact reference: evidence/{run_id}/laptop/mutation-races.json."
       ],
       "failure_rollback_behavior": [
         "Quarantine ambiguous operation, inspect state, and require fresh local approval."
@@ -2730,7 +2817,7 @@
         "evidence/{run_id}/laptop/fail-closed.json"
       ],
       "pass_criteria": [
-        "Every mutation leaves fixture unchanged; availability changes to laptop_unavailable within 60 seconds; no remote fallback occurs. Observable: authoritative result fields; expected comparator: every stated value and threshold equals or satisfies this criterion. Artifact reference: evidence/{run_id}/laptop/fail-closed.json."
+        "Every mutation leaves fixture unchanged; availability changes to laptop_unavailable within 60 seconds; no remote fallback occurs. Artifact reference: evidence/{run_id}/laptop/fail-closed.json."
       ],
       "failure_rollback_behavior": [
         "Restore local prerequisites manually; require fresh approval after recovery."
@@ -2758,7 +2845,7 @@
         "evidence/{run_id}/laptop/reconnect.json"
       ],
       "pass_criteria": [
-        "Reachability and task ledger reconcile within 5 minutes; stale grants remain invalid; reads may resume; every mutation requires fresh local approval. Observable: authoritative result fields; expected comparator: every stated value and threshold equals or satisfies this criterion. Artifact reference: evidence/{run_id}/laptop/reconnect.json."
+        "In evidence/{run_id}/laptop/reconnect.json, reachability_reconciliation_seconds and ledger_reconciliation_seconds are each less than or equal to 300, stale_grant_accept_count equals 0, read_resume_result equals PASS, and mutation_without_fresh_local_approval_count equals 0."
       ],
       "failure_rollback_behavior": [
         "Keep laptop-worker unavailable and reconcile manually if ledger identity is uncertain."
@@ -2787,7 +2874,7 @@
         "evidence/{run_id}/backup/freshness.json"
       ],
       "pass_criteria": [
-        "Each Bot has a checksum-valid manifest and encrypted private restore point age <=24h; failed/missing job alerts. Observable: authoritative result fields; expected comparator: every stated value and threshold equals or satisfies this criterion. Artifact reference: evidence/{run_id}/backup/freshness.json."
+        "Each Bot has a checksum-valid manifest and encrypted private restore point age <=24h; failed/missing job alerts. Artifact reference: evidence/{run_id}/backup/freshness.json."
       ],
       "failure_rollback_behavior": [
         "Pause release; run approved backup after diagnosing cause; never substitute an unverified point."
@@ -2815,7 +2902,7 @@
         "evidence/{run_id}/backup/browser-snapshot-freshness.json"
       ],
       "pass_criteria": [
-        "Each Browser Profile has an encrypted same-Bot restore point age <=24h captured under proven consistency protocol. Observable: authoritative result fields; expected comparator: every stated value and threshold equals or satisfies this criterion. Artifact reference: evidence/{run_id}/backup/browser-snapshot-freshness.json."
+        "Each Browser Profile has an encrypted same-Bot restore point age <=24h captured under proven consistency protocol. Artifact reference: evidence/{run_id}/backup/browser-snapshot-freshness.json."
       ],
       "failure_rollback_behavior": [
         "Disable browser automation until a valid snapshot exists."
@@ -2843,7 +2930,7 @@
         "evidence/{run_id}/backup/export-boundary.json"
       ],
       "pass_criteria": [
-        "Backup principal sees only prepared read-only R1 tree; every excluded canary and cross-Bot path is absent; write is limited to one Bot prefix. Observable: authoritative result fields; expected comparator: every stated value and threshold equals or satisfies this criterion. Artifact reference: evidence/{run_id}/backup/export-boundary.json."
+        "Backup principal sees only prepared read-only R1 tree; every excluded canary and cross-Bot path is absent; write is limited to one Bot prefix. Artifact reference: evidence/{run_id}/backup/export-boundary.json."
       ],
       "failure_rollback_behavior": [
         "Revoke backup principal, delete unsafe staged copy, rotate exposed credentials, and fail release."
@@ -2873,7 +2960,7 @@
         "evidence/{run_id}/restore/isolation.json"
       ],
       "pass_criteria": [
-        "Restore completes within RTO 4 hours; checksums, ownership, modes, DB/WAL health, one-gateway/one-serve contract, identity/persona, memory/session, skills/routines, browser state, and service smoke tests pass; chief before/after digests match. Observable: authoritative result fields; expected comparator: every stated value and threshold equals or satisfies this criterion. Artifact reference: evidence/{run_id}/restore/manifest.json."
+        "In evidence/{run_id}/restore/manifest.json, restore_seconds is less than or equal to 14400, checksum/mode/ownership/DB/WAL/service_smoke assertion failed count equals 0, gateway_pid_count and serve_pid_count each equal 1, restored identity/persona/memory/session/skills/routines digests equal the selected manifest, browser_state equals RECOVERING, and chief_before_digest equals chief_after_digest."
       ],
       "failure_rollback_behavior": [
         "Destroy isolated target; keep production untouched; choose earlier verified point or fix runbook and repeat."
@@ -2901,7 +2988,7 @@
         "evidence/{run_id}/restore/browser-recovery.json"
       ],
       "pass_criteria": [
-        "Prior leases/takeover credentials fail; profile health, known tab/window, rotated nonce, and harmless probe pass before AUTOMATION. Observable: authoritative result fields; expected comparator: every stated value and threshold equals or satisfies this criterion. Artifact reference: evidence/{run_id}/restore/browser-recovery.json."
+        "Prior leases/takeover credentials fail; profile health, known tab/window, rotated nonce, and harmless probe pass before AUTOMATION. Artifact reference: evidence/{run_id}/restore/browser-recovery.json."
       ],
       "failure_rollback_behavior": [
         "Keep restored browser disabled and repeat same-Bot restore or require fresh login."
@@ -2929,7 +3016,7 @@
         "evidence/{run_id}/restore/rollback.json"
       ],
       "pass_criteria": [
-        "Failed canary deployment returns to pre-change identity/state with checksums and service health; unrelated Bot remains unchanged. Observable: authoritative result fields; expected comparator: every stated value and threshold equals or satisfies this criterion. Artifact reference: evidence/{run_id}/restore/rollback.json."
+        "In evidence/{run_id}/restore/rollback.json, post_rollback_identity_digest and state_digest equal their pre_change values, checksum_failure_count equals 0, service_health equals healthy, and unrelated_bot_before_digest equals unrelated_bot_after_digest."
       ],
       "failure_rollback_behavior": [
         "Keep affected Bot disabled and escalate to isolated restore; never perform in-place speculative repair."
@@ -2944,30 +3031,33 @@
     {
       "id": "BKP-007",
       "category": "backup-restore",
-      "requirement": "Inspect live Bot-scoped backup retention and prove at least 7 daily, 4 weekly, and 3 monthly restore points per Bot under the authoritative lifecycle policy, inventory, deletion authority, and holds.",
+      "requirement": "Inspect live Azure server-Bot backup retention for exactly chief and test-worker and prove at least 7 daily, 4 weekly, and 3 monthly R1/R2 restore points per server Bot; separately prove laptop-worker follows Mac-local R5 and is excluded from Azure R1/R2 counts.",
       "prerequisites": [
         "BKP-001",
         "BKP-002"
       ],
       "target": {
         "environment": "live-production",
-        "component": "live Bot-scoped R1/R2 backup retention"
+        "component": "chief/test-worker Azure R1/R2 retention plus laptop-worker Mac-local R5 exclusion"
       },
       "command_test_hook": "acceptance/hooks/run-requirement --id BKP-007 --target live-production",
       "evidence_artifacts": [
         "evidence/{run_id}/backup/retention-policy.json",
         "evidence/{run_id}/backup/restore-point-inventory.json",
-        "evidence/{run_id}/backup/deletion-authority.json"
+        "evidence/{run_id}/backup/deletion-authority.json",
+        "evidence/{run_id}/backup/laptop-worker-r5.json"
       ],
       "authoritative_evidence": [
         "Azure Backup/Blob lifecycle policy export at evidence/{run_id}/backup/retention-policy.json",
         "Storage control-plane immutable restore-point inventory at evidence/{run_id}/backup/restore-point-inventory.json",
-        "Azure RBAC/lifecycle deletion principals, authorization conditions, and legal-hold inventory at evidence/{run_id}/backup/deletion-authority.json"
+        "Azure RBAC/lifecycle deletion principals, authorization conditions, and legal-hold inventory at evidence/{run_id}/backup/deletion-authority.json",
+        "Mac-local R5 policy/inventory and Azure namespace exclusion report at evidence/{run_id}/backup/laptop-worker-r5.json"
       ],
       "pass_criteria": [
-        "For every live Bot, observed policy tiers in evidence/{run_id}/backup/retention-policy.json are >=7 daily, >=4 weekly, and >=3 monthly restore points and use a Bot-scoped encrypted private namespace.",
-        "For every live Bot, distinct checksum-valid restore-point counts in evidence/{run_id}/backup/restore-point-inventory.json are >=7 daily, >=4 weekly, and >=3 monthly and each inventory object maps to the authoritative policy tier without cross-Bot overlap.",
-        "Observed deletion principals and conditions in evidence/{run_id}/backup/deletion-authority.json equal the reviewed lifecycle/deletion authority: backup writers cannot delete, deletion requires expiry plus authorized lifecycle identity, and active hold count/state matches policy."
+        "For exactly the Azure server Bots chief and test-worker, observed policy tiers in evidence/{run_id}/backup/retention-policy.json are greater than or equal to 7 daily, 4 weekly, and 3 monthly R1/R2 restore points and each uses a Bot-scoped encrypted private namespace; Azure R1/R2 policy Bot set equals exactly [chief,test-worker].",
+        "For exactly chief and test-worker, distinct checksum-valid restore-point counts in evidence/{run_id}/backup/restore-point-inventory.json are greater than or equal to 7 daily, 4 weekly, and 3 monthly and each object maps to its authoritative tier; cross-Bot overlap count equals 0 and laptop-worker Azure restore-point count equals 0.",
+        "In evidence/{run_id}/backup/deletion-authority.json, deletion principal/condition set equals the reviewed lifecycle authority, backup-writer delete permission equals DENY, deletion requires expiry plus authorized lifecycle identity, and active hold count/state equals policy.",
+        "In evidence/{run_id}/backup/laptop-worker-r5.json, laptop-worker backup_class equals R5, storage_location equals Mac-local, Azure_R1_R2_namespace_count equals 0, and observed R5 policy digest equals the reviewed Mac-local R5 policy digest."
       ],
       "failure_rollback_behavior": [
         "Fail release; block lifecycle deletion, preserve existing restore points, repair policy or inventory under reviewed human authority, and rerun."
@@ -2993,7 +3083,7 @@
         "evidence/{run_id}/monitoring/check-inventory.json"
       ],
       "pass_criteria": [
-        "Every required signal has owner, cadence, threshold, last success, and sanitized runbook link; stale/missing checks are unhealthy. Observable: authoritative result fields; expected comparator: every stated value and threshold equals or satisfies this criterion. Artifact reference: evidence/{run_id}/monitoring/check-inventory.json."
+        "In evidence/{run_id}/monitoring/check-inventory.json, checks_with_owner_cadence_threshold_last_success_runbook equals required_check_count and stale_or_missing_check_healthy_count equals 0."
       ],
       "failure_rollback_behavior": [
         "Fail release and disable unattended work for unmonitored critical components."
@@ -3022,7 +3112,7 @@
         "evidence/{run_id}/monitoring/telegram-alerts.json"
       ],
       "pass_criteria": [
-        "Every injected condition produces one correctly attributed Telegram alert within 5 minutes containing only event ID, Bot, safe reason code, and time. Observable: authoritative result fields; expected comparator: every stated value and threshold equals or satisfies this criterion. Artifact reference: evidence/{run_id}/monitoring/telegram-alerts.json."
+        "In evidence/{run_id}/monitoring/telegram-alerts.json, attributed_alert_count equals injected_condition_count, duplicate_alert_count equals 0, every delivery_seconds is less than or equal to 300, and alert_field_set equals exactly [event_id,Bot,safe_reason_code,time]."
       ],
       "failure_rollback_behavior": [
         "Use secondary human monitoring path, disable unattended work, and repair alerts before release."
@@ -3052,7 +3142,7 @@
         "evidence/{run_id}/monitoring/chain-verification.json"
       ],
       "pass_criteria": [
-        "Production configuration retains encrypted evidence for 400 days; public access is off; secret canaries absent; daily/monthly verification receipt counts equal the configured schedule and each deletion record contains expiry plus a valid verifier authorization. Observable: authoritative result fields; expected comparator: every stated value and threshold equals or satisfies this criterion. Artifact reference: evidence/{run_id}/monitoring/audit-retention.json."
+        "Production configuration retains encrypted evidence for 400 days; public access is off; secret canaries absent; daily/monthly verification receipt counts equal the configured schedule and each deletion record contains expiry plus a valid verifier authorization. Artifact reference: evidence/{run_id}/monitoring/audit-retention.json."
       ],
       "failure_rollback_behavior": [
         "Block high-impact operations, quarantine unsafe evidence, repair chain/archive, and rotate exposed credentials."
@@ -3080,7 +3170,7 @@
         "evidence/{run_id}/failure/fin-001.json"
       ],
       "pass_criteria": [
-        "gateway stops side effects, recovers healthy within 120 seconds, and does not duplicate work. Observable: authoritative result fields; expected comparator: every stated value and threshold equals or satisfies this criterion. Artifact reference: evidence/{run_id}/failure/fin-001.json."
+        "In evidence/{run_id}/failure/fin-001.json, side_effect_count_while_gateway_stopped equals 0, gateway_recovery_seconds is less than or equal to 120, gateway_health equals healthy, and duplicate_work_count equals 0."
       ],
       "failure_rollback_behavior": [
         "Stop injection, restore last known-good state using component runbook, verify isolation/final health, and fail release on any unsafe or threshold-violating outcome."
@@ -3108,7 +3198,7 @@
         "evidence/{run_id}/failure/fin-002.json"
       ],
       "pass_criteria": [
-        "Desktop becomes unavailable then authenticated healthy within 120 seconds without affecting gateway. Observable: authoritative result fields; expected comparator: every stated value and threshold equals or satisfies this criterion. Artifact reference: evidence/{run_id}/failure/fin-002.json."
+        "In evidence/{run_id}/failure/fin-002.json, Desktop_unavailable_observed equals true, Desktop_recovery_seconds is less than or equal to 120, Desktop_authenticated_health equals healthy, and gateway_restart_or_health_change_count equals 0."
       ],
       "failure_rollback_behavior": [
         "Stop injection, restore last known-good state using component runbook, verify isolation/final health, and fail release on any unsafe or threshold-violating outcome."
@@ -3136,7 +3226,7 @@
         "evidence/{run_id}/failure/fin-003.json"
       ],
       "pass_criteria": [
-        "lease enters RECOVERING and non-browser Bot work remains available. Observable: authoritative result fields; expected comparator: every stated value and threshold equals or satisfies this criterion. Artifact reference: evidence/{run_id}/failure/fin-003.json."
+        "In evidence/{run_id}/failure/fin-003.json, lease_state equals RECOVERING after browser crash and successful_non_browser_fixture_work_count equals submitted_non_browser_fixture_work_count."
       ],
       "failure_rollback_behavior": [
         "Stop injection, restore last known-good state using component runbook, verify isolation/final health, and fail release on any unsafe or threshold-violating outcome."
@@ -3164,7 +3254,7 @@
         "evidence/{run_id}/failure/fin-004.json"
       ],
       "pass_criteria": [
-        "CDP/noVNC input are denied, RECOVERING is recorded, and alert arrives within 5 minutes. Observable: authoritative result fields; expected comparator: every stated value and threshold equals or satisfies this criterion. Artifact reference: evidence/{run_id}/failure/fin-004.json."
+        "CDP/noVNC input are denied, RECOVERING is recorded, and alert arrives within 5 minutes. Artifact reference: evidence/{run_id}/failure/fin-004.json."
       ],
       "failure_rollback_behavior": [
         "Stop injection, restore last known-good state using component runbook, verify isolation/final health, and fail release on any unsafe or threshold-violating outcome."
@@ -3192,7 +3282,7 @@
         "evidence/{run_id}/failure/fin-005.json"
       ],
       "pass_criteria": [
-        "private UI/takeover fail unavailable without public fallback and recover within 120 seconds. Observable: authoritative result fields; expected comparator: every stated value and threshold equals or satisfies this criterion. Artifact reference: evidence/{run_id}/failure/fin-005.json."
+        "private UI/takeover fail unavailable without public fallback and recover within 120 seconds. Artifact reference: evidence/{run_id}/failure/fin-005.json."
       ],
       "failure_rollback_behavior": [
         "Stop injection, restore last known-good state using component runbook, verify isolation/final health, and fail release on any unsafe or threshold-violating outcome."
@@ -3220,7 +3310,7 @@
         "evidence/{run_id}/failure/fin-006.json"
       ],
       "pass_criteria": [
-        "turn and routine fail with no fallback and sanitized alert arrives within 5 minutes. Observable: authoritative result fields; expected comparator: every stated value and threshold equals or satisfies this criterion. Artifact reference: evidence/{run_id}/failure/fin-006.json."
+        "turn and routine fail with no fallback and sanitized alert arrives within 5 minutes. Artifact reference: evidence/{run_id}/failure/fin-006.json."
       ],
       "failure_rollback_behavior": [
         "Stop injection, restore last known-good state using component runbook, verify isolation/final health, and fail release on any unsafe or threshold-violating outcome."
@@ -3248,7 +3338,7 @@
         "evidence/{run_id}/failure/fin-007.json"
       ],
       "pass_criteria": [
-        "freshness becomes unhealthy, restore is blocked, and alert arrives within 5 minutes. Observable: authoritative result fields; expected comparator: every stated value and threshold equals or satisfies this criterion. Artifact reference: evidence/{run_id}/failure/fin-007.json."
+        "In evidence/{run_id}/failure/fin-007.json, backup_freshness_health equals unhealthy, restore_attempt_result equals BLOCKED, and alert_delivery_seconds is less than or equal to 300."
       ],
       "failure_rollback_behavior": [
         "Stop injection, restore last known-good state using component runbook, verify isolation/final health, and fail release on any unsafe or threshold-violating outcome."
@@ -3276,7 +3366,7 @@
         "evidence/{run_id}/failure/fin-008.json"
       ],
       "pass_criteria": [
-        "side effects, approvals, secrets, Mac mutation, and takeover fail closed while bounded diagnostics remain. Observable: authoritative result fields; expected comparator: every stated value and threshold equals or satisfies this criterion. Artifact reference: evidence/{run_id}/failure/fin-008.json."
+        "side effects, approvals, secrets, Mac mutation, and takeover fail closed while bounded diagnostics remain. Artifact reference: evidence/{run_id}/failure/fin-008.json."
       ],
       "failure_rollback_behavior": [
         "Stop injection, restore last known-good state using component runbook, verify isolation/final health, and fail release on any unsafe or threshold-violating outcome."
@@ -3304,7 +3394,7 @@
         "evidence/{run_id}/failure/fin-009.json"
       ],
       "pass_criteria": [
-        "credential use and side effects stop with no value disclosure or bypass. Observable: authoritative result fields; expected comparator: every stated value and threshold equals or satisfies this criterion. Artifact reference: evidence/{run_id}/failure/fin-009.json."
+        "In evidence/{run_id}/failure/fin-009.json, credential_use_count_after_gate_failure and side_effect_count each equal 0, disclosed_credential_value_count equals 0, and bypass_success_count equals 0."
       ],
       "failure_rollback_behavior": [
         "Stop injection, restore last known-good state using component runbook, verify isolation/final health, and fail release on any unsafe or threshold-violating outcome."
@@ -3332,7 +3422,7 @@
         "evidence/{run_id}/failure/fin-010.json"
       ],
       "pass_criteria": [
-        "retry is bounded and produces no duplicate outbound message. Observable: authoritative result fields; expected comparator: every stated value and threshold equals or satisfies this criterion. Artifact reference: evidence/{run_id}/failure/fin-010.json."
+        "In evidence/{run_id}/failure/fin-010.json, retry_count is less than or equal to configured_retry_max, confirmed_outbound_message_count is less than or equal to 1, and duplicate_outbound_message_count equals 0."
       ],
       "failure_rollback_behavior": [
         "Stop injection, restore last known-good state using component runbook, verify isolation/final health, and fail release on any unsafe or threshold-violating outcome."
@@ -3360,7 +3450,7 @@
         "evidence/{run_id}/failure/fin-011.json"
       ],
       "pass_criteria": [
-        "laptop_unavailable is reported within 60 seconds and reconciliation completes within 5 minutes without stale mutation. Observable: authoritative result fields; expected comparator: every stated value and threshold equals or satisfies this criterion. Artifact reference: evidence/{run_id}/failure/fin-011.json."
+        "In evidence/{run_id}/failure/fin-011.json, laptop_unavailable_detection_seconds is less than or equal to 60, reconciliation_seconds is less than or equal to 300, and stale_mutation_count equals 0."
       ],
       "failure_rollback_behavior": [
         "Stop injection, restore last known-good state using component runbook, verify isolation/final health, and fail release on any unsafe or threshold-violating outcome."
@@ -3388,7 +3478,7 @@
         "evidence/{run_id}/failure/fin-012.json"
       ],
       "pass_criteria": [
-        "entire fleet returns healthy within 10 minutes in safe start order. Observable: authoritative result fields; expected comparator: every stated value and threshold equals or satisfies this criterion. Artifact reference: evidence/{run_id}/failure/fin-012.json."
+        "In evidence/{run_id}/failure/fin-012.json, whole_fleet_health equals healthy within 600 seconds and observed_start_order equals the reviewed safe start order."
       ],
       "failure_rollback_behavior": [
         "Stop injection, restore last known-good state using component runbook, verify isolation/final health, and fail release on any unsafe or threshold-violating outcome."
@@ -3416,7 +3506,7 @@
         "evidence/{run_id}/failure/fin-013.json"
       ],
       "pass_criteria": [
-        "admin/takeover access stops and no public listener appears. Observable: authoritative result fields; expected comparator: every stated value and threshold equals or satisfies this criterion. Artifact reference: evidence/{run_id}/failure/fin-013.json."
+        "In evidence/{run_id}/failure/fin-013.json, admin_access_success_count and takeover_access_success_count after Tailscale loss each equal 0, and public_listener_count equals 0."
       ],
       "failure_rollback_behavior": [
         "Stop injection, restore last known-good state using component runbook, verify isolation/final health, and fail release on any unsafe or threshold-violating outcome."
@@ -3444,7 +3534,7 @@
         "evidence/{run_id}/failure/fin-014.json"
       ],
       "pass_criteria": [
-        "both control paths fail closed to RECOVERING and transition completes within 60 seconds. Observable: authoritative result fields; expected comparator: every stated value and threshold equals or satisfies this criterion. Artifact reference: evidence/{run_id}/failure/fin-014.json."
+        "both control paths fail closed to RECOVERING and transition completes within 60 seconds. Artifact reference: evidence/{run_id}/failure/fin-014.json."
       ],
       "failure_rollback_behavior": [
         "Stop injection, restore last known-good state using component runbook, verify isolation/final health, and fail release on any unsafe or threshold-violating outcome."
@@ -3472,7 +3562,7 @@
         "evidence/{run_id}/failure/fin-015.json"
       ],
       "pass_criteria": [
-        "concurrent interfaces produce no corruption, duplicate, lost, or cross-attributed state. Observable: authoritative result fields; expected comparator: every stated value and threshold equals or satisfies this criterion. Artifact reference: evidence/{run_id}/failure/fin-015.json."
+        "In evidence/{run_id}/failure/fin-015.json, DB_integrity_check equals ok and corruption_count, duplicate_commit_count, lost_commit_count, and cross_attributed_commit_count each equal 0."
       ],
       "failure_rollback_behavior": [
         "Stop injection, restore last known-good state using component runbook, verify isolation/final health, and fail release on any unsafe or threshold-violating outcome."
@@ -3500,7 +3590,7 @@
         "evidence/{run_id}/failure/fin-016.json"
       ],
       "pass_criteria": [
-        "checksum validation rejects point before cutover and production remains unchanged. Observable: authoritative result fields; expected comparator: every stated value and threshold equals or satisfies this criterion. Artifact reference: evidence/{run_id}/failure/fin-016.json."
+        "In evidence/{run_id}/failure/fin-016.json, corrupt_restore_point_checksum_result equals INVALID, cutover_attempt_count equals 0, and production_before_digest equals production_after_digest."
       ],
       "failure_rollback_behavior": [
         "Stop injection, restore last known-good state using component runbook, verify isolation/final health, and fail release on any unsafe or threshold-violating outcome."
@@ -3529,7 +3619,7 @@
         "evidence/{run_id}/runbook/additional-bot.json"
       ],
       "pass_criteria": [
-        "Unique profile/Unix user/container network/workspace/credentials/Browser Profile/ports/routes/backup prefix are created from reviewed manifests; default profile and existing Bots remain unchanged. Observable: authoritative result fields; expected comparator: every stated value and threshold equals or satisfies this criterion. Artifact reference: evidence/{run_id}/runbook/additional-bot.json."
+        "In evidence/{run_id}/runbook/additional-bot.json, created profile/Unix-user/container-network/workspace/credential-namespace/Browser-Profile/port/route/backup-prefix counts each equal 1 and their values equal the reviewed manifest; default_profile_digest and existing_bot_digests equal their before values."
       ],
       "failure_rollback_behavior": [
         "Destroy additional Bot fixture with audited cleanup; repair runbook/manifests."
@@ -3557,7 +3647,7 @@
         "evidence/{run_id}/runbook/retirement.json"
       ],
       "pass_criteria": [
-        "Services/routes are absent, credentials revoked, mutable state removed, retained evidence follows 400-day policy, and existing Bot health/digests are unchanged. Observable: authoritative result fields; expected comparator: every stated value and threshold equals or satisfies this criterion. Artifact reference: evidence/{run_id}/runbook/retirement.json."
+        "Services/routes are absent, credentials revoked, mutable state removed, retained evidence follows 400-day policy, and existing Bot health/digests are unchanged. Artifact reference: evidence/{run_id}/runbook/retirement.json."
       ],
       "failure_rollback_behavior": [
         "Keep fixture disabled and complete approved cleanup manually; never delete immutable evidence early."
@@ -3585,7 +3675,7 @@
         "evidence/{run_id}/gaps/capability-parity.json"
       ],
       "pass_criteria": [
-        "Every requested capability is classified native, implemented equivalent, or unsupported; each claim links evidence/version; no simulated/prototype behavior is presented as production. Observable: authoritative result fields; expected comparator: every stated value and threshold equals or satisfies this criterion. Artifact reference: evidence/{run_id}/gaps/capability-parity.json."
+        "In evidence/{run_id}/gaps/capability-parity.json, classification_set is a subset of exactly [native,implemented-equivalent,unsupported], classified_capability_count equals requested_capability_count, evidence_and_version_link_count equals claimed_capability_count, and simulated_or_prototype_production_claim_count equals 0."
       ],
       "failure_rollback_behavior": [
         "Fail release for any unclassified, overstated, or stale claim."
@@ -3613,7 +3703,7 @@
         "evidence/{run_id}/gaps/unsupported.json"
       ],
       "pass_criteria": [
-        "Every named vendor-only capability is present in the gap register; each states user impact, safe degraded behavior, source/version, tracking issue/owner, and no silent substitute or parity claim. Observable: authoritative result fields; expected comparator: every stated value and threshold equals or satisfies this criterion. Artifact reference: evidence/{run_id}/gaps/unsupported.json."
+        "In evidence/{run_id}/gaps/unsupported.json, registered_vendor_only_capability_count equals named_vendor_only_capability_count, records_with_impact_degraded_behavior_source_version_issue_owner equals record_count, and silent_substitute_or_parity_claim_count equals 0."
       ],
       "failure_rollback_behavior": [
         "Disable/label affected UI and documentation claim; do not waive the gate by skipping."
@@ -3642,7 +3732,7 @@
         "evidence/{run_id}/gaps/deferred-absence.json"
       ],
       "pass_criteria": [
-        "No File Bridge listener/mount/general remote shell exists and UI/docs state delegation-only Mac access until separately accepted. Observable: authoritative result fields; expected comparator: every stated value and threshold equals or satisfies this criterion. Artifact reference: evidence/{run_id}/gaps/deferred-absence.json."
+        "In evidence/{run_id}/gaps/deferred-absence.json, File-Bridge listener_count, mount_count, and general_remote_shell_count each equal 0, and UI/docs access_mode equals delegation-only."
       ],
       "failure_rollback_behavior": [
         "Remove undeclared component and treat unexpected Mac exposure as incident."
@@ -3673,7 +3763,7 @@
         "evidence/{run_id}/final/junit.xml"
       ],
       "pass_criteria": [
-        "All required services, private access, Bot boundaries, gateways, schedulers, Channels, Desktop, Rooms, routines, browsers, laptop status, backups, monitoring, and alerts are healthy with no active recovery/incident state. Observable: authoritative result fields; expected comparator: every stated value and threshold equals or satisfies this criterion. Artifact reference: evidence/{run_id}/final/health.json."
+        "In evidence/{run_id}/final/health.json, healthy_component_count equals required_component_count, unhealthy_component_count equals 0, and active_recovery_or_incident_count equals 0."
       ],
       "failure_rollback_behavior": [
         "Do not release; rollback affected change or restore affected Bot and repeat dependent requirements."
@@ -3702,7 +3792,7 @@
         "evidence/{run_id}/final/release-decision.json"
       ],
       "pass_criteria": [
-        "Every catalog ID has exactly one current PASS result, no BLOCKED/SKIPPED/FAIL result, all artifacts verify by digest, evidence is encrypted/redacted, and production decision is PASS. Observable: authoritative result fields; expected comparator: every stated value and threshold equals or satisfies this criterion. Artifact reference: evidence/{run_id}/final/evidence-manifest.json."
+        "Every catalog ID has exactly one current PASS result, no BLOCKED/SKIPPED/FAIL result, all artifacts verify by digest, evidence is encrypted/redacted, and production decision is PASS. Artifact reference: evidence/{run_id}/final/evidence-manifest.json."
       ],
       "failure_rollback_behavior": [
         "Production decision is FAIL; unattended routines and production enablement remain blocked."
@@ -3780,10 +3870,12 @@
       "PSC-021"
     ],
     "AUD-04": [
-      "PSC-022"
+      "PSC-022",
+      "PSC-029"
     ],
     "AUD-05": [
-      "PSC-023"
+      "PSC-023",
+      "PSC-030"
     ],
     "FAIL-01": [
       "PSC-024"
