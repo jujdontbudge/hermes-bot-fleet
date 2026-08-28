@@ -306,9 +306,16 @@ The collector authenticates the producer, validates the producer envelope, appli
     "integrity": {
       "type": "object", "additionalProperties": false,
       "required": ["stream_id", "previous_hash", "event_hash", "key_version"],
-      "properties": {"stream_id": {"type": "string", "maxLength": 128}, "previous_hash": {"type": ["string", "null"], "pattern": "^(hmac-sha256:[a-f0-9]{64})?$"}, "event_hash": {"type": "string", "pattern": "^hmac-sha256:[a-f0-9]{64}$"}, "key_version": {"type": "string", "maxLength": 64}}
+      "properties": {"stream_id": {"type": "string", "maxLength": 128}, "previous_hash": {"type": ["string", "null"], "pattern": "^hmac-sha256:[a-f0-9]{64}$"}, "event_hash": {"type": "string", "pattern": "^hmac-sha256:[a-f0-9]{64}$"}, "key_version": {"type": "string", "maxLength": 64}}
     }
-  }
+  },
+  "allOf": [
+    {
+      "if": {"properties": {"sequence": {"const": 1}}, "required": ["sequence"]},
+      "then": {"properties": {"integrity": {"properties": {"previous_hash": {"type": "null"}}}}},
+      "else": {"properties": {"integrity": {"properties": {"previous_hash": {"type": "string", "pattern": "^hmac-sha256:[a-f0-9]{64}$"}}}}}
+    }
+  ]
 }
 ```
 
