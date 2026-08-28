@@ -306,13 +306,13 @@ The collector authenticates the producer, validates the producer envelope, appli
     "integrity": {
       "type": "object", "additionalProperties": false,
       "required": ["stream_id", "previous_hash", "event_hash", "key_version"],
-      "properties": {"stream_id": {"type": "string", "maxLength": 128}, "previous_hash": {"type": ["string", "null"], "pattern": "^(sha256:[a-f0-9]{64})?$"}, "event_hash": {"type": "string", "pattern": "^hmac-sha256:[a-f0-9]{64}$"}, "key_version": {"type": "string", "maxLength": 64}}
+      "properties": {"stream_id": {"type": "string", "maxLength": 128}, "previous_hash": {"type": ["string", "null"], "pattern": "^(hmac-sha256:[a-f0-9]{64})?$"}, "event_hash": {"type": "string", "pattern": "^hmac-sha256:[a-f0-9]{64}$"}, "key_version": {"type": "string", "maxLength": 64}}
     }
   }
 }
 ```
 
-`details` uses an event-type allowlist of safe scalar keys. It may contain exit status, byte count, duration, HTTP status, destination class, credential handle, credential version ID, image digest, file content digest, and sanitized error code. It may not contain command stdout/stderr unless a producer-specific sanitizer and size limit are tested. It never contains prompts, message bodies, file contents, URLs with query/fragment, headers, cookies, environment dumps, approval/takeover raw tokens, secret values, or browser screenshots.
+`details` uses an event-type allowlist of safe scalar keys. It may contain exit status, byte count, duration, HTTP status, destination class, credential handle, credential version ID, image digest, file content digest, and sanitized error code. It may not contain command stdout/stderr unless a producer-specific sanitizer and size limit are tested. It never contains prompts, message bodies, file contents, URLs with query/fragment, headers, cookies, environment dumps, approval/takeover raw tokens, secret values, or browser screenshots. `integrity.previous_hash` is `null` only for sequence 1 (the stream genesis); every later event must carry the exact preceding `hmac-sha256:<64 hex>` `event_hash`.
 
 ### Sinks, redaction, retention, and integrity
 
