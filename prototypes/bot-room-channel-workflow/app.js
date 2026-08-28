@@ -17,7 +17,11 @@
       'laptop-worker': { title: 'Mac operator', runtime: 'mac', browser: 'NONE', online: false, memoryMode: 'independent-empty', capabilities: ['files'], provider: 'openai-codex', model: 'gpt-5.6-sol' }
     },
     room: ['chief', 'test-worker'], channel: null,
-    routines: { 'Daily fleet brief': 'success', 'Acceptance smoke': 'failed', 'Agent Inbox review': 'paused offline' },
+    routines: {
+      'Daily fleet brief': { owner: 'chief', schedule: '08:30 daily', result: 'success' },
+      'Acceptance smoke': { owner: 'test-worker', schedule: 'every 6h', result: 'failed' },
+      'Agent Inbox review': { owner: 'laptop-worker', schedule: '09:00 weekdays', result: 'paused offline' }
+    },
     activity: ['Prototype state loaded']
   };
   window.prototypeState = state;
@@ -76,6 +80,15 @@
   $('#browserProfile').addEventListener('change', updateImplications);
   updateImplications();
 
+  let credentialManuallyOverridden = false;
+  function defaultCredentialHandle(name = $('#botName').value.trim()) {
+    return `secret://${name}/web/search`;
+  }
+  $('#botName').addEventListener('input', () => {
+    if (!credentialManuallyOverridden) $('#credential').value = defaultCredentialHandle();
+  });
+  $('#credential').addEventListener('input', () => { credentialManuallyOverridden = true; });
+
   function validationErrors() {
     const name = $('#botName').value.trim();
     const errors = [];
@@ -84,7 +97,10 @@
     if (!$('#botTitle').value.trim()) errors.push('Operator title is required.');
     if (!$('#botDescription').value.trim()) errors.push('Role / description is required.');
     if (!$('#persona').value.trim()) errors.push('Persona is required.');
-    if (!/^secret:\/\/[a-z0-9-]+\/[a-z0-9/_-]+$/i.test($('#credential').value.trim())) errors.push('Credential must be an opaque secret:// handle, never a token value.');
+    const credential = $('#credential').value.trim();
+    const credentialMatch = credential.match(/^secret:\/\/([a-z0-9-]+)\/[a-z0-9/_-]+$/);
+    if (!credentialMatch) errors.push('Credential must be an opaque secret:// handle, never a token value.');
+    else if (credentialMatch[1] !== name) errors.push(`Credential owner must exactly match Bot/profile name ${name}.`);
     if (!$('#reviewConfirm').checked) errors.push('Review and confirm runtime, isolation, credentials, and approval implications.');
     return errors;
   }
@@ -115,6 +131,14 @@
     const row = document.createElement('button'); row.type = 'button'; row.className = 'bot-row'; row.dataset.bot = name;
     row.innerHTML = `<span class="avatar">${escapeHtml(name[0].toUpperCase())}</span><span><b>${escapeHtml(name)}</b><small>${escapeHtml(state.bots[name].title)} · ${runtime === 'mac' ? 'johan-mac' : 'server'}</small></span><i class="status ${state.bots[name].online ? 'online' : 'offline'}">${state.bots[name].online ? (browser === 'RECOVERING' ? 'recovering' : 'online') : 'laptop_unavailable'}</i>`;
     row.addEventListener('click', () => selectBot(name)); $('#newBotRows').append(row);
+    addBotOption($('#channelBot'), name);
+    addBotOption($('#mentions'), `@${name}`, `@${name}`);
+    const routine = state.bots[name].firstRoutine;
+    if (routine.name) {
+      state.routines[routine.name] = { owner: name, schedule: routine.schedule || 'not scheduled', result: runtime === 'mac' && !state.macOnline ? 'paused offline' : 'not run' };
+      appendRoutineRow(routine.name, state.routines[routine.name]);
+    }
+    renderRoomBotOptions(name);
     activity(`Created ${name} on ${runtime}; browser ${browser}`); selectBot(name);
     appendMessage($('#canonicalLog'), 'system-line', '', `${name} created with independent profile ownership. ${runtime === 'mac' ? 'Work pauses while johan-mac is offline; mutations need local approval.' : 'Dedicated server isolation provisioned.'}`);
   });
@@ -140,12 +164,27 @@
       const name = button.parentElement.dataset.member; state.room = state.room.filter(member => member !== name);
       renderMembers(); activity(`Removed ${name} from Launch room`);
     }));
+    renderRoomBotOptions();
     renderState();
   }
-  $('#addLaptop').addEventListener('click', () => {
-    if (!state.macOnline) { toast('johan-mac is unavailable; reconnect it in Operate'); activity('Could not add laptop-worker: Mac unavailable'); return; }
-    if (!state.room.includes('laptop-worker')) state.room.push('laptop-worker');
-    renderMembers(); activity('Added laptop-worker to Launch room');
+  function addBotOption(select, value, label = value) {
+    if ([...select.options].some(option => option.value === value)) return;
+    const option = document.createElement('option'); option.value = value; option.textContent = label; select.append(option);
+  }
+  function renderRoomBotOptions(preferred) {
+    const select = $('#roomBot');
+    const previous = preferred || select.value;
+    const available = Object.keys(state.bots).filter(name => !state.room.includes(name));
+    select.innerHTML = '';
+    available.forEach(name => addBotOption(select, name, `${name}${state.bots[name].online ? '' : ' · offline'}`));
+    if (available.includes(previous)) select.value = previous;
+    $('#addRoomBot').disabled = !available.length;
+  }
+  $('#addRoomBot').addEventListener('click', () => {
+    const name = $('#roomBot').value;
+    if (!name || !state.bots[name] || state.room.includes(name)) return;
+    state.room.push(name);
+    renderMembers(); activity(`Added ${name} to Launch room${state.bots[name].online ? '' : ' (currently offline)'}`);
   });
   $('#roomForm').addEventListener('submit', event => {
     event.preventDefault(); const input = $('#roomInput'); const text = input.value.trim(); if (!text) return;
@@ -170,19 +209,34 @@
     if (!strictInteger(userIdText) || Number(userIdText) <= 0) problems.push('Telegram user ID must be a strict positive integer.');
     if (!strictInteger(chatIdText) || Number(chatIdText) === 0) problems.push('Telegram chat ID must be a strict non-zero integer.');
     if (pairingState !== 'paired' || admissionState !== 'approved') problems.push('Mapping requires paired and approved admission state.');
+    const ownerBot = $('#channelBot').value;
+    const expectedCredential = `secret://${ownerBot}/telegram/gateway`;
+    if ($('#channelCredential').value !== expectedCredential) problems.push('Credential handle must belong to the selected owning Bot.');
     if (problems.length) { $('#channelResult').innerHTML = `<div class="security-note validation-error">${escapeHtml(problems.join(' '))} Alias is display-only and cannot authorize this mapping.</div>`; toast('Mapping needs attention'); return; }
-    state.channel = { label, displayAlias: alias, ownerBot: $('#channelBot').value, mode: $('#routeMode').value,
+    state.channel = { label, displayAlias: alias, ownerBot, mode: $('#routeMode').value,
       allowlistedUserId: Number(userIdText), allowlistedChatId: Number(chatIdText), pairingState, admissionState,
-      credentialHandle: $('#channelCredential').value };
+      credentialHandle: expectedCredential };
     $('#channelResult').innerHTML = `<div class="security-note validation-ok"><b>Mapped.</b> ${escapeHtml(label)} routes by outbound polling to ${escapeHtml(state.channel.ownerBot)}. Numeric user ${state.channel.allowlistedUserId} and chat ${state.channel.allowlistedChatId} are paired and approved. Alias is display-only. Telegram session remains separate from canonical Bot Chat.</div>`;
     activity(`Saved Telegram mapping to ${state.channel.ownerBot}`); toast('Channel mapping saved');
   });
 
+  function updateChannelCredential() {
+    $('#channelCredential').value = `secret://${$('#channelBot').value}/telegram/gateway`;
+  }
+  $('#channelBot').addEventListener('change', updateChannelCredential);
+  updateChannelCredential();
+
   $('#toggleLaptop').addEventListener('click', () => {
-    state.macOnline = !state.macOnline; state.bots['laptop-worker'].online = state.macOnline;
+    state.macOnline = !state.macOnline;
+    Object.entries(state.bots).filter(([, bot]) => bot.runtime === 'mac').forEach(([name, bot]) => {
+      bot.online = state.macOnline;
+      const row = $(`.bot-row[data-bot="${name}"] .status`);
+      if (row) { row.className = `status ${bot.online ? 'online' : 'offline'}`; row.textContent = bot.online ? (bot.browser === 'RECOVERING' ? 'recovering' : 'online') : 'laptop_unavailable'; }
+    });
     $('#laptopStatus').className = `status ${state.macOnline ? 'online' : 'offline'}`; $('#laptopStatus').textContent = state.macOnline ? 'online · approval gated' : 'laptop_unavailable';
     $('#macConnection').textContent = state.macOnline ? 'johan-mac connected' : 'johan-mac unavailable';
     $('#toggleLaptop').textContent = state.macOnline ? 'Simulate Mac disconnect' : 'Simulate Mac reconnect';
+    renderRoomBotOptions();
     activity(`johan-mac ${state.macOnline ? 'reconnected; queued routines may resume after approval' : 'disconnected; Mac work paused'}`);
   });
 
@@ -194,10 +248,17 @@
     button.textContent = actionLabels[bot.browser]; activity(`${botName} browser ${before} → ${bot.browser}`);
     toast(bot.browser === 'HUMAN' ? 'Single-use takeover active' : `Browser is ${bot.browser}`);
   }));
-  $$('.runRoutine').forEach(button => button.addEventListener('click', () => {
-    const name = button.dataset.routine; const result = state.routines[name];
-    toast(`${name}: ${result}`); activity(`Inspected routine ${name}: ${result}`);
-  }));
+  function appendRoutineRow(name, routine) {
+    const row = document.createElement('tr');
+    const resultClass = routine.result === 'failed' ? 'error' : routine.result.includes('offline') ? 'offline' : 'online';
+    row.innerHTML = `<td>${escapeHtml(name)}</td><td>${escapeHtml(routine.owner)}</td><td>${escapeHtml(routine.schedule)}</td><td><span class="status ${resultClass}">${escapeHtml(routine.result)}</span></td><td><button class="text-button runRoutine" data-routine="${escapeHtml(name)}">Inspect</button></td>`;
+    $('#routineRows').append(row);
+  }
+  $('#routineRows').addEventListener('click', event => {
+    const button = event.target.closest('.runRoutine'); if (!button) return;
+    const name = button.dataset.routine; const routine = state.routines[name]; if (!routine) return;
+    toast(`${name}: ${routine.result}`); activity(`Inspected routine ${name}: ${routine.result}`);
+  });
   $('#copyState').addEventListener('click', async () => {
     const text = $('#liveState').innerText;
     try { await navigator.clipboard.writeText(text); toast('State copied'); }
