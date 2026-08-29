@@ -223,6 +223,51 @@ class ProductionCatalogTest(unittest.TestCase):
                 for evidence in item["authoritative_evidence"]:
                     self.assertRegex(evidence, artifact)
 
+    def test_every_declared_artifact_is_explicitly_referenced_by_a_pass_criterion(self):
+        artifact_path = re.compile(
+            r"evidence/\{run_id\}/[A-Za-z0-9_/{}/-]+\.(?:json|log|xml)"
+        )
+        for item in self.requirements:
+            with self.subTest(item=item["id"]):
+                referenced = {
+                    path
+                    for criterion in item["pass_criteria"]
+                    for path in artifact_path.findall(criterion)
+                }
+                declared = set(item["evidence_artifacts"])
+                self.assertEqual(
+                    referenced,
+                    declared,
+                    "every declared evidence artifact must be named in at least one "
+                    "binary, artifact-specific pass criterion",
+                )
+
+    def test_dual_plane_exposure_and_chain_requirements_are_binary_and_complete(self):
+        expected_assertions = {
+            "AZR-004": (
+                "Internet inbound allow rule count, public IP association count, bootstrap ingress rule count, and prohibited listening socket count each equal 0",
+                "probe vantage equals Internet",
+                "reachable prohibited port or listener count equals 0",
+            ),
+            "BRW-001": (
+                "authorized tailnet visual access result equals ALLOW",
+                "host unauthorized-context CDP result",
+                "tailnet unauthorized-identity CDP result",
+                "Internet CDP result",
+                "each equal DENY",
+                "reachable prohibited CDP/VNC listener count equals 0",
+            ),
+            "MON-003": (
+                "immutable retention days is greater than or equal to 400",
+                "sequence status, hash-link status, HMAC status, checkpoint-link status, checkpoint signature status, and signing-key status each equal VALID",
+                "invalid segment count equals 0",
+            ),
+        }
+        for rid, assertions in expected_assertions.items():
+            criteria = " ".join(self.by_id[rid]["pass_criteria"])
+            for assertion in assertions:
+                self.assertIn(assertion, criteria, f"{rid} omits {assertion}")
+
     def test_exact_locked_source_crosswalk_and_one_or_more_requirements_per_case(self):
         crosswalk = self.catalog["locked_source_crosswalk"]
         self.assertEqual(set(crosswalk), LOCKED_SOURCE_CASES)

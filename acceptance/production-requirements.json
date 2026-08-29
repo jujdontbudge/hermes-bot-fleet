@@ -291,7 +291,8 @@
         "evidence/{run_id}/clean/inventory.json"
       ],
       "pass_criteria": [
-        "In evidence/{run_id}/clean/bootstrap.log, readiness_state equals PRE_SERVICE_READY and undeclared_manual_step_count, inherited_state_count, and agent_visible_secret_count each equal 0."
+        "In evidence/{run_id}/clean/bootstrap.log, readiness_state equals PRE_SERVICE_READY and undeclared_manual_step_count, inherited_state_count, and agent_visible_secret_count each equal 0.",
+        "In evidence/{run_id}/clean/inventory.json, declared_manifest_item_count equals observed_inventory_item_count, missing_manifest_item_count and unexpected_inventory_item_count each equal 0, and every observed item digest equals its committed manifest digest."
       ],
       "failure_rollback_behavior": [
         "Destroy the clean fixture, repair automation/runbook, and repeat."
@@ -1251,7 +1252,8 @@
         "evidence/{run_id}/azure/cost-selection.json"
       ],
       "pass_criteria": [
-        "In evidence/{run_id}/azure/feasibility.json, selected_sku_available, ubuntu_compatible, within_quota, and within_remaining_credit each equal true; selected_monthly_cost is less than or equal to every other feasible candidate cost; hourly_estimate, monthly_estimate, and observed_at are nonempty."
+        "In evidence/{run_id}/azure/feasibility.json, selected_sku_available, ubuntu_compatible, within_quota, and within_remaining_credit each equal true; selected_monthly_cost is less than or equal to every other feasible candidate cost; hourly_estimate, monthly_estimate, and observed_at are nonempty.",
+        "In evidence/{run_id}/azure/cost-selection.json, feasible_candidate_count is greater than or equal to 1, selected_subscription, selected_region, and selected_sku equal the corresponding feasibility selection, selected_hourly_estimate and selected_monthly_estimate equal the current quoted values, and lower_cost_feasible_candidate_count equals 0."
       ],
       "failure_rollback_behavior": [
         "Fail before provisioning; select no assumed or unavailable SKU."
@@ -1336,7 +1338,8 @@
         "evidence/{run_id}/network/external-scan.json"
       ],
       "pass_criteria": [
-        "Effective Internet-to-VM probes fail for all TCP/UDP ports and Azure shows no public inbound path. Artifact reference: evidence/{run_id}/azure/effective-nsg.json."
+        "In evidence/{run_id}/azure/effective-nsg.json, Internet inbound allow rule count, public IP association count, bootstrap ingress rule count, and prohibited listening socket count each equal 0.",
+        "In evidence/{run_id}/network/external-scan.json, probe vantage equals Internet, completed TCP and UDP prohibited-port probe count equals planned TCP and UDP prohibited-port probe count, and reachable prohibited port or listener count equals 0."
       ],
       "failure_rollback_behavior": [
         "Immediately remove exposure using reviewed rollback; stop exposed services and fail release."
@@ -1479,7 +1482,8 @@
         "evidence/{run_id}/network/tailscale-negative.json"
       ],
       "pass_criteria": [
-        "In evidence/{run_id}/network/tailscale-policy.json, Johan approved-device reachable TCP ports equal exactly [22,443], unauthorized reachable TCP port count equals 0, and Funnel, public Serve/share, Tailscale SSH, exit-node, and subnet-route enabled counts each equal 0."
+        "In evidence/{run_id}/network/tailscale-policy.json, Johan approved-device reachable TCP ports equal exactly [22,443], unauthorized reachable TCP port count equals 0, and Funnel, public Serve/share, Tailscale SSH, exit-node, and subnet-route enabled counts each equal 0.",
+        "In evidence/{run_id}/network/tailscale-negative.json, unauthorized identity/device probe count is greater than or equal to 1, denied probe count equals unauthorized identity/device probe count, and unauthorized reachable TCP port count equals 0."
       ],
       "failure_rollback_behavior": [
         "Revoke node/routes, disable proxy and SSH until policy is corrected, and fail release."
@@ -2432,7 +2436,8 @@
         "evidence/{run_id}/browser/cdp-vnc-denial.json"
       ],
       "pass_criteria": [
-        "Approved view shows current Bot browser; noVNC input is off outside HUMAN; raw ports fail from every non-container source. Artifact reference: evidence/{run_id}/browser/visual-private-access.json."
+        "In evidence/{run_id}/browser/visual-private-access.json, authorized tailnet visual access result equals ALLOW, rendered Bot/browser identity equals the requested current Bot/browser identity, TLS and authentication status each equal valid, and noVNC input enabled outside HUMAN count equals 0.",
+        "In evidence/{run_id}/browser/cdp-vnc-denial.json, host unauthorized-context CDP result, host unauthorized-context raw-VNC result, tailnet unauthorized-identity CDP result, tailnet unauthorized-identity raw-VNC result, Internet CDP result, and Internet raw-VNC result each equal DENY, and reachable prohibited CDP/VNC listener count equals 0."
       ],
       "failure_rollback_behavior": [
         "Disable proxy/browser route and enter RECOVERING until exposure is removed."
@@ -3054,7 +3059,8 @@
         "evidence/{run_id}/restore/isolation.json"
       ],
       "pass_criteria": [
-        "In evidence/{run_id}/restore/manifest.json, restore_seconds is less than or equal to 14400, checksum/mode/ownership/DB/WAL/service_smoke assertion failed count equals 0, gateway_pid_count and serve_pid_count each equal 1, restored identity/persona/memory/session/skills/routines digests equal the selected manifest, browser_state equals RECOVERING, and chief_before_digest equals chief_after_digest."
+        "In evidence/{run_id}/restore/manifest.json, restore_seconds is less than or equal to 14400, checksum/mode/ownership/DB/WAL/service_smoke assertion failed count equals 0, gateway_pid_count and serve_pid_count each equal 1, restored identity/persona/memory/session/skills/routines digests equal the selected manifest, browser_state equals RECOVERING, and chief_before_digest equals chief_after_digest.",
+        "In evidence/{run_id}/restore/isolation.json, isolated_target equals true, production route count, production credential mount count, chief stop count, and chief mutation count each equal 0, and chief_after_probe_digest equals chief_before_probe_digest."
       ],
       "failure_rollback_behavior": [
         "Destroy isolated target; keep production untouched; choose earlier verified point or fix runbook and repeat."
@@ -3236,7 +3242,8 @@
         "evidence/{run_id}/monitoring/chain-verification.json"
       ],
       "pass_criteria": [
-        "Production configuration retains encrypted evidence for 400 days; public access is off; secret canaries absent; daily/monthly verification receipt counts equal the configured schedule and each deletion record contains expiry plus a valid verifier authorization. Artifact reference: evidence/{run_id}/monitoring/audit-retention.json."
+        "In evidence/{run_id}/monitoring/audit-retention.json, immutable retention days is greater than or equal to 400, encryption status equals enabled, public access enabled count and secret canary match count each equal 0, daily and monthly verification receipt counts equal their configured due-run counts, and invalid deletion authorization count equals 0.",
+        "In evidence/{run_id}/monitoring/chain-verification.json, sequence status, hash-link status, HMAC status, checkpoint-link status, checkpoint signature status, and signing-key status each equal VALID, verified segment count equals retained segment count, and invalid segment count equals 0."
       ],
       "failure_rollback_behavior": [
         "Block high-impact operations, quarantine unsafe evidence, repair chain/archive, and rotate exposed credentials."
@@ -3857,7 +3864,8 @@
         "evidence/{run_id}/final/junit.xml"
       ],
       "pass_criteria": [
-        "In evidence/{run_id}/final/health.json, healthy_component_count equals required_component_count, unhealthy_component_count equals 0, and active_recovery_or_incident_count equals 0."
+        "In evidence/{run_id}/final/health.json, healthy_component_count equals required_component_count, unhealthy_component_count equals 0, and active_recovery_or_incident_count equals 0.",
+        "In evidence/{run_id}/final/junit.xml, tests is greater than or equal to 1 and failures, errors, skipped, and malformed testcase count each equal 0."
       ],
       "failure_rollback_behavior": [
         "Do not release; rollback affected change or restore affected Bot and repeat dependent requirements."
@@ -3886,7 +3894,8 @@
         "evidence/{run_id}/final/release-decision.json"
       ],
       "pass_criteria": [
-        "Every catalog ID has exactly one current PASS result, no BLOCKED/SKIPPED/FAIL result, all artifacts verify by digest, evidence is encrypted/redacted, and production decision is PASS. Artifact reference: evidence/{run_id}/final/evidence-manifest.json."
+        "In evidence/{run_id}/final/evidence-manifest.json, every catalog ID has exactly one current PASS result, BLOCKED, SKIPPED, and FAIL result counts each equal 0, artifact digest failure count equals 0, evidence encryption status equals enabled, and redaction violation count equals 0.",
+        "In evidence/{run_id}/final/release-decision.json, production decision equals PASS, mandatory non-PASS requirement count equals 0, unverified artifact count equals 0, and manifest signature status equals VALID."
       ],
       "failure_rollback_behavior": [
         "Production decision is FAIL; unattended routines and production enablement remain blocked."
