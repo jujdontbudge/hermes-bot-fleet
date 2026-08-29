@@ -404,7 +404,7 @@ A provisioning test must identify the pinned Hermes version and prove every nati
 
 ## Executable acceptance-test matrix
 
-The repository implementation must provide `tests/security/run-policy-acceptance.sh`. It accepts `--target test-worker`, `--target laptop-worker`, and `--destructive-fixture`; creates only disposable fixtures/accounts; emits JUnit plus sanitized JSON evidence; and exits nonzero on any failed or skipped mandatory case. The CI-safe subset runs without real credentials. The live suite runs from Johan's approved Mac against the provisioned test environment. `chief` production enablement is blocked until the same non-destructive boundary tests pass for `chief`.
+The repository implementation must provide `tests/security/run-policy-acceptance.sh`. It accepts `--target test-worker`, `--target laptop-worker`, `--target chief`, and `--destructive-fixture`; creates only disposable test-owned fixtures/accounts; emits per-case sanitized JSON plus JUnit evidence; and exits nonzero on any failure, error, or skipped mandatory case. The CI-safe subset runs without real credentials. The live suite runs from Johan's approved Mac against the provisioned test environment. `chief` production enablement is blocked until `tests/security/run-policy-acceptance.sh --target chief` passes against the exact deployed `chief` identity, policy, and runtime digests with no production credential or production data use.
 
 | ID | Executable test | Required assertion |
 |---|---|---|
@@ -447,5 +447,7 @@ tests/security/run-policy-acceptance.sh --target chief
 git diff --check
 tests/security/check-repository-consistency.sh
 ```
+
+The `chief` command is the dedicated non-destructive pre-activation overlay, not another source-case crosswalk row. Its exact mandatory set is `AUTH-01`, `AUTH-03` through `AUTH-08`, `BROW-01` through `BROW-03`, `SEC-01` through `SEC-04`, `AUD-01` through `AUD-04`, `FAIL-02`, `ISO-01`, and `SCAN-01` (exactly 21 cases). It excludes laptop-only `AUTH-02`, every `MAC-*` case, and `BG-01`, plus destructive `AUD-05` and `FAIL-01`. The runner must bind every result to source target `chief`, the exact invoked command, and matching expected-versus-deployed chief identity/policy/runtime digests; use only acceptance-runner-owned disposable data; and emit exactly one sanitized JSON and JUnit result per expected case. Failures, errors, skips, missing or extra cases, digest/command/target mismatch, production credential/data use, or an enablement attempt all fail the overlay and leave chief production enablement disabled. Only a current complete 21-case pass with zero failures, errors, and skips can release that block.
 
 The consistency check must report no stale markers, unresolved documentation sentinels outside fenced schema examples, secret-shaped values, private keys, exported cookies, or credential-bearing URLs. It scans tracked files, history, generated configuration, logs, and test artifacts with entropy and provider-specific detectors. Acceptance evidence records test IDs, versions, policy commit, sanitized event IDs, and pass/fail only. A skipped mandatory test is a failure.

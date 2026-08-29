@@ -96,6 +96,7 @@
     "PSC-026",
     "PSC-027",
     "PSC-028",
+    "PSC-031",
     "AZR-001",
     "AZR-002",
     "AZR-003",
@@ -1235,6 +1236,60 @@
       "secret_risk": true,
       "mandatory": true,
       "source_target_bot": "test-worker"
+    },
+    {
+      "id": "PSC-031",
+      "category": "policy-security",
+      "requirement": "Before any production enablement, execute tests/security/run-policy-acceptance.sh --target chief as the dedicated chief activation overlay against the exact deployed chief identity, policy, and runtime digests, using only disposable test-owned data. The mandatory non-destructive chief suite contains exactly AUTH-01, AUTH-03, AUTH-04, AUTH-05, AUTH-06, AUTH-07, AUTH-08, BROW-01, BROW-02, BROW-03, SEC-01, SEC-02, SEC-03, SEC-04, AUD-01, AUD-02, AUD-03, AUD-04, FAIL-02, ISO-01, and SCAN-01 (21 cases); it is not a locked source-case crosswalk mapping.",
+      "prerequisites": [
+        "PSC-001",
+        "PSC-003",
+        "PSC-004",
+        "PSC-005",
+        "PSC-006",
+        "PSC-007",
+        "PSC-008",
+        "PSC-012",
+        "PSC-013",
+        "PSC-014",
+        "PSC-015",
+        "PSC-016",
+        "PSC-017",
+        "PSC-018",
+        "PSC-019",
+        "PSC-020",
+        "PSC-021",
+        "PSC-022",
+        "PSC-025",
+        "PSC-027",
+        "PSC-028"
+      ],
+      "target": {
+        "environment": "live-production",
+        "component": "exact deployed chief identity, policy, and runtime at the pre-activation production gate"
+      },
+      "command_test_hook": "tests/security/run-policy-acceptance.sh --target chief",
+      "evidence_artifacts": [
+        "evidence/{run_id}/policy-security/chief-policy-acceptance.json",
+        "evidence/{run_id}/policy-security/chief-policy-acceptance.xml"
+      ],
+      "authoritative_evidence": [
+        "Sanitized runner-owned JSON manifest and one result row for each exact chief case, including the invoked command, source target, disposable fixture inventory, deployed chief identity/policy/runtime digests, expected reviewed digests, aggregate counts, and production enablement state at evidence/{run_id}/policy-security/chief-policy-acceptance.json",
+        "Sanitized runner-owned JUnit suite with exactly one testcase for each exact chief case and no omitted, additional, failed, errored, or skipped testcase at evidence/{run_id}/policy-security/chief-policy-acceptance.xml"
+      ],
+      "pass_criteria": [
+        "In evidence/{run_id}/policy-security/chief-policy-acceptance.json, source_target equals chief, invoked_command equals tests/security/run-policy-acceptance.sh --target chief, expected_case_set and observed_case_set each equal exactly [AUTH-01, AUTH-03, AUTH-04, AUTH-05, AUTH-06, AUTH-07, AUTH-08, BROW-01, BROW-02, BROW-03, SEC-01, SEC-02, SEC-03, SEC-04, AUD-01, AUD-02, AUD-03, AUD-04, FAIL-02, ISO-01, SCAN-01], expected_case_count and executed_case_count each equal 21, and unexpected_case_count, missing_case_count, failure_count, error_count, and skipped_count each equal 0.",
+        "In evidence/{run_id}/policy-security/chief-policy-acceptance.json, deployed_chief_identity_digest equals expected_reviewed_chief_identity_digest, deployed_chief_policy_digest equals expected_reviewed_chief_policy_digest, deployed_chief_runtime_digest equals expected_reviewed_chief_runtime_digest, every digest is nonempty, test_data_scope equals disposable-test-owned, fixture_owner equals acceptance-runner, production_credential_count, production_data_read_count, production_data_mutation_count, and production_enablement_attempt_count each equal 0, production_enablement_state equals DISABLED, sanitized equals true, and each of the exactly 21 per-case JSON result rows has result equal PASS and sanitized equals true.",
+        "In evidence/{run_id}/policy-security/chief-policy-acceptance.xml, tests equals 21, failures, errors, skipped, and disabled each equal 0; the testcase name set equals exactly [AUTH-01, AUTH-03, AUTH-04, AUTH-05, AUTH-06, AUTH-07, AUTH-08, BROW-01, BROW-02, BROW-03, SEC-01, SEC-02, SEC-03, SEC-04, AUD-01, AUD-02, AUD-03, AUD-04, FAIL-02, ISO-01, SCAN-01]; and every testcase has sanitized evidence with no production credential or production data value.",
+        "In evidence/{run_id}/policy-security/chief-policy-acceptance.json, suite_result equals PASS before production_enablement_state may change from DISABLED; any FAIL, ERROR, SKIPPED, missing evidence, digest mismatch, source/command mismatch, case-set/count mismatch, production credential/data use, or production enablement attempt makes suite_result equal FAIL and leaves production_enablement_state equal DISABLED."
+      ],
+      "failure_rollback_behavior": [
+        "Keep chief production enablement disabled, revoke the disposable fixture principal, destroy only acceptance-runner-owned test data, verify zero fixture residue, preserve sanitized JSON/JUnit evidence, restore the reviewed fail-closed chief policy/runtime deployment if its digest drifted, and rerun the complete exact 21-case chief overlay; never enable production from a partial or prior run."
+      ],
+      "destructive": false,
+      "secret_risk": true,
+      "mandatory": true,
+      "source_target_bot": "chief"
     },
     {
       "id": "AZR-001",

@@ -63,6 +63,13 @@ LOCKED_SOURCE_CASES = {
     "BG-01", "ISO-01", "SCAN-01",
 }
 LAPTOP_SOURCE_CASES = {"AUTH-02", "MAC-01", "MAC-02", "MAC-03", "BG-01"}
+CHIEF_ACTIVATION_ID = "PSC-031"
+CHIEF_ACTIVATION_COMMAND = "tests/security/run-policy-acceptance.sh --target chief"
+CHIEF_ACTIVATION_CASES = (
+    "AUTH-01", "AUTH-03", "AUTH-04", "AUTH-05", "AUTH-06", "AUTH-07", "AUTH-08",
+    "BROW-01", "BROW-02", "BROW-03", "SEC-01", "SEC-02", "SEC-03", "SEC-04",
+    "AUD-01", "AUD-02", "AUD-03", "AUD-04", "FAIL-02", "ISO-01", "SCAN-01",
+)
 REQUIRED_IDS = {
     "AZR-001", "AZR-003", "AZR-004", "NET-001", "NET-003", "SVC-001",
     "SVC-002", "SVC-005", "GAT-001", "GAT-002", "GAT-004", "TEL-001",
@@ -74,7 +81,7 @@ REQUIRED_IDS = {
     "LAP-006", "LAP-007", "LAP-008", "LAP-009", "BKP-001", "BKP-002",
     "BKP-003", "BKP-004", "BKP-005", "MON-001", "MON-002", "MON-003",
     "RUN-001", "GAP-001", "GAP-002", "GAP-003", "HLT-001", "HLT-002",
-    "PSC-029", "PSC-030",
+    "PSC-029", "PSC-030", CHIEF_ACTIVATION_ID,
 }
 ASSERTION_FIELDS = {
     "assertion_id", "observed_field", "operator", "expected", "actual",
@@ -184,7 +191,9 @@ class ProductionCatalogTest(unittest.TestCase):
                 self.assertIs(type(item["secret_risk"]), bool)
                 self.assertIs(item["mandatory"], True)
                 expected_hook = f"acceptance/hooks/run-requirement --id {item['id']} --target {item['target']['environment']}"
-                if item["category"] == "policy-security":
+                if item["id"] == CHIEF_ACTIVATION_ID:
+                    expected_hook = CHIEF_ACTIVATION_COMMAND
+                elif item["category"] == "policy-security":
                     expected_hook += (
                         f" --source-target-bot {item['source_target_bot']}"
                         " --deployment-identity-digest ${SOURCE_DEPLOYMENT_IDENTITY_DIGEST}"
@@ -304,7 +313,10 @@ class ProductionCatalogTest(unittest.TestCase):
                     self.assertTrue(requirement["authoritative_evidence"])
                     flattened.append(rid)
         self.assertEqual(len(flattened), len(set(flattened)))
-        policy_ids = {item["id"] for item in self.requirements if item["category"] == "policy-security"}
+        policy_ids = {
+            item["id"] for item in self.requirements
+            if item["category"] == "policy-security" and item["id"] != CHIEF_ACTIVATION_ID
+        }
         self.assertEqual(policy_ids, set(flattened))
 
     def test_every_psc_binds_exact_source_bot_deployment_and_disposable_data(self):
@@ -313,7 +325,10 @@ class ProductionCatalogTest(unittest.TestCase):
             bot = "laptop-worker" if case in LAPTOP_SOURCE_CASES else "test-worker"
             for rid in requirement_ids:
                 expected_by_id[rid] = bot
-        policy_items = [item for item in self.requirements if item["category"] == "policy-security"]
+        policy_items = [
+            item for item in self.requirements
+            if item["category"] == "policy-security" and item["id"] != CHIEF_ACTIVATION_ID
+        ]
         self.assertEqual(set(expected_by_id), {item["id"] for item in policy_items})
         for item in policy_items:
             with self.subTest(item=item["id"]):
@@ -328,6 +343,61 @@ class ProductionCatalogTest(unittest.TestCase):
                     self.assertIn(exact, evidence)
                 for exact in (f"source_target_bot equals {bot}", "deployed_gate_runtime_identity_digest equals the expected reviewed source deployment identity digest", "gate_runtime_instance_count equals 1", "test_data_scope equals disposable-test-owned", "production_data_read_count equals 0", "production_data_mutation_count equals 0", "production_credential_count equals 0"):
                     self.assertIn(exact, criteria)
+
+    def test_chief_activation_overlay_has_exact_case_set_and_source_command_identity_binding(self):
+        item = self.by_id[CHIEF_ACTIVATION_ID]
+        self.assertEqual(item["category"], "policy-security")
+        self.assertEqual(item["source_target_bot"], "chief")
+        self.assertEqual(item["target"], {
+            "environment": "live-production",
+            "component": "exact deployed chief identity, policy, and runtime at the pre-activation production gate",
+        })
+        self.assertEqual(item["command_test_hook"], CHIEF_ACTIVATION_COMMAND)
+        self.assertNotIn(CHIEF_ACTIVATION_ID, {
+            rid for requirement_ids in self.catalog["locked_source_crosswalk"].values()
+            for rid in requirement_ids
+        })
+        self.assertEqual(len(CHIEF_ACTIVATION_CASES), 21)
+        requirement_text = item["requirement"]
+        self.assertIn("exactly " + ", ".join(CHIEF_ACTIVATION_CASES[:-1]) + ", and " + CHIEF_ACTIVATION_CASES[-1], requirement_text)
+        self.assertIn("(21 cases)", requirement_text)
+        self.assertEqual(item["prerequisites"], [
+            rid for case in CHIEF_ACTIVATION_CASES
+            for rid in self.catalog["locked_source_crosswalk"][case]
+            if rid not in {"PSC-029"}
+        ])
+        self.assertEqual(item["evidence_artifacts"], [
+            "evidence/{run_id}/policy-security/chief-policy-acceptance.json",
+            "evidence/{run_id}/policy-security/chief-policy-acceptance.xml",
+        ])
+        text = " ".join(all_strings(item))
+        criteria = " ".join(item["pass_criteria"])
+        exact_case_list = "[" + ", ".join(CHIEF_ACTIVATION_CASES) + "]"
+        self.assertGreaterEqual(criteria.count(exact_case_list), 2)
+        for phrase in (
+            "expected_case_count and executed_case_count each equal 21",
+            "failure_count, error_count, and skipped_count each equal 0",
+            "tests equals 21, failures, errors, skipped, and disabled each equal 0",
+            "test_data_scope equals disposable-test-owned",
+            "production_credential_count, production_data_read_count, production_data_mutation_count, and production_enablement_attempt_count each equal 0",
+            "production_enablement_state equals DISABLED",
+            "suite_result equals PASS before production_enablement_state may change from DISABLED",
+        ):
+            self.assertIn(phrase, criteria)
+        for digest in ("identity", "policy", "runtime"):
+            self.assertIn(
+                f"deployed_chief_{digest}_digest equals expected_reviewed_chief_{digest}_digest",
+                criteria,
+            )
+        for phrase in (
+            CHIEF_ACTIVATION_COMMAND,
+            "source_target equals chief",
+            "per-case JSON result rows",
+            "sanitized runner-owned JSON",
+            "sanitized runner-owned JUnit",
+            "Keep chief production enablement disabled",
+        ):
+            self.assertIn(phrase.lower(), text.lower())
 
     def test_aud04_and_aud05_have_exact_live_and_disposable_composition(self):
         expected = {

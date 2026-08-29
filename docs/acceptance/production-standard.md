@@ -128,7 +128,7 @@ A partial or uncertain side effect is not blindly retried. Preserve the original
 Run from Johan's approved Mac using the pinned runner. The JSON `execution_order` array is the exact item-by-item order; prerequisites additionally enforce the DAG. Parallel execution is permitted only when prerequisite closure is complete, fixtures and targets are disjoint, observers can prove attribution, and evidence order remains deterministic. The default safe order is serial.
 
 1. Repository/documentation preflight and clean bootstrap (`REP-*`).
-2. Locked security-policy acceptance cases and source crosswalk (`PSC-*`, preserving `AUTH-*`, `MAC-*`, `BROW-*`, `SEC-*`, `AUD-*`, `FAIL-*`, `BG-01`, `ISO-01`, and `SCAN-01`); inspect live `AUD-04`/`AUD-05` controls separately from their destructive accelerated lifecycle/key fixtures.
+2. Locked security-policy acceptance cases and source crosswalk (`PSC-*`, preserving `AUTH-*`, `MAC-*`, `BROW-*`, `SEC-*`, `AUD-*`, `FAIL-*`, `BG-01`, `ISO-01`, and `SCAN-01`); inspect live `AUD-04`/`AUD-05` controls separately from their destructive accelerated lifecycle/key fixtures, then run the dedicated `PSC-031` chief activation overlay (which is not a source-case crosswalk mapping) before any chief production enablement.
 3. Live Azure feasibility, cost, resource, encryption, NSG, diagnostics, and budget inspection (`AZR-*`).
 4. Listener/firewall/Tailscale/private-access gates and bounded tailnet-loss fixture (`NET-*`).
 5. Service inventory, disposable process/component recovery, the narrow actual-VM pre-activation reboot exception, and maintenance quiescence (`SVC-*`).
@@ -162,7 +162,7 @@ From repository root:
 tests/acceptance/run-production-catalog-validation.sh
 ```
 
-This is a static standard/catalog validator, not the production suite. It proves schema shape, mandatory fields, stable unique IDs, exact document coverage, target classes, default thresholds, prerequisite validity/acyclicity/order, required categories and failure cases, exact one-or-more locked-case crosswalk coverage and `AUD-04`/`AUD-05` target composition, the sole `SVC-005` live destructive exception, the safe-stateful live/destructive-fixture concurrency split, Azure server-Bot retention plus laptop-worker R5 exclusion, the structured assertion-row contract, concrete artifact-bound comparator criteria, rejection of self-referential/vague umbrella criteria, absence of skip-allowed semantics/stale markers, and absence of secret-shaped values. A passing static validator does not claim any live deployment requirement has passed.
+This is a static standard/catalog validator, not the production suite. It proves schema shape, mandatory fields, stable unique IDs, exact document coverage, target classes, default thresholds, prerequisite validity/acyclicity/order, required categories and failure cases, exact one-or-more locked-case crosswalk coverage and `AUD-04`/`AUD-05` target composition, and the separate `PSC-031` chief activation overlay's exact 21-case set, `chief` source target, exact command, deployed identity/policy/runtime digest binding, disposable-data boundary, zero-failure/error/skip gate, and pre-enable block. It also proves the sole `SVC-005` live destructive exception, the safe-stateful live/destructive-fixture concurrency split, Azure server-Bot retention plus laptop-worker R5 exclusion, the structured assertion-row contract, concrete artifact-bound comparator criteria, rejection of self-referential/vague umbrella criteria, absence of skip-allowed semantics/stale markers, and absence of secret-shaped values. A passing static validator does not claim any live deployment requirement has passed.
 
 ## 10. Canonical catalog index
 
@@ -205,6 +205,7 @@ Every canonical ID is listed below so prose/catalog drift is machine-detectable.
 | `PSC-026` | `policy-security` | `disposable-fixture` |
 | `PSC-027` | `policy-security` | `disposable-fixture` |
 | `PSC-028` | `policy-security` | `disposable-fixture` |
+| `PSC-031` | `policy-security` | `live-production` |
 | `AZR-001` | `azure` | `live-production` |
 | `AZR-002` | `azure` | `live-production` |
 | `AZR-003` | `azure` | `live-production` |
