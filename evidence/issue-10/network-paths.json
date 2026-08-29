@@ -1,0 +1,27 @@
+{
+  "schema_version": "1.0",
+  "collected_at": "2026-08-29T15:31:00Z",
+  "azure_network_watcher": {
+    "private_nic_tcp_22": {
+      "source": "10.73.1.5:40000",
+      "destination": "10.73.1.4:22",
+      "access": "Deny",
+      "rule": "securityRules/DenyDirectAdminTcp"
+    },
+    "internet_tcp_443": {
+      "source": "203.0.113.10:40000",
+      "destination": "10.73.1.4:443",
+      "access": "Deny",
+      "rule": "securityRules/DenyDirectAdminTcp"
+    }
+  },
+  "overlay": {
+    "server_node_online": true,
+    "hostname": "fleet-server",
+    "magic_dns_name": "fleet-server.tail2ea909.ts.net",
+    "tailscale_ssh_enabled": false,
+    "advertised_routes": []
+  },
+  "authorized_client_e2e": "PENDING_MAC_TAILSCALE_ENROLLMENT",
+  "unauthorized_principal_e2e": "PENDING_TAILNET_POLICY_APPLY"
+}

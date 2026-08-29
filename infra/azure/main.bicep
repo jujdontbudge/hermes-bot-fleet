@@ -7,6 +7,8 @@ param location string = 'westus'
 param resourceGroupName string = 'rg-hermes-fleet-prod'
 param deploymentName string = 'hermes-fleet-runtime'
 param adminUsername string = 'fleetadmin'
+@description('Pinned image for new VMs. Deploy script preserves an existing VM model value while checking exactVersion evidence.')
+param imageVersion string = '24.04.202608270'
 @secure()
 param adminSshPublicKey string
 
@@ -31,6 +33,7 @@ module runtime 'runtime.bicep' = {
   params: {
     location: location
     adminUsername: adminUsername
+    imageVersion: imageVersion
     adminSshPublicKey: adminSshPublicKey
     tags: tags
   }

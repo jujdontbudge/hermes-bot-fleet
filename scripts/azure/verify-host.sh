@@ -28,12 +28,15 @@ check tailscale_ssh_disabled bash -c 'tailscale debug prefs | jq -e '\''.RunSSH 
 fail_json=$(printf '%s\n' "${failures[@]:-}" | jq -Rsc 'split("\n") | map(select(length > 0))')
 ts_status=$(tailscale status --json)
 ts_prefs=$(tailscale debug prefs)
+node_id_sha256=$(jq -r '.Self.ID' <<<"$ts_status" | sha256sum | cut -d' ' -f1)
 jq -cn --argjson passed "$pass" --argjson failures "$fail_json" \
   --arg boot_id "$(cat /proc/sys/kernel/random/boot_id)" --arg kernel "$(uname -r)" \
+  --arg node_id_sha256 "$node_id_sha256" \
   --argjson ts_status "$ts_status" --argjson ts_prefs "$ts_prefs" \
   '{schema_version:"1.0",control_set:"issue-10-host-hardening",passed:$passed,failures:$failures,
     boot_id:$boot_id,kernel:$kernel,
     tailscale:{state:$ts_status.BackendState,hostname:$ts_status.Self.HostName,
       ips:$ts_status.Self.TailscaleIPs,online:$ts_status.Self.Online,
+      node_id_sha256:$node_id_sha256,magic_dns_suffix:$ts_status.MagicDNSSuffix,
       ssh_enabled:$ts_prefs.RunSSH,advertised_routes:($ts_prefs.AdvertiseRoutes // [])}}'
 [[ $pass == true ]]

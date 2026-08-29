@@ -15,12 +15,18 @@ class AzureRuntimeIaCTest(unittest.TestCase):
     def test_no_public_ip_or_inbound_allow(self):
         self.assertNotIn("publicIPAddresses", self.runtime)
         self.assertIn("No publicIPAddress property", self.runtime)
-        self.assertIn("securityRules: []", self.runtime)
+        self.assertNotIn("access: 'Allow'", self.runtime)
+        self.assertIn("name: 'DenyDirectAdminTcp'", self.runtime)
+        self.assertIn("destinationPortRanges: ['22', '443']", self.runtime)
 
     def test_trusted_launch_and_platform_disk_encryption(self):
         for value in ("TrustedLaunch", "encryptionAtHost: true", "secureBootEnabled: true", "vTpmEnabled: true", "StandardSSD_LRS"):
             self.assertIn(value, self.runtime)
         self.assertNotIn("VMGuestStateOnly", self.runtime)
+        main = (ROOT / "infra/azure/main.bicep").read_text()
+        self.assertIn("param imageVersion string = '24.04.202608270'", main)
+        self.assertNotIn("version: 'latest'", self.runtime)
+        self.assertIn('IMAGE_VERSION=${IMAGE_VERSION:-24.04.202608270}', self.deploy)
 
     def test_identity_auth_and_patching(self):
         for value in ("type: 'SystemAssigned'", "disablePasswordAuthentication: true", "patchMode: 'AutomaticByPlatform'", "assessmentMode: 'AutomaticByPlatform'"):
@@ -46,6 +52,15 @@ class AzureRuntimeIaCTest(unittest.TestCase):
         self.assertNotIn("tailscale up", self.bootstrap)
         self.assertIn("tailscale down", self.bootstrap)
 
+    def test_tailnet_policy_is_default_deny_and_narrow(self):
+        policy = (ROOT / "infra/tailscale/policy.hujson").read_text()
+        self.assertNotIn('"src": ["*"]', policy)
+        self.assertNotIn('"dst": ["*"]', policy)
+        self.assertNotIn('"ip": ["*"]', policy)
+        self.assertIn('"ip": ["tcp:22", "tcp:443"]', policy)
+        self.assertIn('"proto": "tcp"', policy)
+        self.assertIn('"deny": ["fleet-server:22", "fleet-server:443"]', policy)
+
     def test_committed_evidence_if_present(self):
         evidence = ROOT / "evidence/issue-10"
         if not evidence.exists():
@@ -55,6 +70,10 @@ class AzureRuntimeIaCTest(unittest.TestCase):
         self.assertEqual(azure["vm"]["public_ips"], "")
         self.assertEqual(azure["network"]["public_ip_association_count"], 0)
         self.assertEqual(azure["network"]["custom_inbound_allow_rule_count"], 0)
+        self.assertEqual(azure["network"]["custom_inbound_admin_deny_rule_count"], 1)
+        self.assertEqual(azure["vm"]["image"]["exact_version"], "24.04.202608270")
+        self.assertTrue(azure["network"]["vnet_id"].endswith("/virtualNetworks/vnet-hermes-fleet-prod"))
+        self.assertTrue(azure["network"]["subnet_id"].endswith("/subnets/snet-runtime"))
         self.assertTrue(azure["vm"]["encryption_at_host"])
         self.assertEqual(azure["disk"]["encryption_type"], "EncryptionAtRestWithPlatformKey")
         self.assertEqual(azure["disk"]["network_access_policy"], "DenyAll")

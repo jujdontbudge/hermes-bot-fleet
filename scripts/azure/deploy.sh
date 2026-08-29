@@ -12,12 +12,21 @@ az account show --query "state" -o tsv | grep -qx Enabled
 [[ -f "$SSH_PUBLIC_KEY_FILE" ]] || { echo "operator public key not found: $SSH_PUBLIC_KEY_FILE" >&2; exit 2; }
 [[ $(awk '{print NF}' "$SSH_PUBLIC_KEY_FILE") -ge 2 ]] || { echo 'invalid SSH public key' >&2; exit 2; }
 
+# Azure forbids changing imageReference on an existing VM model. New deployments use
+# the pinned Bicep default; idempotent updates preserve the configured selector and
+# independently require the observed exactVersion in collected evidence.
+IMAGE_VERSION=${IMAGE_VERSION:-}
+if [[ -z "$IMAGE_VERSION" ]] && az vm show -g "$RESOURCE_GROUP" -n vm-hermes-fleet-01 --query id -o tsv >/dev/null 2>&1; then
+  IMAGE_VERSION=$(az vm show -g "$RESOURCE_GROUP" -n vm-hermes-fleet-01 --query storageProfile.imageReference.version -o tsv)
+fi
+IMAGE_VERSION=${IMAGE_VERSION:-24.04.202608270}
+
 az deployment sub create \
   --name "$DEPLOYMENT" \
   --location "$LOCATION" \
   --template-file "$ROOT/infra/azure/main.bicep" \
   --parameters location="$LOCATION" resourceGroupName="$RESOURCE_GROUP" \
-    adminSshPublicKey="$(<"$SSH_PUBLIC_KEY_FILE")" \
+    adminSshPublicKey="$(<"$SSH_PUBLIC_KEY_FILE")" imageVersion="$IMAGE_VERSION" \
   --query '{provisioningState:properties.provisioningState,outputs:properties.outputs}' \
   --output json
 

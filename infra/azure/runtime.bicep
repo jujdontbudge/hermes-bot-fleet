@@ -1,5 +1,6 @@
 param location string
 param adminUsername string
+param imageVersion string
 @secure()
 param adminSshPublicKey string
 param tags object
@@ -15,8 +16,23 @@ resource nsg 'Microsoft.Network/networkSecurityGroups@2024-05-01' = {
   location: location
   tags: tags
   properties: {
-    // Intentionally no custom inbound allow rules. Azure default DenyAllInBound remains.
-    securityRules: []
+    // Inner Tailscale TCP is injected after the Azure NIC. This deny blocks direct
+    // private-NIC 22/443 while leaving outbound-initiated Tailscale transport intact.
+    securityRules: [
+      {
+        name: 'DenyDirectAdminTcp'
+        properties: {
+          priority: 100
+          direction: 'Inbound'
+          access: 'Deny'
+          protocol: 'Tcp'
+          sourcePortRange: '*'
+          destinationPortRanges: ['22', '443']
+          sourceAddressPrefix: '*'
+          destinationAddressPrefix: '*'
+        }
+      }
+    ]
   }
 }
 
@@ -98,7 +114,7 @@ resource vm 'Microsoft.Compute/virtualMachines@2024-07-01' = {
         publisher: 'Canonical'
         offer: 'ubuntu-24_04-lts'
         sku: 'server'
-        version: 'latest'
+        version: imageVersion
       }
       osDisk: {
         name: '${vmName}-osdisk'

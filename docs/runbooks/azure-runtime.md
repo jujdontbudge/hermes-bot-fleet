@@ -66,3 +66,12 @@ or documentation. After authorization, rerun the collector and inspect `tailscal
 status --json` through Run Command; Tailscale SSH must remain false. Tailnet ACL/device
 posture authorization is a human control-plane step and is not inferred from node
 enrollment.
+
+The reviewed default-deny policy is `infra/tailscale/policy.hujson`. In the Tailscale
+admin console, replace the default allow-all policy with that file and save only after
+its embedded tests pass. It grants Johan's account only TCP 22/443 to the stable
+`fleet-server` address, denies all other paths implicitly, and includes explicit denial
+tests. MagicDNS must remain enabled; Funnel, Tailscale SSH, exit-node advertisement,
+subnet routes, and public sharing remain disabled. After the approved Mac joins the
+same tailnet, verify SSH with the durable key to `fleet-server.tail2ea909.ts.net`, test
+TCP 443 reachability, and prove the listed prohibited ports fail.

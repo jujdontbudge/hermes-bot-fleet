@@ -34,6 +34,9 @@ jq -n -S \
       private_ips:$v.privateIps,public_ips:($v.publicIps // ""),identity_type:$v.identity.type,
       managed_identity_role_assignment_count:($roles[0]|length),
       vm_size:$v.hardwareProfile.vmSize,security_type:$v.securityProfile.securityType,
+      image:{publisher:$v.storageProfile.imageReference.publisher,offer:$v.storageProfile.imageReference.offer,
+        sku:$v.storageProfile.imageReference.sku,configured_version:$v.storageProfile.imageReference.version,
+        exact_version:$v.storageProfile.imageReference.exactVersion},
       encryption_at_host:$v.securityProfile.encryptionAtHost,
       secure_boot:$v.securityProfile.uefiSettings.secureBootEnabled,
       vtpm:$v.securityProfile.uefiSettings.vTpmEnabled,
@@ -43,7 +46,11 @@ jq -n -S \
     network:{nic_id:($n.id|sub("^/subscriptions/[^/]+";"/subscriptions/[REDACTED]")),
       public_ip_association_count:([($n.ipConfigurations // [])[]|select(.publicIPAddress != null)]|length),
       ip_forwarding:$n.enableIPForwarding,accelerated_networking:$n.enableAcceleratedNetworking,
-      nsg_id:($s.id|sub("^/subscriptions/[^/]+";"/subscriptions/[REDACTED]")),custom_inbound_allow_rule_count:([($s.securityRules // [])[]|select(.direction=="Inbound" and .access=="Allow")]|length)},
+      subnet_id:($n.ipConfigurations[0].subnet.id|sub("^/subscriptions/[^/]+";"/subscriptions/[REDACTED]")),
+      vnet_id:($n.ipConfigurations[0].subnet.id|sub("/subnets/[^/]+$";"")|sub("^/subscriptions/[^/]+";"/subscriptions/[REDACTED]")),
+      nsg_id:($s.id|sub("^/subscriptions/[^/]+";"/subscriptions/[REDACTED]")),
+      custom_inbound_allow_rule_count:([($s.securityRules // [])[]|select(.direction=="Inbound" and .access=="Allow")]|length),
+      custom_inbound_admin_deny_rule_count:([($s.securityRules // [])[]|select(.direction=="Inbound" and .access=="Deny" and .priority<65000 and ((.destinationPortRanges // [])|sort==["22","443"]))]|length)},
     disk:{id:($d.id|sub("^/subscriptions/[^/]+";"/subscriptions/[REDACTED]")),sku:$d.sku.name,size_gb:$d.diskSizeGB,encryption_type:$d.encryption.type,
       network_access_policy:$d.networkAccessPolicy,public_network_access:$d.publicNetworkAccess},
     instance:{provisioning_state:([($i.instanceView.statuses // [])[]|select(.code|startswith("ProvisioningState/"))][0].displayStatus),
@@ -56,8 +63,9 @@ jq -r '[.value[].message | split("\n")[] | select(startswith("{"))] | last' \
 
 jq -e '
   .vm.public_ips=="" and .network.public_ip_association_count==0 and
-  .network.custom_inbound_allow_rule_count==0 and .network.ip_forwarding==false and
+  .network.custom_inbound_allow_rule_count==0 and .network.custom_inbound_admin_deny_rule_count==1 and .network.ip_forwarding==false and
   .vm.identity_type=="SystemAssigned" and .vm.security_type=="TrustedLaunch" and
+  .vm.image.exact_version=="24.04.202608270" and
   .vm.managed_identity_role_assignment_count==0 and
   .vm.encryption_at_host==true and .vm.secure_boot==true and .vm.vtpm==true and
   .vm.password_auth_disabled==true and .vm.patch_mode=="AutomaticByPlatform" and

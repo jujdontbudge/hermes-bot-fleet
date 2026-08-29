@@ -14,11 +14,14 @@
   },
   "network": {
     "accelerated_networking": true,
+    "custom_inbound_admin_deny_rule_count": 1,
     "custom_inbound_allow_rule_count": 0,
     "ip_forwarding": false,
     "nic_id": "/subscriptions/[REDACTED]/resourceGroups/rg-hermes-fleet-prod/providers/Microsoft.Network/networkInterfaces/nic-hermes-fleet-01",
     "nsg_id": "/subscriptions/[REDACTED]/resourceGroups/rg-hermes-fleet-prod/providers/Microsoft.Network/networkSecurityGroups/nsg-hermes-fleet-prod",
-    "public_ip_association_count": 0
+    "public_ip_association_count": 0,
+    "subnet_id": "/subscriptions/[REDACTED]/resourceGroups/rg-hermes-fleet-prod/providers/Microsoft.Network/virtualNetworks/vnet-hermes-fleet-prod/subnets/snet-runtime",
+    "vnet_id": "/subscriptions/[REDACTED]/resourceGroups/rg-hermes-fleet-prod/providers/Microsoft.Network/virtualNetworks/vnet-hermes-fleet-prod"
   },
   "resource_group": {
     "id": "/subscriptions/[REDACTED]/resourceGroups/rg-hermes-fleet-prod",
@@ -39,6 +42,13 @@
     "encryption_at_host": true,
     "id": "/subscriptions/[REDACTED]/resourceGroups/rg-hermes-fleet-prod/providers/Microsoft.Compute/virtualMachines/vm-hermes-fleet-01",
     "identity_type": "SystemAssigned",
+    "image": {
+      "configured_version": "latest",
+      "exact_version": "24.04.202608270",
+      "offer": "ubuntu-24_04-lts",
+      "publisher": "Canonical",
+      "sku": "server"
+    },
     "location": "westus",
     "managed_identity_role_assignment_count": 0,
     "name": "vm-hermes-fleet-01",

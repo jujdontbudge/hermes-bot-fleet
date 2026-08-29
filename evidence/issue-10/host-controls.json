@@ -12,6 +12,8 @@
       "100.102.207.42",
       "fd7a:115c:a1e0::ac01:cfca"
     ],
+    "magic_dns_suffix": "tail2ea909.ts.net",
+    "node_id_sha256": "6a72dbb25a041202dfdc775dbea08835ae3ab308cba4df45b23273075dfd1b79",
     "online": true,
     "ssh_enabled": false,
     "state": "Running"
