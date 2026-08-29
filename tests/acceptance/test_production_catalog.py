@@ -27,6 +27,7 @@ REQUIRED_REQUIREMENT = {
     "authoritative_evidence",
     "failure_rollback_behavior", "destructive", "secret_risk", "mandatory",
 }
+PSC_EXTRA_FIELD = "source_target_bot"
 REQUIRED_CATEGORIES = {
     "repository", "azure", "network", "services", "gateway-scheduler",
     "telegram", "bot-isolation", "desktop-rooms", "routines", "browser",
@@ -61,6 +62,7 @@ LOCKED_SOURCE_CASES = {
     *(f"FAIL-{number:02d}" for number in range(1, 3)),
     "BG-01", "ISO-01", "SCAN-01",
 }
+LAPTOP_SOURCE_CASES = {"AUTH-02", "MAC-01", "MAC-02", "MAC-03", "BG-01"}
 REQUIRED_IDS = {
     "AZR-001", "AZR-003", "AZR-004", "NET-001", "NET-003", "SVC-001",
     "SVC-002", "SVC-005", "GAT-001", "GAT-002", "GAT-004", "TEL-001",
@@ -164,7 +166,8 @@ class ProductionCatalogTest(unittest.TestCase):
         self.assertGreaterEqual(len(self.requirements), 80)
         for item in self.requirements:
             with self.subTest(item=item.get("id")):
-                self.assertEqual(set(item), REQUIRED_REQUIREMENT)
+                expected_fields = REQUIRED_REQUIREMENT | ({PSC_EXTRA_FIELD} if item["category"] == "policy-security" else set())
+                self.assertEqual(set(item), expected_fields)
                 self.assertRegex(item["id"], r"^[A-Z]{3}-\d{3}$")
                 for field in ("category", "requirement", "command_test_hook"):
                     self.assertIsInstance(item[field], str)
@@ -180,10 +183,14 @@ class ProductionCatalogTest(unittest.TestCase):
                 self.assertIs(type(item["destructive"]), bool)
                 self.assertIs(type(item["secret_risk"]), bool)
                 self.assertIs(item["mandatory"], True)
-                self.assertEqual(
-                    item["command_test_hook"],
-                    f"acceptance/hooks/run-requirement --id {item['id']} --target {item['target']['environment']}",
-                )
+                expected_hook = f"acceptance/hooks/run-requirement --id {item['id']} --target {item['target']['environment']}"
+                if item["category"] == "policy-security":
+                    expected_hook += (
+                        f" --source-target-bot {item['source_target_bot']}"
+                        " --deployment-identity-digest ${SOURCE_DEPLOYMENT_IDENTITY_DIGEST}"
+                        " --data-scope disposable-test-owned"
+                    )
+                self.assertEqual(item["command_test_hook"], expected_hook)
                 self.assertTrue(all(path.startswith("evidence/{run_id}/") for path in item["evidence_artifacts"]))
                 if item["destructive"] and item["target"]["environment"] == "live-production":
                     self.assertEqual(item["id"], "SVC-005")
@@ -236,6 +243,28 @@ class ProductionCatalogTest(unittest.TestCase):
         policy_ids = {item["id"] for item in self.requirements if item["category"] == "policy-security"}
         self.assertEqual(policy_ids, set(flattened))
 
+    def test_every_psc_binds_exact_source_bot_deployment_and_disposable_data(self):
+        expected_by_id = {}
+        for case, requirement_ids in self.catalog["locked_source_crosswalk"].items():
+            bot = "laptop-worker" if case in LAPTOP_SOURCE_CASES else "test-worker"
+            for rid in requirement_ids:
+                expected_by_id[rid] = bot
+        policy_items = [item for item in self.requirements if item["category"] == "policy-security"]
+        self.assertEqual(set(expected_by_id), {item["id"] for item in policy_items})
+        for item in policy_items:
+            with self.subTest(item=item["id"]):
+                bot = expected_by_id[item["id"]]
+                self.assertEqual(item["source_target_bot"], bot)
+                self.assertIn(f"--source-target-bot {bot}", item["command_test_hook"])
+                self.assertIn("--deployment-identity-digest ${SOURCE_DEPLOYMENT_IDENTITY_DIGEST}", item["command_test_hook"])
+                self.assertIn("--data-scope disposable-test-owned", item["command_test_hook"])
+                evidence = " ".join(item["authoritative_evidence"])
+                criteria = " ".join(item["pass_criteria"])
+                for exact in (f"Exact source Bot {bot} deployed policy gate/runtime identity manifest", "deployment identity digest", "disposable test-owned fixture inventory"):
+                    self.assertIn(exact, evidence)
+                for exact in (f"source_target_bot equals {bot}", "deployed_gate_runtime_identity_digest equals the expected reviewed source deployment identity digest", "gate_runtime_instance_count equals 1", "test_data_scope equals disposable-test-owned", "production_data_read_count equals 0", "production_data_mutation_count equals 0", "production_credential_count equals 0"):
+                    self.assertIn(exact, criteria)
+
     def test_aud04_and_aud05_have_exact_live_and_disposable_composition(self):
         expected = {
             "AUD-04": {"PSC-022": ("live-production", False), "PSC-029": ("disposable-fixture", True)},
@@ -249,12 +278,12 @@ class ProductionCatalogTest(unittest.TestCase):
 
     def test_reviewer_locked_policy_cases_have_all_exact_adversarial_parts(self):
         expected_terms = {
-            "PSC-003": ("uncertain-commit retry", "original idempotency_key", "unchanged_idempotent_fixture", "fresh single-use grant"),
+            "PSC-003": ("consumed_retry_without_fresh_exact_manifest_or_grant_decision", "uncertain_commit_retry_without_fresh_exact_manifest_or_grant_decision", "unchanged_idempotent_retry_without_fresh_exact_manifest_or_grant_decision", "authorized_reconciled_path", "fresh_single_use_grant_present"),
             "PSC-021": ("archive-object digest mutation", "broken previous-checkpoint/cross-checkpoint link", "invalid"),
-            "PSC-022": ("400", "collector_rights", "daily_verification_schedule", "monthly_verification_schedule"),
+            "PSC-022": ("400", "collector_rights", "retained_daily_verification_receipt_count", "daily_due_run_count", "retained_monthly_verification_receipt_count", "monthly_due_run_count", "skipped_or_failed_run_alert_count", "telegram alert correlation_id"),
             "PSC-029": ("accelerated", "tampered_object", "wrong/malformed tags", "cleanup_remaining_object_count"),
-            "PSC-023": ("distinct-key", "revoked_key", "root cross-certificate", "unknown_root"),
-            "PSC-030": ("retired_key", "multi-key", "missing, malformed, forged", "incomplete-key-set", "extra-key-set", "key_destroyed", "post_cleanup_fixture_key_count"),
+            "PSC-023": ("real live storage control plane", "immutable_retention_days", "400", "retention_lock_state", "distinct-key", "revoked_key", "affected interval", "old/new root cross-certificate", "unknown_root"),
+            "PSC-030": ("signing_key_rotation_executed", "signing_key_revocation_executed", "revoked-key affected interval", "unknown_key_signature_result", "old_root_to_new_root_cross_certificate_result", "new_root_to_old_root_cross_certificate_result", "retired_hmac_key", "missing, malformed, forged", "incomplete-key-set", "extra-key-set", "key_destroyed", "post_cleanup_fixture_key_count"),
         }
         for rid, terms in expected_terms.items():
             text = " ".join(all_strings(self.by_id[rid])).lower()
@@ -275,7 +304,7 @@ class ProductionCatalogTest(unittest.TestCase):
         self.assertEqual(live["target"]["environment"], "live-production")
         self.assertIs(live["destructive"], False)
         live_text = " ".join(all_strings(live)).lower()
-        for phrase in ("chief", "test-worker", "laptop-worker", "gateway", "serve", "pre-activation", "session_write", "memory_write", "cron_tick", "restart order", "correlation_id", "commit_receipt", "db", "wal", "integrity_check", "cleanup"):
+        for phrase in ("chief", "test-worker", "laptop-worker", "telegram", "desktop", "bounded concurrent", "submitted_count", "accepted_count", "reply_count", "cron ticks execute", "session_write", "memory_write", "restart order", "correlation_id", "commit_receipt", "lost_count", "duplicate_reply_count", "cross_interface_attribution_count", "cross_profile_attribution_count", "db", "wal", "integrity_check", "cleanup"):
             self.assertIn(phrase, live_text)
         fixture = self.by_id["GAT-005"]
         self.assertEqual(fixture["target"]["environment"], "disposable-fixture")
@@ -289,8 +318,48 @@ class ProductionCatalogTest(unittest.TestCase):
         self.assertEqual(item["target"]["environment"], "live-production")
         self.assertIs(item["destructive"], False)
         text = " ".join(all_strings(item)).lower()
-        for phrase in ("7 daily", "4 weekly", "3 monthly", "chief", "test-worker", "laptop-worker", "r5", "mac-local", "excluded", "retention-policy.json", "restore-point-inventory.json", "deletion-authority.json", "laptop-worker-r5.json"):
+        for phrase in ("7 daily", "4 weekly", "3 monthly", "chief", "test-worker", "laptop-worker", "r5", "mac-local", "actual_backup_configuration_present", "encryption_at_rest", "inventory_object_count", ".env", "auth.json", "profile-home credentials", "r3 paths", "azure r1/r2 paths", "retention-policy.json", "restore-point-inventory.json", "deletion-authority.json", "laptop-worker-r5.json"):
             self.assertIn(phrase, text)
+
+    def test_psc003_has_three_zero_receipt_denials_then_authorized_reconciliation(self):
+        item = self.by_id["PSC-003"]
+        criteria = " ".join(item["pass_criteria"])
+        for retry in ("consumed_retry", "uncertain_commit_retry", "unchanged_idempotent_retry"):
+            self.assertIn(f"{retry}_without_fresh_exact_manifest_or_grant_decision equals DENY", criteria)
+            self.assertIn(f"{retry}_receipt_count equals 0", criteria)
+        for assertion in ("authorized_reconciled_path preserves original idempotency_key", "authoritative_reconciliation_result equals NO_PRIOR_COMMIT", "fresh_exact_manifest_digest_present equals true", "fresh_single_use_grant_present equals true", "authorized_reconciled_receipt_count equals 1"):
+            self.assertIn(assertion, criteria)
+
+    def test_psc022_requires_retained_live_due_observed_receipts_and_alert_correlation(self):
+        item = self.by_id["PSC-022"]
+        self.assertEqual(item["evidence_artifacts"], ["evidence/{run_id}/policy-security/aud-04-live.json"])
+        criteria = " ".join(item["pass_criteria"])
+        for assertion in ("retained_daily_verification_receipt_count equals daily_due_run_count", "retained_monthly_verification_receipt_count equals monthly_due_run_count", "real completed live-production run", "skipped_or_failed_run_alert_count equals skipped_or_failed_run_count", "every skipped/failed run correlation_id equals exactly one Telegram alert correlation_id"):
+            self.assertIn(assertion, criteria)
+
+    def test_psc023_and_psc030_separate_real_retention_inspection_from_key_execution(self):
+        live = self.by_id["PSC-023"]
+        fixture = self.by_id["PSC-030"]
+        live_criteria = " ".join(live["pass_criteria"])
+        for assertion in ("storage_configuration_source equals real live storage control plane", "immutable_retention_days is greater than or equal to 400", "retention_lock_state equals immutable"):
+            self.assertIn(assertion, live_criteria)
+        fixture_criteria = " ".join(fixture["pass_criteria"])
+        for assertion in ("signing_key_rotation_executed and signing_key_revocation_executed each equal true", "revoked_key_new_signature_result and unknown_key_signature_result each equal DENY", "every revoked-key affected interval trust_mark equals REVOKED_OR_UNTRUSTED", "old_root_to_new_root_cross_certificate_result and new_root_to_old_root_cross_certificate_result each equal VALID", "retired_hmac_key_new_signature_result equals DENY"):
+            self.assertIn(assertion, fixture_criteria)
+
+    def test_gat002_structurally_declares_concurrent_interface_evidence_and_exact_counts(self):
+        item = self.by_id["GAT-002"]
+        self.assertIn("evidence/{run_id}/gateway/live-concurrent-interface-bursts.json", item["evidence_artifacts"])
+        criteria = " ".join(item["pass_criteria"])
+        for assertion in ("each exact live chief, test-worker, and laptop-worker", "bounded concurrent Telegram and Desktop bursts while cron ticks execute", "submitted_count equals accepted_count and accepted_count equals reply_count", "every accepted item and cron tick has exactly one unique correlation_id", "lost_count, duplicate_reply_count, duplicate_commit_count, cross_interface_attribution_count, cross_profile_attribution_count, and unbounded_operation_count each equal 0"):
+            self.assertIn(assertion, criteria)
+
+    def test_bkp007_requires_actual_encrypted_inventory_and_exact_secret_exclusions(self):
+        item = self.by_id["BKP-007"]
+        self.assertIn("evidence/{run_id}/backup/laptop-worker-r5.json", item["evidence_artifacts"])
+        criteria = " ".join(item["pass_criteria"])
+        for assertion in ("actual_backup_configuration_present equals true", "encryption_at_rest equals enabled", "encryption_key_handle_present equals true", "inventory_object_count is greater than or equal to 1", "inventory_checksum_failure_count equals 0", "inclusion counts for .env, auth.json, profile-home credentials, R3 paths, and Azure R1/R2 paths each equal 0"):
+            self.assertIn(assertion, criteria)
 
     def test_unique_stable_ids_and_complete_execution_order(self):
         ids = [item["id"] for item in self.requirements]

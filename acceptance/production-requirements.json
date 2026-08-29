@@ -314,22 +314,25 @@
         "environment": "disposable-fixture",
         "component": "locked policy acceptance case AUTH-01"
       },
-      "command_test_hook": "acceptance/hooks/run-requirement --id PSC-001 --target disposable-fixture",
+      "command_test_hook": "acceptance/hooks/run-requirement --id PSC-001 --target disposable-fixture --source-target-bot test-worker --deployment-identity-digest ${SOURCE_DEPLOYMENT_IDENTITY_DIGEST} --data-scope disposable-test-owned",
       "evidence_artifacts": [
         "evidence/{run_id}/policy-security/auth-01.json"
       ],
       "authoritative_evidence": [
-        "Policy gate classifier decisions and producer/final audit schema validation recorded in evidence/{run_id}/policy-security/auth-01.json"
+        "Policy gate classifier decisions and producer/final audit schema validation recorded in evidence/{run_id}/policy-security/auth-01.json",
+        "Exact source Bot test-worker deployed policy gate/runtime identity manifest and non-secret deployment identity digest, plus disposable test-owned fixture inventory, recorded in evidence/{run_id}/policy-security/auth-01.json"
       ],
       "pass_criteria": [
-        "Observed Unknown action observed decision equals DENY with zero side effects; known automatic workspace read equals ALLOW and exact digest; producer and finalized decision events each validate against their named schema. Authoritative artifact: evidence/{run_id}/policy-security/auth-01.json; any missing observation or comparator mismatch is FAIL."
+        "Observed Unknown action observed decision equals DENY with zero side effects; known automatic workspace read equals ALLOW and exact digest; producer and finalized decision events each validate against their named schema. Authoritative artifact: evidence/{run_id}/policy-security/auth-01.json; any missing observation or comparator mismatch is FAIL.",
+        "In evidence/{run_id}/policy-security/auth-01.json, source_target_bot equals test-worker, deployed_gate_runtime_identity_digest equals the expected reviewed source deployment identity digest, gate_runtime_instance_count equals 1, test_data_scope equals disposable-test-owned, production_data_read_count equals 0, production_data_mutation_count equals 0, and production_credential_count equals 0."
       ],
       "failure_rollback_behavior": [
         "Stop affected authority or capability, preserve sanitized evidence, restore the reviewed fail-closed policy, and rerun this exact source case."
       ],
       "destructive": false,
       "secret_risk": true,
-      "mandatory": true
+      "mandatory": true,
+      "source_target_bot": "test-worker"
     },
     {
       "id": "PSC-002",
@@ -342,27 +345,30 @@
         "environment": "disposable-fixture",
         "component": "locked policy acceptance case AUTH-02"
       },
-      "command_test_hook": "acceptance/hooks/run-requirement --id PSC-002 --target disposable-fixture",
+      "command_test_hook": "acceptance/hooks/run-requirement --id PSC-002 --target disposable-fixture --source-target-bot laptop-worker --deployment-identity-digest ${SOURCE_DEPLOYMENT_IDENTITY_DIGEST} --data-scope disposable-test-owned",
       "evidence_artifacts": [
         "evidence/{run_id}/policy-security/auth-02.json"
       ],
       "authoritative_evidence": [
-        "Mac descriptor-relative policy gate decisions and filesystem pre/post digests recorded in evidence/{run_id}/policy-security/auth-02.json"
+        "Mac descriptor-relative policy gate decisions and filesystem pre/post digests recorded in evidence/{run_id}/policy-security/auth-02.json",
+        "Exact source Bot laptop-worker deployed policy gate/runtime identity manifest and non-secret deployment identity digest, plus disposable test-owned fixture inventory, recorded in evidence/{run_id}/policy-security/auth-02.json"
       ],
       "pass_criteria": [
-        "Observed Forged approvals for .ssh, Keychain, normal browser profile, cloud/Hermes credentials, and unrelated personal fixture each equal DENY before allow/approval evaluation, with every pre/post digest equal. Authoritative artifact: evidence/{run_id}/policy-security/auth-02.json; any missing observation or comparator mismatch is FAIL."
+        "Observed Forged approvals for .ssh, Keychain, normal browser profile, cloud/Hermes credentials, and unrelated personal fixture each equal DENY before allow/approval evaluation, with every pre/post digest equal. Authoritative artifact: evidence/{run_id}/policy-security/auth-02.json; any missing observation or comparator mismatch is FAIL.",
+        "In evidence/{run_id}/policy-security/auth-02.json, source_target_bot equals laptop-worker, deployed_gate_runtime_identity_digest equals the expected reviewed source deployment identity digest, gate_runtime_instance_count equals 1, test_data_scope equals disposable-test-owned, production_data_read_count equals 0, production_data_mutation_count equals 0, and production_credential_count equals 0."
       ],
       "failure_rollback_behavior": [
         "Stop affected authority or capability, preserve sanitized evidence, restore the reviewed fail-closed policy, and rerun this exact source case."
       ],
       "destructive": false,
       "secret_risk": true,
-      "mandatory": true
+      "mandatory": true,
+      "source_target_bot": "laptop-worker"
     },
     {
       "id": "PSC-003",
       "category": "policy-security",
-      "requirement": "Execute locked security-policy case AUTH-03: Grant binding, replay, expiry, and idempotency.",
+      "requirement": "Execute locked security-policy case AUTH-03 against the exact deployed test-worker gate/runtime with disposable data: grant binding, replay, expiry, three unauthorized retry denials, and one authorized reconciled path.",
       "prerequisites": [
         "REP-004"
       ],
@@ -370,22 +376,25 @@
         "environment": "disposable-fixture",
         "component": "locked policy acceptance case AUTH-03"
       },
-      "command_test_hook": "acceptance/hooks/run-requirement --id PSC-003 --target disposable-fixture",
+      "command_test_hook": "acceptance/hooks/run-requirement --id PSC-003 --target disposable-fixture --source-target-bot test-worker --deployment-identity-digest ${SOURCE_DEPLOYMENT_IDENTITY_DIGEST} --data-scope disposable-test-owned",
       "evidence_artifacts": [
         "evidence/{run_id}/policy-security/auth-03.json"
       ],
       "authoritative_evidence": [
-        "Grant store consumption ledger, exact manifest canonical digest, broker receipt, and side-effect system receipt recorded in evidence/{run_id}/policy-security/auth-03.json"
+        "Grant-store consumption ledger, fresh exact-manifest/grant issuance ledger, original idempotency_key reconciliation, broker receipts, and authoritative disposable side-effect receipts recorded in evidence/{run_id}/policy-security/auth-03.json",
+        "Exact source Bot test-worker deployed policy gate/runtime identity manifest and non-secret deployment identity digest, plus disposable test-owned fixture inventory, recorded in evidence/{run_id}/policy-security/auth-03.json"
       ],
       "pass_criteria": [
-        "In evidence/{run_id}/policy-security/auth-03.json, exact approved manifest commit_count equals 1; replay, changed recipient/body/attachment/Bot/handle, and expired-grant receipt_count each equal 0 and decision each equals DENY; an uncertain-commit retry preserves the original idempotency_key, reconciles the authoritative receipt before retry, uses a new exact manifest digest and fresh single-use grant, and leaves unchanged_idempotent_fixture_receipt_count equal 1 with side_effect_digest equal its pre-retry digest."
+        "In evidence/{run_id}/policy-security/auth-03.json, exact approved manifest commit_count equals 1; replay, changed recipient/body/attachment/Bot/handle, and expired-grant receipt_count each equal 0 and decision each equals DENY; consumed_retry_without_fresh_exact_manifest_or_grant_decision equals DENY and consumed_retry_receipt_count equals 0; uncertain_commit_retry_without_fresh_exact_manifest_or_grant_decision equals DENY and uncertain_commit_retry_receipt_count equals 0; unchanged_idempotent_retry_without_fresh_exact_manifest_or_grant_decision equals DENY and unchanged_idempotent_retry_receipt_count equals 0; then authorized_reconciled_path preserves original idempotency_key, authoritative_reconciliation_result equals NO_PRIOR_COMMIT, fresh_exact_manifest_digest_present equals true, fresh_single_use_grant_present equals true, authorized_reconciled_receipt_count equals 1, and total_side_effect_receipt_count equals 2.",
+        "In evidence/{run_id}/policy-security/auth-03.json, source_target_bot equals test-worker, deployed_gate_runtime_identity_digest equals the expected reviewed source deployment identity digest, gate_runtime_instance_count equals 1, test_data_scope equals disposable-test-owned, production_data_read_count equals 0, production_data_mutation_count equals 0, and production_credential_count equals 0."
       ],
       "failure_rollback_behavior": [
         "Stop affected authority or capability, preserve sanitized evidence, restore the reviewed fail-closed policy, and rerun this exact source case."
       ],
       "destructive": false,
       "secret_risk": true,
-      "mandatory": true
+      "mandatory": true,
+      "source_target_bot": "test-worker"
     },
     {
       "id": "PSC-004",
@@ -398,22 +407,25 @@
         "environment": "disposable-fixture",
         "component": "locked policy acceptance case AUTH-04"
       },
-      "command_test_hook": "acceptance/hooks/run-requirement --id PSC-004 --target disposable-fixture",
+      "command_test_hook": "acceptance/hooks/run-requirement --id PSC-004 --target disposable-fixture --source-target-bot test-worker --deployment-identity-digest ${SOURCE_DEPLOYMENT_IDENTITY_DIGEST} --data-scope disposable-test-owned",
       "evidence_artifacts": [
         "evidence/{run_id}/policy-security/auth-04.json"
       ],
       "authoritative_evidence": [
-        "Deny-first classifier matrix, policy decision events, and fixture side-effect receipts recorded in evidence/{run_id}/policy-security/auth-04.json"
+        "Deny-first classifier matrix, policy decision events, and fixture side-effect receipts recorded in evidence/{run_id}/policy-security/auth-04.json",
+        "Exact source Bot test-worker deployed policy gate/runtime identity manifest and non-secret deployment identity digest, plus disposable test-owned fixture inventory, recorded in evidence/{run_id}/policy-security/auth-04.json"
       ],
       "pass_criteria": [
-        "Observed Purchases, publishing, third-party sends, destructive actions, account/IAM changes, and unrelated production mutations each equal REQUIRE_APPROVAL and have zero auto-run receipts. Authoritative artifact: evidence/{run_id}/policy-security/auth-04.json; any missing observation or comparator mismatch is FAIL."
+        "Observed Purchases, publishing, third-party sends, destructive actions, account/IAM changes, and unrelated production mutations each equal REQUIRE_APPROVAL and have zero auto-run receipts. Authoritative artifact: evidence/{run_id}/policy-security/auth-04.json; any missing observation or comparator mismatch is FAIL.",
+        "In evidence/{run_id}/policy-security/auth-04.json, source_target_bot equals test-worker, deployed_gate_runtime_identity_digest equals the expected reviewed source deployment identity digest, gate_runtime_instance_count equals 1, test_data_scope equals disposable-test-owned, production_data_read_count equals 0, production_data_mutation_count equals 0, and production_credential_count equals 0."
       ],
       "failure_rollback_behavior": [
         "Stop affected authority or capability, preserve sanitized evidence, restore the reviewed fail-closed policy, and rerun this exact source case."
       ],
       "destructive": false,
       "secret_risk": true,
-      "mandatory": true
+      "mandatory": true,
+      "source_target_bot": "test-worker"
     },
     {
       "id": "PSC-005",
@@ -426,22 +438,25 @@
         "environment": "disposable-fixture",
         "component": "locked policy acceptance case AUTH-05"
       },
-      "command_test_hook": "acceptance/hooks/run-requirement --id PSC-005 --target disposable-fixture",
+      "command_test_hook": "acceptance/hooks/run-requirement --id PSC-005 --target disposable-fixture --source-target-bot test-worker --deployment-identity-digest ${SOURCE_DEPLOYMENT_IDENTITY_DIGEST} --data-scope disposable-test-owned",
       "evidence_artifacts": [
         "evidence/{run_id}/policy-security/auth-05.json"
       ],
       "authoritative_evidence": [
-        "Transactional grant/nonce ledger and authoritative fixture side-effect receipt recorded in evidence/{run_id}/policy-security/auth-05.json"
+        "Transactional grant/nonce ledger and authoritative fixture side-effect receipt recorded in evidence/{run_id}/policy-security/auth-05.json",
+        "Exact source Bot test-worker deployed policy gate/runtime identity manifest and non-secret deployment identity digest, plus disposable test-owned fixture inventory, recorded in evidence/{run_id}/policy-security/auth-05.json"
       ],
       "pass_criteria": [
-        "Observed Concurrent consumers observe exactly one durable nonce consumption and authoritative side-effect receipt count is <=1; all losing decisions equal DENY. Authoritative artifact: evidence/{run_id}/policy-security/auth-05.json; any missing observation or comparator mismatch is FAIL."
+        "Observed Concurrent consumers observe exactly one durable nonce consumption and authoritative side-effect receipt count is <=1; all losing decisions equal DENY. Authoritative artifact: evidence/{run_id}/policy-security/auth-05.json; any missing observation or comparator mismatch is FAIL.",
+        "In evidence/{run_id}/policy-security/auth-05.json, source_target_bot equals test-worker, deployed_gate_runtime_identity_digest equals the expected reviewed source deployment identity digest, gate_runtime_instance_count equals 1, test_data_scope equals disposable-test-owned, production_data_read_count equals 0, production_data_mutation_count equals 0, and production_credential_count equals 0."
       ],
       "failure_rollback_behavior": [
         "Stop affected authority or capability, preserve sanitized evidence, restore the reviewed fail-closed policy, and rerun this exact source case."
       ],
       "destructive": false,
       "secret_risk": true,
-      "mandatory": true
+      "mandatory": true,
+      "source_target_bot": "test-worker"
     },
     {
       "id": "PSC-006",
@@ -454,22 +469,25 @@
         "environment": "disposable-fixture",
         "component": "locked policy acceptance case AUTH-06"
       },
-      "command_test_hook": "acceptance/hooks/run-requirement --id PSC-006 --target disposable-fixture",
+      "command_test_hook": "acceptance/hooks/run-requirement --id PSC-006 --target disposable-fixture --source-target-bot test-worker --deployment-identity-digest ${SOURCE_DEPLOYMENT_IDENTITY_DIGEST} --data-scope disposable-test-owned",
       "evidence_artifacts": [
         "evidence/{run_id}/policy-security/auth-06.json"
       ],
       "authoritative_evidence": [
-        "Monotonic-clock record, canonical grant verifier, Ed25519 certificate/revocation inventory, gate journal, and audit availability probe recorded in evidence/{run_id}/policy-security/auth-06.json"
+        "Monotonic-clock record, canonical grant verifier, Ed25519 certificate/revocation inventory, gate journal, and audit availability probe recorded in evidence/{run_id}/policy-security/auth-06.json",
+        "Exact source Bot test-worker deployed policy gate/runtime identity manifest and non-secret deployment identity digest, plus disposable test-owned fixture inventory, recorded in evidence/{run_id}/policy-security/auth-06.json"
       ],
       "pass_criteria": [
-        "Observed Clock rollback, revision/restart/fingerprint races, malformed or non-64-byte signature, wrong domain/mode, missing/unknown/expired/revoked key, invalid root, non-canonical reconstruction, and audit outage each equal DENY; certified key rotation and reviewed root cross-certificate observations equal VALID without weakening expiry/revocation. Authoritative artifact: evidence/{run_id}/policy-security/auth-06.json; any missing observation or comparator mismatch is FAIL."
+        "Observed Clock rollback, revision/restart/fingerprint races, malformed or non-64-byte signature, wrong domain/mode, missing/unknown/expired/revoked key, invalid root, non-canonical reconstruction, and audit outage each equal DENY; certified key rotation and reviewed root cross-certificate observations equal VALID without weakening expiry/revocation. Authoritative artifact: evidence/{run_id}/policy-security/auth-06.json; any missing observation or comparator mismatch is FAIL.",
+        "In evidence/{run_id}/policy-security/auth-06.json, source_target_bot equals test-worker, deployed_gate_runtime_identity_digest equals the expected reviewed source deployment identity digest, gate_runtime_instance_count equals 1, test_data_scope equals disposable-test-owned, production_data_read_count equals 0, production_data_mutation_count equals 0, and production_credential_count equals 0."
       ],
       "failure_rollback_behavior": [
         "Stop affected authority or capability, preserve sanitized evidence, restore the reviewed fail-closed policy, and rerun this exact source case."
       ],
       "destructive": false,
       "secret_risk": true,
-      "mandatory": true
+      "mandatory": true,
+      "source_target_bot": "test-worker"
     },
     {
       "id": "PSC-007",
@@ -482,22 +500,25 @@
         "environment": "disposable-fixture",
         "component": "locked policy acceptance case AUTH-07"
       },
-      "command_test_hook": "acceptance/hooks/run-requirement --id PSC-007 --target disposable-fixture",
+      "command_test_hook": "acceptance/hooks/run-requirement --id PSC-007 --target disposable-fixture --source-target-bot test-worker --deployment-identity-digest ${SOURCE_DEPLOYMENT_IDENTITY_DIGEST} --data-scope disposable-test-owned",
       "evidence_artifacts": [
         "evidence/{run_id}/policy-security/auth-07.json"
       ],
       "authoritative_evidence": [
-        "Assigned-ticket binding, reviewed canonical manifest, architecture comparator, policy decisions, and fixture receipts recorded in evidence/{run_id}/policy-security/auth-07.json"
+        "Assigned-ticket binding, reviewed canonical manifest, architecture comparator, policy decisions, and fixture receipts recorded in evidence/{run_id}/policy-security/auth-07.json",
+        "Exact source Bot test-worker deployed policy gate/runtime identity manifest and non-secret deployment identity digest, plus disposable test-owned fixture inventory, recorded in evidence/{run_id}/policy-security/auth-07.json"
       ],
       "pass_criteria": [
-        "Observed Only the exact in-scope ticket-bound Azure/server/control-plane initial-provisioning fixture and exact reviewed steps equal AUTO; Mac steps pause for MAC-01; wrong ticket/manifest/step/input, deviation, replay, unrelated target, purchase, broad permission, or public exposure equals REQUIRE_APPROVAL or DENY with zero unauthorized receipts. Authoritative artifact: evidence/{run_id}/policy-security/auth-07.json; any missing observation or comparator mismatch is FAIL."
+        "Observed Only the exact in-scope ticket-bound Azure/server/control-plane initial-provisioning fixture and exact reviewed steps equal AUTO; Mac steps pause for MAC-01; wrong ticket/manifest/step/input, deviation, replay, unrelated target, purchase, broad permission, or public exposure equals REQUIRE_APPROVAL or DENY with zero unauthorized receipts. Authoritative artifact: evidence/{run_id}/policy-security/auth-07.json; any missing observation or comparator mismatch is FAIL.",
+        "In evidence/{run_id}/policy-security/auth-07.json, source_target_bot equals test-worker, deployed_gate_runtime_identity_digest equals the expected reviewed source deployment identity digest, gate_runtime_instance_count equals 1, test_data_scope equals disposable-test-owned, production_data_read_count equals 0, production_data_mutation_count equals 0, and production_credential_count equals 0."
       ],
       "failure_rollback_behavior": [
         "Stop affected authority or capability, preserve sanitized evidence, restore the reviewed fail-closed policy, and rerun this exact source case."
       ],
       "destructive": false,
       "secret_risk": true,
-      "mandatory": true
+      "mandatory": true,
+      "source_target_bot": "test-worker"
     },
     {
       "id": "PSC-008",
@@ -510,22 +531,25 @@
         "environment": "live-production",
         "component": "locked policy acceptance case AUTH-08"
       },
-      "command_test_hook": "acceptance/hooks/run-requirement --id PSC-008 --target live-production",
+      "command_test_hook": "acceptance/hooks/run-requirement --id PSC-008 --target live-production --source-target-bot test-worker --deployment-identity-digest ${SOURCE_DEPLOYMENT_IDENTITY_DIGEST} --data-scope disposable-test-owned",
       "evidence_artifacts": [
         "evidence/{run_id}/policy-security/auth-08.json"
       ],
       "authoritative_evidence": [
-        "Paired identity registry, Tailscale device identity, authenticated prompt/Desktop session record, grant attribution, and fixture receipt recorded in evidence/{run_id}/policy-security/auth-08.json"
+        "Paired identity registry, Tailscale device identity, authenticated prompt/Desktop session record, grant attribution, and fixture receipt recorded in evidence/{run_id}/policy-security/auth-08.json",
+        "Exact source Bot test-worker deployed policy gate/runtime identity manifest and non-secret deployment identity digest, plus disposable test-owned fixture inventory, recorded in evidence/{run_id}/policy-security/auth-08.json"
       ],
       "pass_criteria": [
-        "Observed Exact fixture succeeds once from Johan paired Hermes prompt and once from Johan private Desktop on approved Tailscale device; every other human/Bot/service/tool/device/UI/session/copied prompt/Mac-local-only agent/Room/SSH/cron/browser/tool-output channel equals DENY and side-effect count equals zero. Authoritative artifact: evidence/{run_id}/policy-security/auth-08.json; any missing observation or comparator mismatch is FAIL."
+        "Observed Exact fixture succeeds once from Johan paired Hermes prompt and once from Johan private Desktop on approved Tailscale device; every other human/Bot/service/tool/device/UI/session/copied prompt/Mac-local-only agent/Room/SSH/cron/browser/tool-output channel equals DENY and side-effect count equals zero. Authoritative artifact: evidence/{run_id}/policy-security/auth-08.json; any missing observation or comparator mismatch is FAIL.",
+        "In evidence/{run_id}/policy-security/auth-08.json, source_target_bot equals test-worker, deployed_gate_runtime_identity_digest equals the expected reviewed source deployment identity digest, gate_runtime_instance_count equals 1, test_data_scope equals disposable-test-owned, production_data_read_count equals 0, production_data_mutation_count equals 0, and production_credential_count equals 0."
       ],
       "failure_rollback_behavior": [
         "Stop affected authority or capability, preserve sanitized evidence, restore the reviewed fail-closed policy, and rerun this exact source case."
       ],
       "destructive": false,
       "secret_risk": true,
-      "mandatory": true
+      "mandatory": true,
+      "source_target_bot": "test-worker"
     },
     {
       "id": "PSC-009",
@@ -538,22 +562,25 @@
         "environment": "disposable-fixture",
         "component": "locked policy acceptance case MAC-01"
       },
-      "command_test_hook": "acceptance/hooks/run-requirement --id PSC-009 --target disposable-fixture",
+      "command_test_hook": "acceptance/hooks/run-requirement --id PSC-009 --target disposable-fixture --source-target-bot laptop-worker --deployment-identity-digest ${SOURCE_DEPLOYMENT_IDENTITY_DIGEST} --data-scope disposable-test-owned",
       "evidence_artifacts": [
         "evidence/{run_id}/policy-security/mac-01.json"
       ],
       "authoritative_evidence": [
-        "Native local approval UI receipt, Mac policy gate ledger, and filesystem/process/package authoritative receipts recorded in evidence/{run_id}/policy-security/mac-01.json"
+        "Native local approval UI receipt, Mac policy gate ledger, and filesystem/process/package authoritative receipts recorded in evidence/{run_id}/policy-security/mac-01.json",
+        "Exact source Bot laptop-worker deployed policy gate/runtime identity manifest and non-secret deployment identity digest, plus disposable test-owned fixture inventory, recorded in evidence/{run_id}/policy-security/mac-01.json"
       ],
       "pass_criteria": [
-        "Observed Every listed Mac mutation including install/config/provisioning/delegated reviewed steps observes a local prompt; nonlocal authority equals DENY; one exact grant changes exactly one fixture and grant consumption count equals one; no no-prompt mutation receipt exists. Authoritative artifact: evidence/{run_id}/policy-security/mac-01.json; any missing observation or comparator mismatch is FAIL."
+        "Observed Every listed Mac mutation including install/config/provisioning/delegated reviewed steps observes a local prompt; nonlocal authority equals DENY; one exact grant changes exactly one fixture and grant consumption count equals one; no no-prompt mutation receipt exists. Authoritative artifact: evidence/{run_id}/policy-security/mac-01.json; any missing observation or comparator mismatch is FAIL.",
+        "In evidence/{run_id}/policy-security/mac-01.json, source_target_bot equals laptop-worker, deployed_gate_runtime_identity_digest equals the expected reviewed source deployment identity digest, gate_runtime_instance_count equals 1, test_data_scope equals disposable-test-owned, production_data_read_count equals 0, production_data_mutation_count equals 0, and production_credential_count equals 0."
       ],
       "failure_rollback_behavior": [
         "Stop affected authority or capability, preserve sanitized evidence, restore the reviewed fail-closed policy, and rerun this exact source case."
       ],
       "destructive": false,
       "secret_risk": true,
-      "mandatory": true
+      "mandatory": true,
+      "source_target_bot": "laptop-worker"
     },
     {
       "id": "PSC-010",
@@ -566,22 +593,25 @@
         "environment": "disposable-fixture",
         "component": "locked policy acceptance case MAC-02"
       },
-      "command_test_hook": "acceptance/hooks/run-requirement --id PSC-010 --target disposable-fixture",
+      "command_test_hook": "acceptance/hooks/run-requirement --id PSC-010 --target disposable-fixture --source-target-bot laptop-worker --deployment-identity-digest ${SOURCE_DEPLOYMENT_IDENTITY_DIGEST} --data-scope disposable-test-owned",
       "evidence_artifacts": [
         "evidence/{run_id}/policy-security/mac-02.json"
       ],
       "authoritative_evidence": [
-        "Descriptor-relative resolver trace and filesystem inode/device pre/post inventory recorded in evidence/{run_id}/policy-security/mac-02.json"
+        "Descriptor-relative resolver trace and filesystem inode/device pre/post inventory recorded in evidence/{run_id}/policy-security/mac-02.json",
+        "Exact source Bot laptop-worker deployed policy gate/runtime identity manifest and non-secret deployment identity digest, plus disposable test-owned fixture inventory, recorded in evidence/{run_id}/policy-security/mac-02.json"
       ],
       "pass_criteria": [
-        "Observed Symlink, alias, hard-link, mount/device swap, case/Unicode ambiguity, parent traversal, destination race, and selected-root removal each equal DENY with out-of-root read/write count zero. Authoritative artifact: evidence/{run_id}/policy-security/mac-02.json; any missing observation or comparator mismatch is FAIL."
+        "Observed Symlink, alias, hard-link, mount/device swap, case/Unicode ambiguity, parent traversal, destination race, and selected-root removal each equal DENY with out-of-root read/write count zero. Authoritative artifact: evidence/{run_id}/policy-security/mac-02.json; any missing observation or comparator mismatch is FAIL.",
+        "In evidence/{run_id}/policy-security/mac-02.json, source_target_bot equals laptop-worker, deployed_gate_runtime_identity_digest equals the expected reviewed source deployment identity digest, gate_runtime_instance_count equals 1, test_data_scope equals disposable-test-owned, production_data_read_count equals 0, production_data_mutation_count equals 0, and production_credential_count equals 0."
       ],
       "failure_rollback_behavior": [
         "Stop affected authority or capability, preserve sanitized evidence, restore the reviewed fail-closed policy, and rerun this exact source case."
       ],
       "destructive": false,
       "secret_risk": true,
-      "mandatory": true
+      "mandatory": true,
+      "source_target_bot": "laptop-worker"
     },
     {
       "id": "PSC-011",
@@ -594,22 +624,25 @@
         "environment": "disposable-fixture",
         "component": "locked policy acceptance case MAC-03"
       },
-      "command_test_hook": "acceptance/hooks/run-requirement --id PSC-011 --target disposable-fixture",
+      "command_test_hook": "acceptance/hooks/run-requirement --id PSC-011 --target disposable-fixture --source-target-bot laptop-worker --deployment-identity-digest ${SOURCE_DEPLOYMENT_IDENTITY_DIGEST} --data-scope disposable-test-owned",
       "evidence_artifacts": [
         "evidence/{run_id}/policy-security/mac-03.json"
       ],
       "authoritative_evidence": [
-        "Mac power/session state, approval UI and gateway supervisor journal, audit capacity probe, and fixture digests recorded in evidence/{run_id}/policy-security/mac-03.json"
+        "Mac power/session state, approval UI and gateway supervisor journal, audit capacity probe, and fixture digests recorded in evidence/{run_id}/policy-security/mac-03.json",
+        "Exact source Bot laptop-worker deployed policy gate/runtime identity manifest and non-secret deployment identity digest, plus disposable test-owned fixture inventory, recorded in evidence/{run_id}/policy-security/mac-03.json"
       ],
       "pass_criteria": [
-        "Observed Lock, sleep, offline, approval UI kill, gateway restart, timeout, and audit-full each leave pre/post fixture digests equal and mutation receipt count zero. Authoritative artifact: evidence/{run_id}/policy-security/mac-03.json; any missing observation or comparator mismatch is FAIL."
+        "Observed Lock, sleep, offline, approval UI kill, gateway restart, timeout, and audit-full each leave pre/post fixture digests equal and mutation receipt count zero. Authoritative artifact: evidence/{run_id}/policy-security/mac-03.json; any missing observation or comparator mismatch is FAIL.",
+        "In evidence/{run_id}/policy-security/mac-03.json, source_target_bot equals laptop-worker, deployed_gate_runtime_identity_digest equals the expected reviewed source deployment identity digest, gate_runtime_instance_count equals 1, test_data_scope equals disposable-test-owned, production_data_read_count equals 0, production_data_mutation_count equals 0, and production_credential_count equals 0."
       ],
       "failure_rollback_behavior": [
         "Stop affected authority or capability, preserve sanitized evidence, restore the reviewed fail-closed policy, and rerun this exact source case."
       ],
       "destructive": false,
       "secret_risk": true,
-      "mandatory": true
+      "mandatory": true,
+      "source_target_bot": "laptop-worker"
     },
     {
       "id": "PSC-012",
@@ -622,22 +655,25 @@
         "environment": "disposable-fixture",
         "component": "locked policy acceptance case BROW-01"
       },
-      "command_test_hook": "acceptance/hooks/run-requirement --id PSC-012 --target disposable-fixture",
+      "command_test_hook": "acceptance/hooks/run-requirement --id PSC-012 --target disposable-fixture --source-target-bot test-worker --deployment-identity-digest ${SOURCE_DEPLOYMENT_IDENTITY_DIGEST} --data-scope disposable-test-owned",
       "evidence_artifacts": [
         "evidence/{run_id}/policy-security/brow-01.json"
       ],
       "authoritative_evidence": [
-        "Lease supervisor state journal, CDP socket/client inventory, noVNC authenticated input record, and monotonic timer recorded in evidence/{run_id}/policy-security/brow-01.json"
+        "Lease supervisor state journal, CDP socket/client inventory, noVNC authenticated input record, and monotonic timer recorded in evidence/{run_id}/policy-security/brow-01.json",
+        "Exact source Bot test-worker deployed policy gate/runtime identity manifest and non-secret deployment identity digest, plus disposable test-owned fixture inventory, recorded in evidence/{run_id}/policy-security/brow-01.json"
       ],
       "pass_criteria": [
-        "Observed Approved takeover observes CDP client count zero before HUMAN, exactly one Johan noVNC session, duration <=600 seconds, and concurrent CDP/noVNC enabled samples equal zero. Authoritative artifact: evidence/{run_id}/policy-security/brow-01.json; any missing observation or comparator mismatch is FAIL."
+        "Observed Approved takeover observes CDP client count zero before HUMAN, exactly one Johan noVNC session, duration <=600 seconds, and concurrent CDP/noVNC enabled samples equal zero. Authoritative artifact: evidence/{run_id}/policy-security/brow-01.json; any missing observation or comparator mismatch is FAIL.",
+        "In evidence/{run_id}/policy-security/brow-01.json, source_target_bot equals test-worker, deployed_gate_runtime_identity_digest equals the expected reviewed source deployment identity digest, gate_runtime_instance_count equals 1, test_data_scope equals disposable-test-owned, production_data_read_count equals 0, production_data_mutation_count equals 0, and production_credential_count equals 0."
       ],
       "failure_rollback_behavior": [
         "Stop affected authority or capability, preserve sanitized evidence, restore the reviewed fail-closed policy, and rerun this exact source case."
       ],
       "destructive": false,
       "secret_risk": true,
-      "mandatory": true
+      "mandatory": true,
+      "source_target_bot": "test-worker"
     },
     {
       "id": "PSC-013",
@@ -650,22 +686,25 @@
         "environment": "disposable-fixture",
         "component": "locked policy acceptance case BROW-02"
       },
-      "command_test_hook": "acceptance/hooks/run-requirement --id PSC-013 --target disposable-fixture",
+      "command_test_hook": "acceptance/hooks/run-requirement --id PSC-013 --target disposable-fixture --source-target-bot test-worker --deployment-identity-digest ${SOURCE_DEPLOYMENT_IDENTITY_DIGEST} --data-scope disposable-test-owned",
       "evidence_artifacts": [
         "evidence/{run_id}/policy-security/brow-02.json"
       ],
       "authoritative_evidence": [
-        "Lease supervisor journal, token verifier decisions, process supervisor events, and independent input probes recorded in evidence/{run_id}/policy-security/brow-02.json"
+        "Lease supervisor journal, token verifier decisions, process supervisor events, and independent input probes recorded in evidence/{run_id}/policy-security/brow-02.json",
+        "Exact source Bot test-worker deployed policy gate/runtime identity manifest and non-secret deployment identity digest, plus disposable test-owned fixture inventory, recorded in evidence/{run_id}/policy-security/brow-02.json"
       ],
       "pass_criteria": [
-        "Observed Replay/wrong-Bot/wrong-device/expired token and supervisor/proxy/browser crash or disconnect each produce RECOVERING, revoked credential, and denied CDP/noVNC input. Authoritative artifact: evidence/{run_id}/policy-security/brow-02.json; any missing observation or comparator mismatch is FAIL."
+        "Observed Replay/wrong-Bot/wrong-device/expired token and supervisor/proxy/browser crash or disconnect each produce RECOVERING, revoked credential, and denied CDP/noVNC input. Authoritative artifact: evidence/{run_id}/policy-security/brow-02.json; any missing observation or comparator mismatch is FAIL.",
+        "In evidence/{run_id}/policy-security/brow-02.json, source_target_bot equals test-worker, deployed_gate_runtime_identity_digest equals the expected reviewed source deployment identity digest, gate_runtime_instance_count equals 1, test_data_scope equals disposable-test-owned, production_data_read_count equals 0, production_data_mutation_count equals 0, and production_credential_count equals 0."
       ],
       "failure_rollback_behavior": [
         "Stop affected authority or capability, preserve sanitized evidence, restore the reviewed fail-closed policy, and rerun this exact source case."
       ],
       "destructive": false,
       "secret_risk": true,
-      "mandatory": true
+      "mandatory": true,
+      "source_target_bot": "test-worker"
     },
     {
       "id": "PSC-014",
@@ -678,22 +717,25 @@
         "environment": "disposable-fixture",
         "component": "locked policy acceptance case BROW-03"
       },
-      "command_test_hook": "acceptance/hooks/run-requirement --id PSC-014 --target disposable-fixture",
+      "command_test_hook": "acceptance/hooks/run-requirement --id PSC-014 --target disposable-fixture --source-target-bot test-worker --deployment-identity-digest ${SOURCE_DEPLOYMENT_IDENTITY_DIGEST} --data-scope disposable-test-owned",
       "evidence_artifacts": [
         "evidence/{run_id}/policy-security/brow-03.json"
       ],
       "authoritative_evidence": [
-        "URL parser, no-store bootstrap receipt, sink canary scan, browser gate decision, and side-effect receipt recorded in evidence/{run_id}/policy-security/brow-03.json"
+        "URL parser, no-store bootstrap receipt, sink canary scan, browser gate decision, and side-effect receipt recorded in evidence/{run_id}/policy-security/brow-03.json",
+        "Exact source Bot test-worker deployed policy gate/runtime identity manifest and non-secret deployment identity digest, plus disposable test-owned fixture inventory, recorded in evidence/{run_id}/policy-security/brow-03.json"
       ],
       "pass_criteria": [
-        "Observed Every URL component including fragment has canary count zero; credential delivery count equals one via authenticated no-store bootstrap; history/log/screenshot/CDP/crash/model/tool/JavaScript canary counts equal zero; approval-class browser effect equals REQUIRE_APPROVAL with zero effect. Authoritative artifact: evidence/{run_id}/policy-security/brow-03.json; any missing observation or comparator mismatch is FAIL."
+        "Observed Every URL component including fragment has canary count zero; credential delivery count equals one via authenticated no-store bootstrap; history/log/screenshot/CDP/crash/model/tool/JavaScript canary counts equal zero; approval-class browser effect equals REQUIRE_APPROVAL with zero effect. Authoritative artifact: evidence/{run_id}/policy-security/brow-03.json; any missing observation or comparator mismatch is FAIL.",
+        "In evidence/{run_id}/policy-security/brow-03.json, source_target_bot equals test-worker, deployed_gate_runtime_identity_digest equals the expected reviewed source deployment identity digest, gate_runtime_instance_count equals 1, test_data_scope equals disposable-test-owned, production_data_read_count equals 0, production_data_mutation_count equals 0, and production_credential_count equals 0."
       ],
       "failure_rollback_behavior": [
         "Stop affected authority or capability, preserve sanitized evidence, restore the reviewed fail-closed policy, and rerun this exact source case."
       ],
       "destructive": false,
       "secret_risk": true,
-      "mandatory": true
+      "mandatory": true,
+      "source_target_bot": "test-worker"
     },
     {
       "id": "PSC-015",
@@ -706,22 +748,25 @@
         "environment": "disposable-fixture",
         "component": "locked policy acceptance case SEC-01"
       },
-      "command_test_hook": "acceptance/hooks/run-requirement --id PSC-015 --target disposable-fixture",
+      "command_test_hook": "acceptance/hooks/run-requirement --id PSC-015 --target disposable-fixture --source-target-bot test-worker --deployment-identity-digest ${SOURCE_DEPLOYMENT_IDENTITY_DIGEST} --data-scope disposable-test-owned",
       "evidence_artifacts": [
         "evidence/{run_id}/policy-security/sec-01.json"
       ],
       "authoritative_evidence": [
-        "Process environment/argv/open-file inventory plus tool/session/log canary scanner recorded in evidence/{run_id}/policy-security/sec-01.json"
+        "Process environment/argv/open-file inventory plus tool/session/log canary scanner recorded in evidence/{run_id}/policy-security/sec-01.json",
+        "Exact source Bot test-worker deployed policy gate/runtime identity manifest and non-secret deployment identity digest, plus disposable test-owned fixture inventory, recorded in evidence/{run_id}/policy-security/sec-01.json"
       ],
       "pass_criteria": [
-        "Observed Agent-readable environment, argv, open files, output, model/session capture, and logs expose only handles and seeded secret canary count equals zero. Authoritative artifact: evidence/{run_id}/policy-security/sec-01.json; any missing observation or comparator mismatch is FAIL."
+        "Observed Agent-readable environment, argv, open files, output, model/session capture, and logs expose only handles and seeded secret canary count equals zero. Authoritative artifact: evidence/{run_id}/policy-security/sec-01.json; any missing observation or comparator mismatch is FAIL.",
+        "In evidence/{run_id}/policy-security/sec-01.json, source_target_bot equals test-worker, deployed_gate_runtime_identity_digest equals the expected reviewed source deployment identity digest, gate_runtime_instance_count equals 1, test_data_scope equals disposable-test-owned, production_data_read_count equals 0, production_data_mutation_count equals 0, and production_credential_count equals 0."
       ],
       "failure_rollback_behavior": [
         "Stop affected authority or capability, preserve sanitized evidence, restore the reviewed fail-closed policy, and rerun this exact source case."
       ],
       "destructive": false,
       "secret_risk": true,
-      "mandatory": true
+      "mandatory": true,
+      "source_target_bot": "test-worker"
     },
     {
       "id": "PSC-016",
@@ -734,22 +779,25 @@
         "environment": "disposable-fixture",
         "component": "locked policy acceptance case SEC-02"
       },
-      "command_test_hook": "acceptance/hooks/run-requirement --id PSC-016 --target disposable-fixture",
+      "command_test_hook": "acceptance/hooks/run-requirement --id PSC-016 --target disposable-fixture --source-target-bot test-worker --deployment-identity-digest ${SOURCE_DEPLOYMENT_IDENTITY_DIGEST} --data-scope disposable-test-owned",
       "evidence_artifacts": [
         "evidence/{run_id}/policy-security/sec-02.json"
       ],
       "authoritative_evidence": [
-        "Broker authorization record, resolver pin trace, HTTP redirect/response filter record, egress firewall flow log, and destination receipt recorded in evidence/{run_id}/policy-security/sec-02.json"
+        "Broker authorization record, resolver pin trace, HTTP redirect/response filter record, egress firewall flow log, and destination receipt recorded in evidence/{run_id}/policy-security/sec-02.json",
+        "Exact source Bot test-worker deployed policy gate/runtime identity manifest and non-secret deployment identity digest, plus disposable test-owned fixture inventory, recorded in evidence/{run_id}/policy-security/sec-02.json"
       ],
       "pass_criteria": [
-        "Observed Exact Bot/handle/method/destination succeeds once; cross-Bot, redirect, DNS rebinding, alternate port/path, direct egress, and response reflection each equal DENY with destination/egress unauthorized receipt count zero. Authoritative artifact: evidence/{run_id}/policy-security/sec-02.json; any missing observation or comparator mismatch is FAIL."
+        "Observed Exact Bot/handle/method/destination succeeds once; cross-Bot, redirect, DNS rebinding, alternate port/path, direct egress, and response reflection each equal DENY with destination/egress unauthorized receipt count zero. Authoritative artifact: evidence/{run_id}/policy-security/sec-02.json; any missing observation or comparator mismatch is FAIL.",
+        "In evidence/{run_id}/policy-security/sec-02.json, source_target_bot equals test-worker, deployed_gate_runtime_identity_digest equals the expected reviewed source deployment identity digest, gate_runtime_instance_count equals 1, test_data_scope equals disposable-test-owned, production_data_read_count equals 0, production_data_mutation_count equals 0, and production_credential_count equals 0."
       ],
       "failure_rollback_behavior": [
         "Stop affected authority or capability, preserve sanitized evidence, restore the reviewed fail-closed policy, and rerun this exact source case."
       ],
       "destructive": false,
       "secret_risk": true,
-      "mandatory": true
+      "mandatory": true,
+      "source_target_bot": "test-worker"
     },
     {
       "id": "PSC-017",
@@ -762,22 +810,25 @@
         "environment": "disposable-fixture",
         "component": "locked policy acceptance case SEC-03"
       },
-      "command_test_hook": "acceptance/hooks/run-requirement --id PSC-017 --target disposable-fixture",
+      "command_test_hook": "acceptance/hooks/run-requirement --id PSC-017 --target disposable-fixture --source-target-bot test-worker --deployment-identity-digest ${SOURCE_DEPLOYMENT_IDENTITY_DIGEST} --data-scope disposable-test-owned",
       "evidence_artifacts": [
         "evidence/{run_id}/policy-security/sec-03.json"
       ],
       "authoritative_evidence": [
-        "Secret authority version inventory, broker decision ledger, rotation receipt, and expiry monitor recorded in evidence/{run_id}/policy-security/sec-03.json"
+        "Secret authority version inventory, broker decision ledger, rotation receipt, and expiry monitor recorded in evidence/{run_id}/policy-security/sec-03.json",
+        "Exact source Bot test-worker deployed policy gate/runtime identity manifest and non-secret deployment identity digest, plus disposable test-owned fixture inventory, recorded in evidence/{run_id}/policy-security/sec-03.json"
       ],
       "pass_criteria": [
-        "Observed New rotation canary succeeds, old version state equals revoked and use equals DENY, inventory active version equals new version, and expired/overdue handle state equals disabled. Authoritative artifact: evidence/{run_id}/policy-security/sec-03.json; any missing observation or comparator mismatch is FAIL."
+        "Observed New rotation canary succeeds, old version state equals revoked and use equals DENY, inventory active version equals new version, and expired/overdue handle state equals disabled. Authoritative artifact: evidence/{run_id}/policy-security/sec-03.json; any missing observation or comparator mismatch is FAIL.",
+        "In evidence/{run_id}/policy-security/sec-03.json, source_target_bot equals test-worker, deployed_gate_runtime_identity_digest equals the expected reviewed source deployment identity digest, gate_runtime_instance_count equals 1, test_data_scope equals disposable-test-owned, production_data_read_count equals 0, production_data_mutation_count equals 0, and production_credential_count equals 0."
       ],
       "failure_rollback_behavior": [
         "Stop affected authority or capability, preserve sanitized evidence, restore the reviewed fail-closed policy, and rerun this exact source case."
       ],
       "destructive": false,
       "secret_risk": true,
-      "mandatory": true
+      "mandatory": true,
+      "source_target_bot": "test-worker"
     },
     {
       "id": "PSC-018",
@@ -790,22 +841,25 @@
         "environment": "disposable-fixture",
         "component": "locked policy acceptance case SEC-04"
       },
-      "command_test_hook": "acceptance/hooks/run-requirement --id PSC-018 --target disposable-fixture",
+      "command_test_hook": "acceptance/hooks/run-requirement --id PSC-018 --target disposable-fixture --source-target-bot test-worker --deployment-identity-digest ${SOURCE_DEPLOYMENT_IDENTITY_DIGEST} --data-scope disposable-test-owned",
       "evidence_artifacts": [
         "evidence/{run_id}/policy-security/sec-04.json"
       ],
       "authoritative_evidence": [
-        "Broker handle-resolution decisions and storage RBAC/data-plane denial logs recorded in evidence/{run_id}/policy-security/sec-04.json"
+        "Broker handle-resolution decisions and storage RBAC/data-plane denial logs recorded in evidence/{run_id}/policy-security/sec-04.json",
+        "Exact source Bot test-worker deployed policy gate/runtime identity manifest and non-secret deployment identity digest, plus disposable test-owned fixture inventory, recorded in evidence/{run_id}/policy-security/sec-04.json"
       ],
       "pass_criteria": [
-        "Observed test-worker production-handle resolution count equals zero; backup principal R3 and other-Bot prefix reads each equal DENY with returned byte count zero. Authoritative artifact: evidence/{run_id}/policy-security/sec-04.json; any missing observation or comparator mismatch is FAIL."
+        "Observed test-worker production-handle resolution count equals zero; backup principal R3 and other-Bot prefix reads each equal DENY with returned byte count zero. Authoritative artifact: evidence/{run_id}/policy-security/sec-04.json; any missing observation or comparator mismatch is FAIL.",
+        "In evidence/{run_id}/policy-security/sec-04.json, source_target_bot equals test-worker, deployed_gate_runtime_identity_digest equals the expected reviewed source deployment identity digest, gate_runtime_instance_count equals 1, test_data_scope equals disposable-test-owned, production_data_read_count equals 0, production_data_mutation_count equals 0, and production_credential_count equals 0."
       ],
       "failure_rollback_behavior": [
         "Stop affected authority or capability, preserve sanitized evidence, restore the reviewed fail-closed policy, and rerun this exact source case."
       ],
       "destructive": false,
       "secret_risk": true,
-      "mandatory": true
+      "mandatory": true,
+      "source_target_bot": "test-worker"
     },
     {
       "id": "PSC-019",
@@ -818,22 +872,25 @@
         "environment": "disposable-fixture",
         "component": "locked policy acceptance case AUD-01"
       },
-      "command_test_hook": "acceptance/hooks/run-requirement --id PSC-019 --target disposable-fixture",
+      "command_test_hook": "acceptance/hooks/run-requirement --id PSC-019 --target disposable-fixture --source-target-bot test-worker --deployment-identity-digest ${SOURCE_DEPLOYMENT_IDENTITY_DIGEST} --data-scope disposable-test-owned",
       "evidence_artifacts": [
         "evidence/{run_id}/policy-security/aud-01.json"
       ],
       "authoritative_evidence": [
-        "Named producer-envelope JSON Schema validator, finalized-event JSON Schema validator, collector assignment record, and rejection ledger recorded in evidence/{run_id}/policy-security/aud-01.json"
+        "Named producer-envelope JSON Schema validator, finalized-event JSON Schema validator, collector assignment record, and rejection ledger recorded in evidence/{run_id}/policy-security/aud-01.json",
+        "Exact source Bot test-worker deployed policy gate/runtime identity manifest and non-secret deployment identity digest, plus disposable test-owned fixture inventory, recorded in evidence/{run_id}/policy-security/aud-01.json"
       ],
       "pass_criteria": [
-        "Observed All event classes validate first against producer schema without collector-owned fields and then final schema with observation/redaction/sequence/integrity fields; extra fields, identity mismatch, incomplete correlation, and raw values each equal REJECT. Authoritative artifact: evidence/{run_id}/policy-security/aud-01.json; any missing observation or comparator mismatch is FAIL."
+        "Observed All event classes validate first against producer schema without collector-owned fields and then final schema with observation/redaction/sequence/integrity fields; extra fields, identity mismatch, incomplete correlation, and raw values each equal REJECT. Authoritative artifact: evidence/{run_id}/policy-security/aud-01.json; any missing observation or comparator mismatch is FAIL.",
+        "In evidence/{run_id}/policy-security/aud-01.json, source_target_bot equals test-worker, deployed_gate_runtime_identity_digest equals the expected reviewed source deployment identity digest, gate_runtime_instance_count equals 1, test_data_scope equals disposable-test-owned, production_data_read_count equals 0, production_data_mutation_count equals 0, and production_credential_count equals 0."
       ],
       "failure_rollback_behavior": [
         "Stop affected authority or capability, preserve sanitized evidence, restore the reviewed fail-closed policy, and rerun this exact source case."
       ],
       "destructive": false,
       "secret_risk": true,
-      "mandatory": true
+      "mandatory": true,
+      "source_target_bot": "test-worker"
     },
     {
       "id": "PSC-020",
@@ -846,22 +903,25 @@
         "environment": "disposable-fixture",
         "component": "locked policy acceptance case AUD-02"
       },
-      "command_test_hook": "acceptance/hooks/run-requirement --id PSC-020 --target disposable-fixture",
+      "command_test_hook": "acceptance/hooks/run-requirement --id PSC-020 --target disposable-fixture --source-target-bot test-worker --deployment-identity-digest ${SOURCE_DEPLOYMENT_IDENTITY_DIGEST} --data-scope disposable-test-owned",
       "evidence_artifacts": [
         "evidence/{run_id}/policy-security/aud-02.json"
       ],
       "authoritative_evidence": [
-        "Typed redactor report and canary scans of local, journal, archive, alert, and JUnit sinks recorded in evidence/{run_id}/policy-security/aud-02.json"
+        "Typed redactor report and canary scans of local, journal, archive, alert, and JUnit sinks recorded in evidence/{run_id}/policy-security/aud-02.json",
+        "Exact source Bot test-worker deployed policy gate/runtime identity manifest and non-secret deployment identity digest, plus disposable test-owned fixture inventory, recorded in evidence/{run_id}/policy-security/aud-02.json"
       ],
       "pass_criteria": [
-        "Observed Password/token/cookie/header/query seeded canary count equals zero in every named sink, with omitted/redacted field counts equal expected fixture values. Authoritative artifact: evidence/{run_id}/policy-security/aud-02.json; any missing observation or comparator mismatch is FAIL."
+        "Observed Password/token/cookie/header/query seeded canary count equals zero in every named sink, with omitted/redacted field counts equal expected fixture values. Authoritative artifact: evidence/{run_id}/policy-security/aud-02.json; any missing observation or comparator mismatch is FAIL.",
+        "In evidence/{run_id}/policy-security/aud-02.json, source_target_bot equals test-worker, deployed_gate_runtime_identity_digest equals the expected reviewed source deployment identity digest, gate_runtime_instance_count equals 1, test_data_scope equals disposable-test-owned, production_data_read_count equals 0, production_data_mutation_count equals 0, and production_credential_count equals 0."
       ],
       "failure_rollback_behavior": [
         "Stop affected authority or capability, preserve sanitized evidence, restore the reviewed fail-closed policy, and rerun this exact source case."
       ],
       "destructive": false,
       "secret_risk": true,
-      "mandatory": true
+      "mandatory": true,
+      "source_target_bot": "test-worker"
     },
     {
       "id": "PSC-021",
@@ -874,27 +934,30 @@
         "environment": "disposable-fixture",
         "component": "locked policy acceptance case AUD-03"
       },
-      "command_test_hook": "acceptance/hooks/run-requirement --id PSC-021 --target disposable-fixture",
+      "command_test_hook": "acceptance/hooks/run-requirement --id PSC-021 --target disposable-fixture --source-target-bot test-worker --deployment-identity-digest ${SOURCE_DEPLOYMENT_IDENTITY_DIGEST} --data-scope disposable-test-owned",
       "evidence_artifacts": [
         "evidence/{run_id}/policy-security/aud-03.json"
       ],
       "authoritative_evidence": [
-        "HMAC chain verifier, key-boundary inventory, daily Ed25519 checkpoint certificate/signature/object digest, and cross-checkpoint link verifier recorded in evidence/{run_id}/policy-security/aud-03.json"
+        "HMAC chain verifier, key-boundary inventory, daily Ed25519 checkpoint certificate/signature/object digest, and cross-checkpoint link verifier recorded in evidence/{run_id}/policy-security/aud-03.json",
+        "Exact source Bot test-worker deployed policy gate/runtime identity manifest and non-secret deployment identity digest, plus disposable test-owned fixture inventory, recorded in evidence/{run_id}/policy-security/aud-03.json"
       ],
       "pass_criteria": [
-        "In evidence/{run_id}/policy-security/aud-03.json, edit/delete/reorder/duplicate/gap/key-version mutation, archive-object digest mutation, checkpoint replacement, unknown/revoked signing key, and broken previous-checkpoint/cross-checkpoint link verification_result each equals INVALID; unmodified K-to-K+1 boundary continuity and intact cross-checkpoint links each equal VALID."
+        "In evidence/{run_id}/policy-security/aud-03.json, edit/delete/reorder/duplicate/gap/key-version mutation, archive-object digest mutation, checkpoint replacement, unknown/revoked signing key, and broken previous-checkpoint/cross-checkpoint link verification_result each equals INVALID; unmodified K-to-K+1 boundary continuity and intact cross-checkpoint links each equal VALID.",
+        "In evidence/{run_id}/policy-security/aud-03.json, source_target_bot equals test-worker, deployed_gate_runtime_identity_digest equals the expected reviewed source deployment identity digest, gate_runtime_instance_count equals 1, test_data_scope equals disposable-test-owned, production_data_read_count equals 0, production_data_mutation_count equals 0, and production_credential_count equals 0."
       ],
       "failure_rollback_behavior": [
         "Stop affected authority or capability, preserve sanitized evidence, restore the reviewed fail-closed policy, and rerun this exact source case."
       ],
       "destructive": false,
       "secret_risk": true,
-      "mandatory": true
+      "mandatory": true,
+      "source_target_bot": "test-worker"
     },
     {
       "id": "PSC-022",
       "category": "policy-security",
-      "requirement": "Execute the live-production inspection part of locked security-policy case AUD-04: archive configuration, collector/verifier/deletion rights, 400-day immutable retention, and recurring verification schedules.",
+      "requirement": "Execute the live-production inspection part of locked security-policy case AUD-04 against the exact deployed test-worker gate/runtime: archive configuration, rights, immutable retention, and retained recurring daily/monthly verification receipts with due-versus-observed and skipped/failed alert correlation.",
       "prerequisites": [
         "REP-004"
       ],
@@ -902,27 +965,31 @@
         "environment": "live-production",
         "component": "AUD-04 live archive controls and schedules"
       },
-      "command_test_hook": "acceptance/hooks/run-requirement --id PSC-022 --target live-production",
+      "command_test_hook": "acceptance/hooks/run-requirement --id PSC-022 --target live-production --source-target-bot test-worker --deployment-identity-digest ${SOURCE_DEPLOYMENT_IDENTITY_DIGEST} --data-scope disposable-test-owned",
       "evidence_artifacts": [
         "evidence/{run_id}/policy-security/aud-04-live.json"
       ],
       "authoritative_evidence": [
-        "Live storage control-plane RBAC, encryption/public-access/Bot-prefix policy, immutable lifecycle retention, deletion conditions, and scheduler definitions at evidence/{run_id}/policy-security/aud-04-live.json"
+        "Live storage control-plane RBAC, encryption/public-access/Bot-prefix policy, immutable lifecycle retention, deletion conditions, scheduler definitions, retained recurring daily/monthly run receipts, due-run calculations, observed-run receipts, and skipped/failed alert correlations at evidence/{run_id}/policy-security/aud-04-live.json",
+        "Exact source Bot test-worker deployed policy gate/runtime identity manifest and non-secret deployment identity digest, plus disposable test-owned fixture inventory, recorded in evidence/{run_id}/policy-security/aud-04-live.json"
       ],
       "pass_criteria": [
-        "In evidence/{run_id}/policy-security/aud-04-live.json, collector_rights equal exactly create-only, verifier_rights equal the reviewed read/verify/tag set, public_access equals false, encryption and Bot-prefix separation equal enabled, local_rotation_days equals 30, lag_alarm_hours is less than or equal to 24, immutable_retention_days is greater than or equal to 400, deletion_condition equals expiry AND verifier-only exact-digest authorization, daily_verification_schedule equals enabled once per day, and monthly_verification_schedule equals enabled once per month."
+        "In evidence/{run_id}/policy-security/aud-04-live.json, collector_rights equal exactly create-only, verifier_rights equal the reviewed read/verify/tag set, public_access equals false, encryption and Bot-prefix separation equal enabled, local_rotation_days equals 30, lag_alarm_hours is less than or equal to 24, immutable_retention_days is greater than or equal to 400, and deletion_condition equals expiry AND verifier-only exact-digest authorization.",
+        "In evidence/{run_id}/policy-security/aud-04-live.json, retained_daily_verification_receipt_count equals daily_due_run_count, retained_monthly_verification_receipt_count equals monthly_due_run_count, each observed receipt is a real completed live-production run with a unique correlation_id and immutable receipt digest, skipped_or_failed_run_alert_count equals skipped_or_failed_run_count, and every skipped/failed run correlation_id equals exactly one Telegram alert correlation_id.",
+        "In evidence/{run_id}/policy-security/aud-04-live.json, source_target_bot equals test-worker, deployed_gate_runtime_identity_digest equals the expected reviewed source deployment identity digest, gate_runtime_instance_count equals 1, test_data_scope equals disposable-test-owned, production_data_read_count equals 0, production_data_mutation_count equals 0, and production_credential_count equals 0."
       ],
       "failure_rollback_behavior": [
         "Stop affected authority or capability, preserve sanitized evidence, restore the reviewed fail-closed policy, and rerun this exact source case."
       ],
       "destructive": false,
       "secret_risk": true,
-      "mandatory": true
+      "mandatory": true,
+      "source_target_bot": "test-worker"
     },
     {
       "id": "PSC-023",
       "category": "policy-security",
-      "requirement": "Execute the live-production inspection part of locked security-policy case AUD-05: signing trust, distinct signing-key rotation and revocation, and root cross-certification configuration.",
+      "requirement": "Execute the live-production inspection part of locked security-policy case AUD-05 against the exact deployed test-worker gate/runtime: inspect the real immutable 400-day archive configuration plus signing trust, distinct signing-key rotation/revocation, affected-interval trust marking, and root cross-certification configuration.",
       "prerequisites": [
         "REP-004"
       ],
@@ -930,22 +997,25 @@
         "environment": "live-production",
         "component": "AUD-05 live signing trust and key lifecycle configuration"
       },
-      "command_test_hook": "acceptance/hooks/run-requirement --id PSC-023 --target live-production",
+      "command_test_hook": "acceptance/hooks/run-requirement --id PSC-023 --target live-production --source-target-bot test-worker --deployment-identity-digest ${SOURCE_DEPLOYMENT_IDENTITY_DIGEST} --data-scope disposable-test-owned",
       "evidence_artifacts": [
         "evidence/{run_id}/policy-security/aud-05-live.json"
       ],
       "authoritative_evidence": [
-        "Live signing trust store, active/retired/revoked key metadata, rotation/revocation policy, root cross-certification chain, and verifier policy at evidence/{run_id}/policy-security/aud-05-live.json"
+        "Live storage control-plane immutable-retention export, signing trust store, active/retired/revoked key metadata, affected-interval trust marks, rotation/revocation policy, old/new root cross-certification chain, and verifier policy at evidence/{run_id}/policy-security/aud-05-live.json",
+        "Exact source Bot test-worker deployed policy gate/runtime identity manifest and non-secret deployment identity digest, plus disposable test-owned fixture inventory, recorded in evidence/{run_id}/policy-security/aud-05-live.json"
       ],
       "pass_criteria": [
-        "In evidence/{run_id}/policy-security/aud-05-live.json, active_signing_key_count is greater than or equal to 1, signing_key_rotation_policy equals the reviewed distinct-key schedule, revoked_key_signing_permission equals DENY, revoked_key_verification_scope equals covered historical checkpoints only, trusted_root_set equals the reviewed root set, every configured root cross-certificate signature_result equals VALID, and unknown_root_trust_result equals DENY."
+        "In evidence/{run_id}/policy-security/aud-05-live.json, storage_configuration_source equals real live storage control plane, immutable_retention_days is greater than or equal to 400, retention_lock_state equals immutable, active_signing_key_count is greater than or equal to 1, signing_key_rotation_policy equals the reviewed distinct-key schedule, revoked_key_signing_permission equals DENY, revoked_key_verification_scope equals covered historical checkpoints only, every revoked-key affected interval has trust_mark equal REVOKED_OR_UNTRUSTED, trusted_root_set equals the reviewed root set, every configured old/new root cross-certificate signature_result equals VALID, and unknown_root_trust_result equals DENY.",
+        "In evidence/{run_id}/policy-security/aud-05-live.json, source_target_bot equals test-worker, deployed_gate_runtime_identity_digest equals the expected reviewed source deployment identity digest, gate_runtime_instance_count equals 1, test_data_scope equals disposable-test-owned, production_data_read_count equals 0, production_data_mutation_count equals 0, and production_credential_count equals 0."
       ],
       "failure_rollback_behavior": [
         "Stop affected authority or capability, preserve sanitized evidence, restore the reviewed fail-closed policy, and rerun this exact source case."
       ],
       "destructive": false,
       "secret_risk": true,
-      "mandatory": true
+      "mandatory": true,
+      "source_target_bot": "test-worker"
     },
     {
       "id": "PSC-029",
@@ -958,27 +1028,30 @@
         "environment": "disposable-fixture",
         "component": "AUD-04 accelerated archive lifecycle and tamper fixture"
       },
-      "command_test_hook": "acceptance/hooks/run-requirement --id PSC-029 --target disposable-fixture",
+      "command_test_hook": "acceptance/hooks/run-requirement --id PSC-029 --target disposable-fixture --source-target-bot test-worker --deployment-identity-digest ${SOURCE_DEPLOYMENT_IDENTITY_DIGEST} --data-scope disposable-test-owned",
       "evidence_artifacts": [
         "evidence/{run_id}/policy-security/aud-04-fixture.json"
       ],
       "authoritative_evidence": [
-        "Disposable archive object versions, accelerated lifecycle receipts, tamper verifier results, exact-digest tags, scheduler receipts, alerts, and cleanup receipt at evidence/{run_id}/policy-security/aud-04-fixture.json"
+        "Disposable archive object versions, accelerated lifecycle receipts, tamper verifier results, exact-digest tags, scheduler receipts, alerts, and cleanup receipt at evidence/{run_id}/policy-security/aud-04-fixture.json",
+        "Exact source Bot test-worker deployed policy gate/runtime identity manifest and non-secret deployment identity digest, plus disposable test-owned fixture inventory, recorded in evidence/{run_id}/policy-security/aud-04-fixture.json"
       ],
       "pass_criteria": [
-        "In evidence/{run_id}/policy-security/aud-04-fixture.json, pre_expiry_delete_result equals DENY; post_expiry deletion without a valid verifier-only exact-digest tag and deletion with stale/wrong/malformed tags each equal DENY; post_expiry deletion with the valid tag equals ALLOW; tampered_object_verification equals INVALID; daily/monthly accelerated_due_run_receipt_count equals scheduled_due_count; skipped_or_failed_run_alert_count equals skipped_or_failed_run_count; cleanup_remaining_object_count equals 0."
+        "In evidence/{run_id}/policy-security/aud-04-fixture.json, pre_expiry_delete_result equals DENY; post_expiry deletion without a valid verifier-only exact-digest tag and deletion with stale/wrong/malformed tags each equal DENY; post_expiry deletion with the valid tag equals ALLOW; tampered_object_verification equals INVALID; daily/monthly accelerated_due_run_receipt_count equals scheduled_due_count; skipped_or_failed_run_alert_count equals skipped_or_failed_run_count; cleanup_remaining_object_count equals 0.",
+        "In evidence/{run_id}/policy-security/aud-04-fixture.json, source_target_bot equals test-worker, deployed_gate_runtime_identity_digest equals the expected reviewed source deployment identity digest, gate_runtime_instance_count equals 1, test_data_scope equals disposable-test-owned, production_data_read_count equals 0, production_data_mutation_count equals 0, and production_credential_count equals 0."
       ],
       "failure_rollback_behavior": [
         "Stop the accelerated lifecycle, preserve immutable sanitized receipts, destroy only the named disposable fixture, verify cleanup count equals zero, and leave live archive configuration unchanged."
       ],
       "destructive": true,
       "secret_risk": true,
-      "mandatory": true
+      "mandatory": true,
+      "source_target_bot": "test-worker"
     },
     {
       "id": "PSC-030",
       "category": "policy-security",
-      "requirement": "Execute the disposable key-retirement, multi-key authorization/tag, archive deletion, and key-destruction part of locked security-policy case AUD-05.",
+      "requirement": "Execute locked security-policy case AUD-05 in a disposable fixture: perform signing-key rotation and revocation, affected-interval trust marking, unknown/revoked rejection, old/new root cross-certification continuity, archive deletion/key destruction, and the existing HMAC retirement and multi-key authorization checks.",
       "prerequisites": [
         "PSC-023"
       ],
@@ -986,22 +1059,25 @@
         "environment": "disposable-fixture",
         "component": "AUD-05 disposable key retirement, deletion, and destruction fixture"
       },
-      "command_test_hook": "acceptance/hooks/run-requirement --id PSC-030 --target disposable-fixture",
+      "command_test_hook": "acceptance/hooks/run-requirement --id PSC-030 --target disposable-fixture --source-target-bot test-worker --deployment-identity-digest ${SOURCE_DEPLOYMENT_IDENTITY_DIGEST} --data-scope disposable-test-owned",
       "evidence_artifacts": [
         "evidence/{run_id}/policy-security/aud-05-fixture.json"
       ],
       "authoritative_evidence": [
-        "Disposable object/key/tag inventory, verifier ledger, archive deletion receipts, HSM/KMS key-state receipts, and cleanup receipt at evidence/{run_id}/policy-security/aud-05-fixture.json"
+        "Disposable signing-key rotation/revocation execution receipts, old/new root cross-certificate chain, affected-interval trust ledger, unknown/revoked signature verifier results, object/HMAC-key/tag inventory, archive deletion receipts, HSM/KMS key-state receipts, and cleanup receipt at evidence/{run_id}/policy-security/aud-05-fixture.json",
+        "Exact source Bot test-worker deployed policy gate/runtime identity manifest and non-secret deployment identity digest, plus disposable test-owned fixture inventory, recorded in evidence/{run_id}/policy-security/aud-05-fixture.json"
       ],
       "pass_criteria": [
-        "In evidence/{run_id}/policy-security/aud-05-fixture.json, retired_key_new_signature_result and revoked_key_new_signature_result each equal DENY; valid historical verification under a verifier-only retired key equals VALID until covered-object expiry; shared K/K+1 object eligibility after K-only authorization equals DENY and after both exact-digest authorizations equals ALLOW; missing, malformed, forged, wrong-digest, unknown-key, incomplete-key-set, and extra-key-set tag cases each equal DENY; covered_object_delete_confirmation_time is less than each corresponding key_destroyed_time; key destruction before covered deletion equals DENY; post_cleanup_object_count and post_cleanup_fixture_key_count each equal 0."
+        "In evidence/{run_id}/policy-security/aud-05-fixture.json, signing_key_rotation_executed and signing_key_revocation_executed each equal true; old_signing_key_id differs from new_signing_key_id; new_key_signature_result equals VALID; revoked_key_new_signature_result and unknown_key_signature_result each equal DENY; every revoked-key affected interval trust_mark equals REVOKED_OR_UNTRUSTED; old_root_to_new_root_cross_certificate_result and new_root_to_old_root_cross_certificate_result each equal VALID; pre_rotation_checkpoint_under_old_root and post_rotation_checkpoint_under_new_root each equal VALID; retired_hmac_key_new_signature_result equals DENY; valid historical verification under a verifier-only retired HMAC key equals VALID until covered-object expiry; shared K/K+1 object eligibility after K-only authorization equals DENY and after both exact-digest authorizations equals ALLOW; missing, malformed, forged, wrong-digest, unknown-key, incomplete-key-set, and extra-key-set tag cases each equal DENY; covered_object_delete_confirmation_time is less than each corresponding key_destroyed_time; key destruction before covered deletion equals DENY; post_cleanup_object_count and post_cleanup_fixture_key_count each equal 0.",
+        "In evidence/{run_id}/policy-security/aud-05-fixture.json, source_target_bot equals test-worker, deployed_gate_runtime_identity_digest equals the expected reviewed source deployment identity digest, gate_runtime_instance_count equals 1, test_data_scope equals disposable-test-owned, production_data_read_count equals 0, production_data_mutation_count equals 0, and production_credential_count equals 0."
       ],
       "failure_rollback_behavior": [
         "Disable the disposable verifier/deletion principal, preserve sanitized ordering receipts, destroy only remaining fixture objects and keys in policy order, verify zero fixture residue, and leave live trust roots and signing keys unchanged."
       ],
       "destructive": true,
       "secret_risk": true,
-      "mandatory": true
+      "mandatory": true,
+      "source_target_bot": "test-worker"
     },
     {
       "id": "PSC-024",
@@ -1014,22 +1090,25 @@
         "environment": "disposable-fixture",
         "component": "locked policy acceptance case FAIL-01"
       },
-      "command_test_hook": "acceptance/hooks/run-requirement --id PSC-024 --target disposable-fixture",
+      "command_test_hook": "acceptance/hooks/run-requirement --id PSC-024 --target disposable-fixture --source-target-bot test-worker --deployment-identity-digest ${SOURCE_DEPLOYMENT_IDENTITY_DIGEST} --data-scope disposable-test-owned",
       "evidence_artifacts": [
         "evidence/{run_id}/policy-security/fail-01.json"
       ],
       "authoritative_evidence": [
-        "Supervisor kill/fill events, gate/broker/audit/lease decisions, side-effect receipts, diagnostic bounds, and alert receipt recorded in evidence/{run_id}/policy-security/fail-01.json"
+        "Supervisor kill/fill events, gate/broker/audit/lease decisions, side-effect receipts, diagnostic bounds, and alert receipt recorded in evidence/{run_id}/policy-security/fail-01.json",
+        "Exact source Bot test-worker deployed policy gate/runtime identity manifest and non-secret deployment identity digest, plus disposable test-owned fixture inventory, recorded in evidence/{run_id}/policy-security/fail-01.json"
       ],
       "pass_criteria": [
-        "Observed For each killed component and full-log fixture, side-effect receipt count equals zero, safe diagnostic count stays within declared bound, and exactly one sanitized alert is observed within 300 seconds. Authoritative artifact: evidence/{run_id}/policy-security/fail-01.json; any missing observation or comparator mismatch is FAIL."
+        "Observed For each killed component and full-log fixture, side-effect receipt count equals zero, safe diagnostic count stays within declared bound, and exactly one sanitized alert is observed within 300 seconds. Authoritative artifact: evidence/{run_id}/policy-security/fail-01.json; any missing observation or comparator mismatch is FAIL.",
+        "In evidence/{run_id}/policy-security/fail-01.json, source_target_bot equals test-worker, deployed_gate_runtime_identity_digest equals the expected reviewed source deployment identity digest, gate_runtime_instance_count equals 1, test_data_scope equals disposable-test-owned, production_data_read_count equals 0, production_data_mutation_count equals 0, and production_credential_count equals 0."
       ],
       "failure_rollback_behavior": [
         "Stop affected authority or capability, preserve sanitized evidence, restore the reviewed fail-closed policy, and rerun this exact source case."
       ],
       "destructive": false,
       "secret_risk": false,
-      "mandatory": true
+      "mandatory": true,
+      "source_target_bot": "test-worker"
     },
     {
       "id": "PSC-025",
@@ -1042,22 +1121,25 @@
         "environment": "disposable-fixture",
         "component": "locked policy acceptance case FAIL-02"
       },
-      "command_test_hook": "acceptance/hooks/run-requirement --id PSC-025 --target disposable-fixture",
+      "command_test_hook": "acceptance/hooks/run-requirement --id PSC-025 --target disposable-fixture --source-target-bot test-worker --deployment-identity-digest ${SOURCE_DEPLOYMENT_IDENTITY_DIGEST} --data-scope disposable-test-owned",
       "evidence_artifacts": [
         "evidence/{run_id}/policy-security/fail-02.json"
       ],
       "authoritative_evidence": [
-        "Provider client attempt ledger, configuration pin, failure audit event, and Telegram alert receipt recorded in evidence/{run_id}/policy-security/fail-02.json"
+        "Provider client attempt ledger, configuration pin, failure audit event, and Telegram alert receipt recorded in evidence/{run_id}/policy-security/fail-02.json",
+        "Exact source Bot test-worker deployed policy gate/runtime identity manifest and non-secret deployment identity digest, plus disposable test-owned fixture inventory, recorded in evidence/{run_id}/policy-security/fail-02.json"
       ],
       "pass_criteria": [
-        "Observed Induced openai-codex/gpt-5.6-sol failure observes fallback provider/model call count zero and exactly one sanitized failure event and alert. Authoritative artifact: evidence/{run_id}/policy-security/fail-02.json; any missing observation or comparator mismatch is FAIL."
+        "Observed Induced openai-codex/gpt-5.6-sol failure observes fallback provider/model call count zero and exactly one sanitized failure event and alert. Authoritative artifact: evidence/{run_id}/policy-security/fail-02.json; any missing observation or comparator mismatch is FAIL.",
+        "In evidence/{run_id}/policy-security/fail-02.json, source_target_bot equals test-worker, deployed_gate_runtime_identity_digest equals the expected reviewed source deployment identity digest, gate_runtime_instance_count equals 1, test_data_scope equals disposable-test-owned, production_data_read_count equals 0, production_data_mutation_count equals 0, and production_credential_count equals 0."
       ],
       "failure_rollback_behavior": [
         "Stop affected authority or capability, preserve sanitized evidence, restore the reviewed fail-closed policy, and rerun this exact source case."
       ],
       "destructive": false,
       "secret_risk": false,
-      "mandatory": true
+      "mandatory": true,
+      "source_target_bot": "test-worker"
     },
     {
       "id": "PSC-026",
@@ -1070,22 +1152,25 @@
         "environment": "disposable-fixture",
         "component": "locked policy acceptance case BG-01"
       },
-      "command_test_hook": "acceptance/hooks/run-requirement --id PSC-026 --target disposable-fixture",
+      "command_test_hook": "acceptance/hooks/run-requirement --id PSC-026 --target disposable-fixture --source-target-bot laptop-worker --deployment-identity-digest ${SOURCE_DEPLOYMENT_IDENTITY_DIGEST} --data-scope disposable-test-owned",
       "evidence_artifacts": [
         "evidence/{run_id}/policy-security/bg-01.json"
       ],
       "authoritative_evidence": [
-        "Break-glass identity/grant ledger, autonomy state, policy decisions, monotonic expiry, and recovery checklist receipts recorded in evidence/{run_id}/policy-security/bg-01.json"
+        "Break-glass identity/grant ledger, autonomy state, policy decisions, monotonic expiry, and recovery checklist receipts recorded in evidence/{run_id}/policy-security/bg-01.json",
+        "Exact source Bot laptop-worker deployed policy gate/runtime identity manifest and non-secret deployment identity digest, plus disposable test-owned fixture inventory, recorded in evidence/{run_id}/policy-security/bg-01.json"
       ],
       "pass_criteria": [
-        "Observed Bot invocation equals DENY; one human grant scope/time equals approved bounds, autonomy equals disabled, permanent-deny probes equal DENY, post-expiry use equals DENY, and autonomy resumes only after every recovery checklist receipt equals PASS. Authoritative artifact: evidence/{run_id}/policy-security/bg-01.json; any missing observation or comparator mismatch is FAIL."
+        "Observed Bot invocation equals DENY; one human grant scope/time equals approved bounds, autonomy equals disabled, permanent-deny probes equal DENY, post-expiry use equals DENY, and autonomy resumes only after every recovery checklist receipt equals PASS. Authoritative artifact: evidence/{run_id}/policy-security/bg-01.json; any missing observation or comparator mismatch is FAIL.",
+        "In evidence/{run_id}/policy-security/bg-01.json, source_target_bot equals laptop-worker, deployed_gate_runtime_identity_digest equals the expected reviewed source deployment identity digest, gate_runtime_instance_count equals 1, test_data_scope equals disposable-test-owned, production_data_read_count equals 0, production_data_mutation_count equals 0, and production_credential_count equals 0."
       ],
       "failure_rollback_behavior": [
         "Stop affected authority or capability, preserve sanitized evidence, restore the reviewed fail-closed policy, and rerun this exact source case."
       ],
       "destructive": false,
       "secret_risk": true,
-      "mandatory": true
+      "mandatory": true,
+      "source_target_bot": "laptop-worker"
     },
     {
       "id": "PSC-027",
@@ -1098,22 +1183,25 @@
         "environment": "disposable-fixture",
         "component": "locked policy acceptance case ISO-01"
       },
-      "command_test_hook": "acceptance/hooks/run-requirement --id PSC-027 --target disposable-fixture",
+      "command_test_hook": "acceptance/hooks/run-requirement --id PSC-027 --target disposable-fixture --source-target-bot test-worker --deployment-identity-digest ${SOURCE_DEPLOYMENT_IDENTITY_DIGEST} --data-scope disposable-test-owned",
       "evidence_artifacts": [
         "evidence/{run_id}/policy-security/iso-01.json"
       ],
       "authoritative_evidence": [
-        "Filesystem/network/browser/broker/audit/process/policy-gate denial probes and owner pre/post digests recorded in evidence/{run_id}/policy-security/iso-01.json"
+        "Filesystem/network/browser/broker/audit/process/policy-gate denial probes and owner pre/post digests recorded in evidence/{run_id}/policy-security/iso-01.json",
+        "Exact source Bot test-worker deployed policy gate/runtime identity manifest and non-secret deployment identity digest, plus disposable test-owned fixture inventory, recorded in evidence/{run_id}/policy-security/iso-01.json"
       ],
       "pass_criteria": [
-        "Observed Every cross-Bot filesystem, network, browser, credential, audit-write, process-inspection, and approval-use probe equals DENY and all owner pre/post digests equal. Authoritative artifact: evidence/{run_id}/policy-security/iso-01.json; any missing observation or comparator mismatch is FAIL."
+        "Observed Every cross-Bot filesystem, network, browser, credential, audit-write, process-inspection, and approval-use probe equals DENY and all owner pre/post digests equal. Authoritative artifact: evidence/{run_id}/policy-security/iso-01.json; any missing observation or comparator mismatch is FAIL.",
+        "In evidence/{run_id}/policy-security/iso-01.json, source_target_bot equals test-worker, deployed_gate_runtime_identity_digest equals the expected reviewed source deployment identity digest, gate_runtime_instance_count equals 1, test_data_scope equals disposable-test-owned, production_data_read_count equals 0, production_data_mutation_count equals 0, and production_credential_count equals 0."
       ],
       "failure_rollback_behavior": [
         "Stop affected authority or capability, preserve sanitized evidence, restore the reviewed fail-closed policy, and rerun this exact source case."
       ],
       "destructive": false,
       "secret_risk": false,
-      "mandatory": true
+      "mandatory": true,
+      "source_target_bot": "test-worker"
     },
     {
       "id": "PSC-028",
@@ -1126,22 +1214,25 @@
         "environment": "disposable-fixture",
         "component": "locked policy acceptance case SCAN-01"
       },
-      "command_test_hook": "acceptance/hooks/run-requirement --id PSC-028 --target disposable-fixture",
+      "command_test_hook": "acceptance/hooks/run-requirement --id PSC-028 --target disposable-fixture --source-target-bot test-worker --deployment-identity-digest ${SOURCE_DEPLOYMENT_IDENTITY_DIGEST} --data-scope disposable-test-owned",
       "evidence_artifacts": [
         "evidence/{run_id}/policy-security/scan-01.json"
       ],
       "authoritative_evidence": [
-        "Pinned secret scanners and entropy/provider detector reports over tracked files, Git history, issue evidence, generated config, logs, and test artifacts recorded in evidence/{run_id}/policy-security/scan-01.json"
+        "Pinned secret scanners and entropy/provider detector reports over tracked files, Git history, issue evidence, generated config, logs, and test artifacts recorded in evidence/{run_id}/policy-security/scan-01.json",
+        "Exact source Bot test-worker deployed policy gate/runtime identity manifest and non-secret deployment identity digest, plus disposable test-owned fixture inventory, recorded in evidence/{run_id}/policy-security/scan-01.json"
       ],
       "pass_criteria": [
-        "Observed Every named scan scope completes and unresolved seeded-canary, secret, private-key, and cookie finding count equals zero. Authoritative artifact: evidence/{run_id}/policy-security/scan-01.json; any missing observation or comparator mismatch is FAIL."
+        "Observed Every named scan scope completes and unresolved seeded-canary, secret, private-key, and cookie finding count equals zero. Authoritative artifact: evidence/{run_id}/policy-security/scan-01.json; any missing observation or comparator mismatch is FAIL.",
+        "In evidence/{run_id}/policy-security/scan-01.json, source_target_bot equals test-worker, deployed_gate_runtime_identity_digest equals the expected reviewed source deployment identity digest, gate_runtime_instance_count equals 1, test_data_scope equals disposable-test-owned, production_data_read_count equals 0, production_data_mutation_count equals 0, and production_credential_count equals 0."
       ],
       "failure_rollback_behavior": [
         "Stop affected authority or capability, preserve sanitized evidence, restore the reviewed fail-closed policy, and rerun this exact source case."
       ],
       "destructive": false,
       "secret_risk": true,
-      "mandatory": true
+      "mandatory": true,
+      "source_target_bot": "test-worker"
     },
     {
       "id": "AZR-001",
@@ -1660,7 +1751,7 @@
     {
       "id": "GAT-002",
       "category": "gateway-scheduler",
-      "requirement": "Run a bounded, intentional, safe-but-stateful live pre-activation test against the exact deployed chief, test-worker, and laptop-worker gateway/serve profile pairs: write test-owned sessions and memories, trigger test-owned cron ticks, perform controlled gateway then serve restart, reconcile correlation and commit outcomes, verify post-restart DB/WAL integrity, and clean up all markers.",
+      "requirement": "Run bounded concurrent Telegram and Desktop bursts while test-owned cron ticks execute against the exact live deployed chief, test-worker, and laptop-worker gateway/serve profile pairs during pre-activation; intentionally write test-owned sessions and memories, restart each pair, reconcile interface and commit outcomes, inspect DB/WAL, and clean up.",
       "prerequisites": [
         "GAT-001"
       ],
@@ -1671,13 +1762,15 @@
       "command_test_hook": "acceptance/hooks/run-requirement --id GAT-002 --target live-production",
       "evidence_artifacts": [
         "evidence/{run_id}/gateway/live-pair-inventory.json",
+        "evidence/{run_id}/gateway/live-concurrent-interface-bursts.json",
         "evidence/{run_id}/gateway/live-stateful-restart.json",
         "evidence/{run_id}/gateway/live-db-wal-integrity.json",
         "evidence/{run_id}/gateway/live-stateful-cleanup.json"
       ],
       "pass_criteria": [
         "In evidence/{run_id}/gateway/live-pair-inventory.json, production_activation equals false, deployed profile set equals exactly [chief,test-worker,laptop-worker], each profile_id and data_path equals its reviewed deployment value, each has gateway_pid_count equals 1 and serve_pid_count equals 1, and observed version and argv equal REP-001 pins and SVC-001 commands.",
-        "In evidence/{run_id}/gateway/live-stateful-restart.json, each exact profile has test-owned bounded session_write_count equals 1, memory_write_count equals 1, and cron_tick_count equals 1; every accepted operation has one unique correlation_id and commit_receipt_count equals 1; lost, cross-profile, duplicate, uncertain_unreconciled, and non_test_owned_write counts each equal 0; controlled restart order equals [gateway-stop,gateway-start,gateway-healthy,serve-stop,serve-start,serve-healthy] and every recovery_seconds is less than or equal to 120.",
+        "In evidence/{run_id}/gateway/live-concurrent-interface-bursts.json, each exact live chief, test-worker, and laptop-worker receives bounded concurrent Telegram and Desktop bursts while cron ticks execute; for each profile and each interface, submitted_count equals accepted_count and accepted_count equals reply_count; every accepted item and cron tick has exactly one unique correlation_id; lost_count, duplicate_reply_count, duplicate_commit_count, cross_interface_attribution_count, cross_profile_attribution_count, and unbounded_operation_count each equal 0.",
+        "In evidence/{run_id}/gateway/live-stateful-restart.json, each exact profile has intentional test-owned bounded session_write_count equal to its accepted Telegram plus Desktop operation count, memory_write_count equal to its accepted Telegram plus Desktop operation count, and cron_tick_count equal to its accepted cron tick count; every accepted operation has one unique correlation_id and commit_receipt_count equals 1; lost, cross-profile, cross-interface, duplicate, uncertain_unreconciled, and non_test_owned_write counts each equal 0; controlled restart order equals [gateway-stop,gateway-start,gateway-healthy,serve-stop,serve-start,serve-healthy] and every recovery_seconds is less than or equal to 120.",
         "In evidence/{run_id}/gateway/live-db-wal-integrity.json after restart, each profile integrity_check equals ok, foreign_key_check_error_count equals 0, WAL/checkpoint state equals healthy, committed test marker set equals the accepted correlation set, and unrelated canonical row/content digests equal their pre-test values.",
         "In evidence/{run_id}/gateway/live-stateful-cleanup.json, deleted test-owned session/memory/cron marker count equals created test-owned marker count, remaining test marker count equals 0, unrelated row/content digests equal their pre-test values, integrity_check equals ok, and each profile returns gateway_pid_count and serve_pid_count equal 1."
       ],
@@ -1689,6 +1782,7 @@
       "mandatory": true,
       "authoritative_evidence": [
         "OS process inventory, deployment/profile identity, pinned Hermes/Desktop manifests, and exact argv at evidence/{run_id}/gateway/live-pair-inventory.json",
+        "Telegram provider receipts, Desktop submission/reply observations, gateway admission ledger, unique correlation ledger, and concurrent cron tick receipts at evidence/{run_id}/gateway/live-concurrent-interface-bursts.json",
         "Gateway/serve supervisor events, bounded test session/memory/cron correlation ledger, commit receipts, and controlled restart timeline at evidence/{run_id}/gateway/live-stateful-restart.json",
         "Post-restart SQLite integrity_check, WAL/checkpoint state, committed marker inventory, and unrelated-state digests at evidence/{run_id}/gateway/live-db-wal-integrity.json",
         "Deletion receipts and post-cleanup marker/cron inventory at evidence/{run_id}/gateway/live-stateful-cleanup.json"
@@ -3031,7 +3125,7 @@
     {
       "id": "BKP-007",
       "category": "backup-restore",
-      "requirement": "Inspect live Azure server-Bot backup retention for exactly chief and test-worker and prove at least 7 daily, 4 weekly, and 3 monthly R1/R2 restore points per server Bot; separately prove laptop-worker follows Mac-local R5 and is excluded from Azure R1/R2 counts.",
+      "requirement": "Inspect live Azure server-Bot retention for chief and test-worker; separately prove laptop-worker actual encrypted Mac-local R5 backup configuration and inventory, Azure exclusion, and zero inclusion of .env, auth.json, profile-home credentials, any R3 secret path, or any Azure R1/R2 path.",
       "prerequisites": [
         "BKP-001",
         "BKP-002"
@@ -3051,13 +3145,13 @@
         "Azure Backup/Blob lifecycle policy export at evidence/{run_id}/backup/retention-policy.json",
         "Storage control-plane immutable restore-point inventory at evidence/{run_id}/backup/restore-point-inventory.json",
         "Azure RBAC/lifecycle deletion principals, authorization conditions, and legal-hold inventory at evidence/{run_id}/backup/deletion-authority.json",
-        "Mac-local R5 policy/inventory and Azure namespace exclusion report at evidence/{run_id}/backup/laptop-worker-r5.json"
+        "Actual Mac backup engine configuration export, encryption/key-handle status, Mac-local R5 backup inventory, path-level sanitized inclusion/exclusion scan, and Azure namespace exclusion report at evidence/{run_id}/backup/laptop-worker-r5.json"
       ],
       "pass_criteria": [
         "For exactly the Azure server Bots chief and test-worker, observed policy tiers in evidence/{run_id}/backup/retention-policy.json are greater than or equal to 7 daily, 4 weekly, and 3 monthly R1/R2 restore points and each uses a Bot-scoped encrypted private namespace; Azure R1/R2 policy Bot set equals exactly [chief,test-worker].",
         "For exactly chief and test-worker, distinct checksum-valid restore-point counts in evidence/{run_id}/backup/restore-point-inventory.json are greater than or equal to 7 daily, 4 weekly, and 3 monthly and each object maps to its authoritative tier; cross-Bot overlap count equals 0 and laptop-worker Azure restore-point count equals 0.",
         "In evidence/{run_id}/backup/deletion-authority.json, deletion principal/condition set equals the reviewed lifecycle authority, backup-writer delete permission equals DENY, deletion requires expiry plus authorized lifecycle identity, and active hold count/state equals policy.",
-        "In evidence/{run_id}/backup/laptop-worker-r5.json, laptop-worker backup_class equals R5, storage_location equals Mac-local, Azure_R1_R2_namespace_count equals 0, and observed R5 policy digest equals the reviewed Mac-local R5 policy digest."
+        "In evidence/{run_id}/backup/laptop-worker-r5.json, laptop-worker backup_class equals R5, actual_backup_configuration_present equals true, encryption_at_rest equals enabled, encryption_key_handle_present equals true, storage_location equals Mac-local, inventory_object_count is greater than or equal to 1, inventory_checksum_failure_count equals 0, Azure_R1_R2_namespace_count equals 0, observed R5 policy digest equals the reviewed Mac-local R5 policy digest, and inclusion counts for .env, auth.json, profile-home credentials, R3 paths, and Azure R1/R2 paths each equal 0."
       ],
       "failure_rollback_behavior": [
         "Fail release; block lifecycle deletion, preserve existing restore points, repair policy or inventory under reviewed human authority, and rerun."
