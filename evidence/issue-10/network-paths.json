@@ -1,6 +1,6 @@
 {
   "schema_version": "1.0",
-  "collected_at": "2026-08-29T15:31:00Z",
+  "collected_at": "2026-08-29T15:52:00Z",
   "azure_network_watcher": {
     "private_nic_tcp_22": {
       "source": "10.73.1.5:40000",
@@ -22,6 +22,21 @@
     "tailscale_ssh_enabled": false,
     "advertised_routes": []
   },
-  "authorized_client_e2e": "PENDING_MAC_TAILSCALE_ENROLLMENT",
-  "unauthorized_principal_e2e": "PENDING_TAILNET_POLICY_APPLY"
+  "authorized_client_e2e": {
+    "source": "laptop-worker.tail2ea909.ts.net",
+    "destination": "fleet-server.tail2ea909.ts.net",
+    "ssh_tcp_22": "PASS",
+    "ssh_batch_key_auth": "PASS",
+    "remote_hostname": "fleet-server",
+    "remote_services_active": ["ssh", "nftables", "tailscaled", "unattended-upgrades"]
+  },
+  "host_firewall_denials_from_authorized_client": {
+    "tcp_80": "PASS_BLOCKED",
+    "tcp_5900": "PASS_BLOCKED",
+    "tcp_6081": "PASS_BLOCKED",
+    "tcp_8642": "PASS_BLOCKED",
+    "tcp_8701": "PASS_BLOCKED",
+    "tcp_9222": "PASS_BLOCKED"
+  },
+  "tailnet_policy_evaluator": "PENDING_HUMAN_POLICY_APPROVAL"
 }

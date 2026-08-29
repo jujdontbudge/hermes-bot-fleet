@@ -1,0 +1,27 @@
+{
+  "schema_version": "1.0",
+  "collected_at": "2026-08-29T15:52:00Z",
+  "installation": "homebrew-headless",
+  "version": "1.102.3",
+  "service": {
+    "label": "homebrew.mxcl.tailscale",
+    "scope": "system",
+    "state": "running",
+    "last_exit": "never",
+    "service_restart_recovery": "PASS",
+    "post_restart_private_ssh": "PASS"
+  },
+  "node": {
+    "hostname": "laptop-worker",
+    "magic_dns_name": "laptop-worker.tail2ea909.ts.net",
+    "online": true,
+    "tailscale_ssh_enabled": false,
+    "advertised_routes": [],
+    "exit_node": false
+  },
+  "peer": {
+    "hostname": "fleet-server",
+    "magic_dns_name": "fleet-server.tail2ea909.ts.net",
+    "online": true
+  }
+}
