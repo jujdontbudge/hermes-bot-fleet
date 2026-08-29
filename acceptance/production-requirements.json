@@ -301,7 +301,8 @@
       "secret_risk": true,
       "mandatory": true,
       "authoritative_evidence": [
-        "Declared bootstrap authoritative observer output at evidence/{run_id}/clean/bootstrap.log"
+        "Declared bootstrap authoritative observer output at evidence/{run_id}/clean/bootstrap.log",
+        "Committed manifest comparator and clean-environment inventory authoritative observer output at evidence/{run_id}/clean/inventory.json"
       ]
     },
     {
@@ -1262,7 +1263,8 @@
       "secret_risk": true,
       "mandatory": true,
       "authoritative_evidence": [
-        "Declared Azure control plane authoritative observer output at evidence/{run_id}/azure/feasibility.json"
+        "Declared Azure control plane authoritative observer output at evidence/{run_id}/azure/feasibility.json",
+        "Azure subscription catalog, regional SKU availability, quota, credit, and current retail price selection output at evidence/{run_id}/azure/cost-selection.json"
       ]
     },
     {
@@ -1348,7 +1350,8 @@
       "secret_risk": false,
       "mandatory": true,
       "authoritative_evidence": [
-        "Declared NIC and NSG authoritative observer output at evidence/{run_id}/azure/effective-nsg.json"
+        "Declared NIC and NSG authoritative observer output at evidence/{run_id}/azure/effective-nsg.json",
+        "Independent Internet-vantage TCP and UDP prohibited-port scanner output at evidence/{run_id}/network/external-scan.json"
       ]
     },
     {
@@ -1492,7 +1495,8 @@
       "secret_risk": true,
       "mandatory": true,
       "authoritative_evidence": [
-        "Declared tailnet authoritative observer output at evidence/{run_id}/network/tailscale-policy.json"
+        "Declared tailnet authoritative observer output at evidence/{run_id}/network/tailscale-policy.json",
+        "Unauthorized tailnet identity and device negative-probe runner output at evidence/{run_id}/network/tailscale-negative.json"
       ]
     },
     {
@@ -2446,7 +2450,8 @@
       "secret_risk": true,
       "mandatory": true,
       "authoritative_evidence": [
-        "Declared server browsers authoritative observer output at evidence/{run_id}/browser/visual-private-access.json"
+        "Declared server browsers authoritative observer output at evidence/{run_id}/browser/visual-private-access.json",
+        "Host, unauthorized-tailnet, and independent Internet-vantage CDP/raw-VNC denial probe output at evidence/{run_id}/browser/cdp-vnc-denial.json"
       ]
     },
     {
@@ -3069,7 +3074,8 @@
       "secret_risk": true,
       "mandatory": true,
       "authoritative_evidence": [
-        "Declared isolated restore target authoritative observer output at evidence/{run_id}/restore/manifest.json"
+        "Declared isolated restore target authoritative observer output at evidence/{run_id}/restore/manifest.json",
+        "Restore sandbox boundary, production route and credential mount inventory, and chief pre/post observer output at evidence/{run_id}/restore/isolation.json"
       ]
     },
     {
@@ -3252,7 +3258,8 @@
       "secret_risk": true,
       "mandatory": true,
       "authoritative_evidence": [
-        "Declared audit archive authoritative observer output at evidence/{run_id}/monitoring/audit-retention.json"
+        "Declared audit archive authoritative observer output at evidence/{run_id}/monitoring/audit-retention.json",
+        "Audit segment sequence, hash-link, HMAC, checkpoint signature, and signing-key verifier output at evidence/{run_id}/monitoring/chain-verification.json"
       ]
     },
     {
@@ -3874,7 +3881,8 @@
       "secret_risk": true,
       "mandatory": true,
       "authoritative_evidence": [
-        "Declared entire fleet authoritative observer output at evidence/{run_id}/final/health.json"
+        "Declared entire fleet authoritative observer output at evidence/{run_id}/final/health.json",
+        "Acceptance test runner JUnit report at evidence/{run_id}/final/junit.xml"
       ]
     },
     {
@@ -3904,7 +3912,8 @@
       "secret_risk": true,
       "mandatory": true,
       "authoritative_evidence": [
-        "Declared release evidence bundle authoritative observer output at evidence/{run_id}/final/evidence-manifest.json"
+        "Declared release evidence bundle authoritative observer output at evidence/{run_id}/final/evidence-manifest.json",
+        "Binary release gate evaluator and manifest signature verifier output at evidence/{run_id}/final/release-decision.json"
       ]
     }
   ],

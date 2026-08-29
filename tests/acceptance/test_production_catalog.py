@@ -242,6 +242,25 @@ class ProductionCatalogTest(unittest.TestCase):
                     "binary, artifact-specific pass criterion",
                 )
 
+    def test_every_declared_artifact_is_explicitly_referenced_by_authoritative_evidence(self):
+        artifact_path = re.compile(
+            r"evidence/\{run_id\}/[A-Za-z0-9_/{}/-]+\.(?:json|log|xml)"
+        )
+        for item in self.requirements:
+            with self.subTest(item=item["id"]):
+                referenced = {
+                    path
+                    for evidence in item["authoritative_evidence"]
+                    for path in artifact_path.findall(evidence)
+                }
+                declared = set(item["evidence_artifacts"])
+                self.assertEqual(
+                    referenced,
+                    declared,
+                    "every declared evidence artifact must be named in at least one "
+                    "source-specific authoritative evidence entry",
+                )
+
     def test_dual_plane_exposure_and_chain_requirements_are_binary_and_complete(self):
         expected_assertions = {
             "AZR-004": (
