@@ -1,0 +1,9 @@
+{
+  "boot_id": "236500d4-7833-47e7-a830-014051f58c86",
+  "control_set": "issue-10-host-hardening",
+  "failures": [],
+  "kernel": "6.17.0-1022-azure",
+  "passed": true,
+  "schema_version": "1.0",
+  "tailscale_state": "NeedsLogin"
+}

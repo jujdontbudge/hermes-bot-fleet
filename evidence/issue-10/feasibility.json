@@ -1,0 +1,40 @@
+{
+  "schema_version": "1.0",
+  "collected_at": "2026-08-29T04:12:00Z",
+  "subscription_offer": "Azure for Students",
+  "preferred_region_evaluation": {
+    "centralus": {
+      "deployable": false,
+      "reason": "Denied by enforced Allowed resource deployment regions policy"
+    },
+    "eastus2": {
+      "deployable": false,
+      "reason": "Usable 8 GiB SKUs were subscription-restricted; StandardDasv7Family quota request returned ResourceNotAvailableForOffer"
+    }
+  },
+  "selected": {
+    "region": "westus",
+    "sku": "Standard_D2s_v3",
+    "vcpu": 2,
+    "memory_gib": 8,
+    "sku_restrictions": [],
+    "family_quota_vcpu": 4,
+    "regional_quota_vcpu": 6,
+    "encryption_at_host_supported": true,
+    "accelerated_networking_supported": true
+  },
+  "retail_cost_usd": {
+    "linux_compute_hourly": 0.117,
+    "hours_assumption": 730,
+    "linux_compute_monthly": 85.41,
+    "standard_ssd_e10_128_gib_monthly": 9.60,
+    "baseline_monthly": 95.01,
+    "student_credit_assumption_monthly": 100.00,
+    "baseline_headroom": 4.99,
+    "excludes": ["storage transactions", "log ingestion beyond free allowances", "taxes"]
+  },
+  "price_sources": [
+    "https://prices.azure.com/api/retail/prices?$filter=armRegionName%20eq%20%27westus%27%20and%20armSkuName%20eq%20%27Standard_D2s_v3%27%20and%20priceType%20eq%20%27Consumption%27",
+    "https://prices.azure.com/api/retail/prices?$filter=armRegionName%20eq%20%27westus%27%20and%20meterName%20eq%20%27E10%20LRS%20Disk%27%20and%20priceType%20eq%20%27Consumption%27"
+  ]
+}

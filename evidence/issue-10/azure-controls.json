@@ -1,0 +1,55 @@
+{
+  "disk": {
+    "encryption_type": "EncryptionAtRestWithPlatformKey",
+    "id": "/subscriptions/[REDACTED]/resourceGroups/rg-hermes-fleet-prod/providers/Microsoft.Compute/disks/vm-hermes-fleet-01-osdisk",
+    "network_access_policy": "DenyAll",
+    "public_network_access": "Disabled",
+    "size_gb": 128,
+    "sku": "StandardSSD_LRS"
+  },
+  "evidence_scope": "issue-10-azure-runtime",
+  "instance": {
+    "power_state": "VM running",
+    "provisioning_state": "Provisioning succeeded"
+  },
+  "network": {
+    "accelerated_networking": true,
+    "custom_inbound_allow_rule_count": 0,
+    "ip_forwarding": false,
+    "nic_id": "/subscriptions/[REDACTED]/resourceGroups/rg-hermes-fleet-prod/providers/Microsoft.Network/networkInterfaces/nic-hermes-fleet-01",
+    "nsg_id": "/subscriptions/[REDACTED]/resourceGroups/rg-hermes-fleet-prod/providers/Microsoft.Network/networkSecurityGroups/nsg-hermes-fleet-prod",
+    "public_ip_association_count": 0
+  },
+  "resource_group": {
+    "id": "/subscriptions/[REDACTED]/resourceGroups/rg-hermes-fleet-prod",
+    "location": "westus",
+    "name": "rg-hermes-fleet-prod",
+    "tags": {
+      "application": "hermes-bot-fleet",
+      "dataClassification": "restricted",
+      "environment": "production",
+      "issue": "10",
+      "managedBy": "bicep",
+      "publicInbound": "prohibited"
+    }
+  },
+  "schema_version": "1.0",
+  "vm": {
+    "assessment_mode": "AutomaticByPlatform",
+    "encryption_at_host": true,
+    "id": "/subscriptions/[REDACTED]/resourceGroups/rg-hermes-fleet-prod/providers/Microsoft.Compute/virtualMachines/vm-hermes-fleet-01",
+    "identity_type": "SystemAssigned",
+    "location": "westus",
+    "managed_identity_role_assignment_count": 0,
+    "name": "vm-hermes-fleet-01",
+    "password_auth_disabled": true,
+    "patch_mode": "AutomaticByPlatform",
+    "power_state": "VM running",
+    "private_ips": "10.73.1.4",
+    "public_ips": "",
+    "secure_boot": true,
+    "security_type": "TrustedLaunch",
+    "vm_size": "Standard_D2s_v3",
+    "vtpm": true
+  }
+}
