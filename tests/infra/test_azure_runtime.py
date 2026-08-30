@@ -55,7 +55,8 @@ class AzureRuntimeIaCTest(unittest.TestCase):
     def test_tailnet_policy_is_default_deny_and_narrow(self):
         policy = (ROOT / "infra/tailscale/policy.hujson").read_text()
         self.assertNotIn('"src": ["*"]', policy)
-        self.assertNotIn('"dst": ["*"]', policy)
+        self.assertIn('"dst": ["fleet-server"]', policy)
+        self.assertIn('"src": ["laptop-worker"]', policy)
         self.assertNotIn('"ip": ["*"]', policy)
         self.assertIn('"ip": ["tcp:22", "tcp:443"]', policy)
         self.assertIn('"proto": "tcp"', policy)

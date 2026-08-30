@@ -2,12 +2,13 @@
   // Personal tailnet policy for the production Hermes fleet. Default deny is
   // implicit: only the exact grant below permits access to fleet-server.
   "hosts": {
-    "fleet-server": "100.102.207.42"
+    "fleet-server": "100.102.207.42",
+    "laptop-worker": "100.81.13.4",
   },
 
   "grants": [
     {
-      "src": ["johansardar77@gmail.com"],
+      "src": ["laptop-worker"],
       "dst": ["fleet-server"],
       "ip": ["tcp:22", "tcp:443"]
     }
@@ -15,7 +16,7 @@
 
   "tests": [
     {
-      "src": "johansardar77@gmail.com",
+      "src": "laptop-worker",
       "proto": "tcp",
       "accept": ["fleet-server:22", "fleet-server:443"],
       "deny": [
