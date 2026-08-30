@@ -38,5 +38,12 @@
     "tcp_8701": "PASS_BLOCKED",
     "tcp_9222": "PASS_BLOCKED"
   },
-  "tailnet_policy_evaluator": "PENDING_HUMAN_POLICY_APPROVAL"
+  "tailnet_policy": {
+    "approval": "human-approved-and-live-verified",
+    "artifact_sha256": "4dc40153645b3f05f80c2e9ed37b05f830e72156b4777319dad334f3de6cb1e3",
+    "authorized_laptop_to_server_tcp_22": "PASS_ALLOWED",
+    "authorized_laptop_to_server_tcp_443": "PASS_ALLOWED_WITH_TRANSIENT_LISTENER",
+    "server_to_laptop_tcp_49154": "PASS_DENIED",
+    "server_to_laptop_listener_result": "NO_CONNECTION"
+  }
 }
