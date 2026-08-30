@@ -1,0 +1,49 @@
+{
+  "schema_version": "1.0",
+  "collected_at": "2026-08-29T15:52:00Z",
+  "azure_network_watcher": {
+    "private_nic_tcp_22": {
+      "source": "10.73.1.5:40000",
+      "destination": "10.73.1.4:22",
+      "access": "Deny",
+      "rule": "securityRules/DenyDirectAdminTcp"
+    },
+    "internet_tcp_443": {
+      "source": "203.0.113.10:40000",
+      "destination": "10.73.1.4:443",
+      "access": "Deny",
+      "rule": "securityRules/DenyDirectAdminTcp"
+    }
+  },
+  "overlay": {
+    "server_node_online": true,
+    "hostname": "fleet-server",
+    "magic_dns_name": "fleet-server.tail2ea909.ts.net",
+    "tailscale_ssh_enabled": false,
+    "advertised_routes": []
+  },
+  "authorized_client_e2e": {
+    "source": "laptop-worker.tail2ea909.ts.net",
+    "destination": "fleet-server.tail2ea909.ts.net",
+    "ssh_tcp_22": "PASS",
+    "ssh_batch_key_auth": "PASS",
+    "remote_hostname": "fleet-server",
+    "remote_services_active": ["ssh", "nftables", "tailscaled", "unattended-upgrades"]
+  },
+  "host_firewall_denials_from_authorized_client": {
+    "tcp_80": "PASS_BLOCKED",
+    "tcp_5900": "PASS_BLOCKED",
+    "tcp_6081": "PASS_BLOCKED",
+    "tcp_8642": "PASS_BLOCKED",
+    "tcp_8701": "PASS_BLOCKED",
+    "tcp_9222": "PASS_BLOCKED"
+  },
+  "tailnet_policy": {
+    "approval": "human-approved-and-live-verified",
+    "artifact_sha256": "4dc40153645b3f05f80c2e9ed37b05f830e72156b4777319dad334f3de6cb1e3",
+    "authorized_laptop_to_server_tcp_22": "PASS_ALLOWED",
+    "authorized_laptop_to_server_tcp_443": "PASS_ALLOWED_WITH_TRANSIENT_LISTENER",
+    "server_to_laptop_tcp_49154": "PASS_DENIED",
+    "server_to_laptop_listener_result": "NO_CONNECTION"
+  }
+}

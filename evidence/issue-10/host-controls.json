@@ -1,0 +1,21 @@
+{
+  "boot_id": "236500d4-7833-47e7-a830-014051f58c86",
+  "control_set": "issue-10-host-hardening",
+  "failures": [],
+  "kernel": "6.17.0-1022-azure",
+  "passed": true,
+  "schema_version": "1.0",
+  "tailscale": {
+    "advertised_routes": [],
+    "hostname": "fleet-server",
+    "ips": [
+      "100.102.207.42",
+      "fd7a:115c:a1e0::ac01:cfca"
+    ],
+    "magic_dns_suffix": "tail2ea909.ts.net",
+    "node_id_sha256": "6a72dbb25a041202dfdc775dbea08835ae3ab308cba4df45b23273075dfd1b79",
+    "online": true,
+    "ssh_enabled": false,
+    "state": "Running"
+  }
+}

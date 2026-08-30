@@ -268,7 +268,7 @@ Dependencies are strict: gateway startup may proceed only when the gated CDP end
 ### Locked here
 
 - Azure for Students and one initial Ubuntu Server Runtime.
-- Region is constrained to Central US or East US 2 and selected by live feasibility/cost.
+- Preferred region was Central US or East US 2, selected by live feasibility/cost. Issue #10 live deployment superseded that preference with West US because the subscription policy denied Central US, East US 2 had no usable quota-backed 8 GiB SKU and rejected the quota request, while West US had an allowed `Standard_D2s_v3` within credits. This is a region-only exception; all security and cost boundaries remain unchanged.
 - Tailscale-exclusive administration; no public admin/control/data endpoints.
 - Initial Bots and ownership: server `chief`, server `test-worker`, native Mac `laptop-worker`.
 - Exactly one messaging gateway and one dedicated `serve --isolated` process per live server profile, one app-managed dedicated local serve plus one launchd gateway for `laptop-worker`, and no second turn-capable instance of either interface; no multiplex gateway.

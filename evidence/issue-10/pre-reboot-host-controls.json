@@ -1,0 +1,9 @@
+{
+  "boot_id": "61eb1e31-07e7-41cf-8c81-bd5d8d070453",
+  "control_set": "issue-10-host-hardening-pre-reboot",
+  "failures": [],
+  "kernel": "6.17.0-1022-azure",
+  "passed": true,
+  "schema_version": "1.0",
+  "tailscale_state": "NeedsLogin"
+}
