@@ -1,12 +1,13 @@
 {
   "schema_version": "1.0",
-  "observed_at": "2026-08-31T04:06:27Z",
+  "observed_at": "2026-08-31T16:28:39Z",
   "provider": "openai-codex",
   "model": "gpt-5.6-sol",
   "credential_topology": {
-    "account": "shared-provider-account",
+    "authorization": "independent-device-flows",
     "stores": "separate-bot-scoped-files",
-    "cross_bot_permissions": "denied"
+    "cross_bot_permissions": "denied",
+    "auth_file_digests_equal": false
   },
   "round_trips": [
     {
@@ -17,8 +18,8 @@
     },
     {
       "bot": "test-worker",
-      "expected": "TEST_WORKER_RUNTIME_OK",
-      "observed": "TEST_WORKER_RUNTIME_OK",
+      "expected": "TEST_WORKER_DIRECT_OAUTH_OK",
+      "observed": "TEST_WORKER_DIRECT_OAUTH_OK",
       "passed": true
     }
   ],
