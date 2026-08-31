@@ -1,0 +1,20 @@
+{
+  "schema_version": "1.0",
+  "hermes_version": "0.20.6",
+  "runtime_image": "docker.io/nousresearch/hermes-agent@sha256:859d33c223ffa243f5927882b4f41263c5994218baa2197b3deeebbf9782ba72",
+  "runtime_image_digest": "sha256:859d33c223ffa243f5927882b4f41263c5994218baa2197b3deeebbf9782ba72",
+  "model": "gpt-5.6-sol",
+  "provider": "openai-codex",
+  "bots": {
+    "chief": {
+      "unix_user": "bot-chief",
+      "serve_port": 8701,
+      "workspace": "/workspaces/chief"
+    },
+    "test-worker": {
+      "unix_user": "bot-test-worker",
+      "serve_port": 8702,
+      "workspace": "/workspaces/test-worker"
+    }
+  }
+}

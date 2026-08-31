@@ -1,0 +1,13 @@
+[Unit]
+Description=Verify Hermes runtime health for %i
+After=hermes-runtime@%i.target
+
+[Service]
+Type=oneshot
+User=root
+ExecStart=/usr/local/libexec/hermes-fleet-health %i all
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=strict
+ProtectHome=read-only
+ReadOnlyPaths=/var/lib/hermes-bots/%i

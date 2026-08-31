@@ -1,0 +1,19 @@
+{
+  "schema_version": "1.0",
+  "observed_at": "2026-08-31T04:06:27Z",
+  "checks": [
+    {
+      "bot": "chief",
+      "gateway_running": true,
+      "ticker_heartbeat_observed": true,
+      "standalone_scheduler": false
+    },
+    {
+      "bot": "test-worker",
+      "gateway_running": true,
+      "ticker_heartbeat_observed": true,
+      "standalone_scheduler": false
+    }
+  ],
+  "passed": true
+}

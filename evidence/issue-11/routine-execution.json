@@ -1,0 +1,18 @@
+{
+  "authoritative_receipt_observed": true,
+  "bot": "test-worker",
+  "executed_at": "2026-08-31T03:24:40.463438+00:00",
+  "gateway_process_persisted_through_run": true,
+  "interactive_client_process_count_after": 0,
+  "interactive_client_process_count_before": 0,
+  "job_id": "ce5b362e8309",
+  "marker_sha256": "94be1f7f6add5fbd18180f5a5e5473b5ad56715239a05a49ddf1458ff027bcad",
+  "mode": "no-agent",
+  "observed_at": "2026-08-31T03:24:53Z",
+  "passed": true,
+  "run_id": "a7ac3c5b7bb6411f97ac8df6bd642892",
+  "run_status": "completed",
+  "schedule": "2026-08-31T03:23:58Z",
+  "schema_version": "1.0",
+  "source": "builtin"
+}

@@ -1,0 +1,46 @@
+{
+  "fixture": "pre-activation-live-runtime",
+  "catalog_svc_002_003_eligible": false,
+  "objective_seconds": 120,
+  "observed_at": "2026-08-31T04:00:26Z",
+  "passed": true,
+  "results": [
+    {
+      "bot": "test-worker",
+      "component": "gateway",
+      "crash_target": "in-container-hermes-process",
+      "healthy_pid_count": 1,
+      "process_identity_changed": true,
+      "recovery_seconds": 6.274,
+      "within_objective": true
+    },
+    {
+      "bot": "test-worker",
+      "component": "serve",
+      "crash_target": "in-container-hermes-process",
+      "healthy_pid_count": 1,
+      "process_identity_changed": true,
+      "recovery_seconds": 15.451,
+      "within_objective": true
+    },
+    {
+      "bot": "chief",
+      "component": "gateway",
+      "crash_target": "in-container-hermes-process",
+      "healthy_pid_count": 1,
+      "process_identity_changed": true,
+      "recovery_seconds": 6.488,
+      "within_objective": true
+    },
+    {
+      "bot": "chief",
+      "component": "serve",
+      "crash_target": "in-container-hermes-process",
+      "healthy_pid_count": 1,
+      "process_identity_changed": true,
+      "recovery_seconds": 16.339,
+      "within_objective": true
+    }
+  ],
+  "schema_version": "1.0"
+}

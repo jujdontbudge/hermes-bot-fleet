@@ -1,0 +1,36 @@
+{
+  "_config_version": 12,
+  "model": {
+    "default": "gpt-5.6-sol",
+    "provider": "openai-codex"
+  },
+  "terminal": {
+    "backend": "local",
+    "cwd": "__WORKSPACE__",
+    "home_mode": "profile"
+  },
+  "security": {
+    "redact_secrets": true
+  },
+  "approvals": {
+    "mode": "manual"
+  },
+  "memory": {
+    "memory_enabled": true,
+    "user_profile_enabled": true
+  },
+  "database": {
+    "journal_mode": "wal",
+    "synchronous": "FULL"
+  },
+  "runtime": {
+    "nofile_soft_limit": 4096
+  },
+  "tool_loop_guardrails": {
+    "hard_stop_enabled": true,
+    "hard_stop_after": {
+      "exact_failure": 5,
+      "idempotent_no_progress": 5
+    }
+  }
+}

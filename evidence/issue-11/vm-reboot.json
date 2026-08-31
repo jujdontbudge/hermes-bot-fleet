@@ -1,0 +1,15 @@
+{
+  "objective_seconds": 600,
+  "observed_at": "2026-08-31T04:03:52Z",
+  "passed": true,
+  "post_boot_id": "6a58c245-82b7-40a8-97c0-60866ab400ae",
+  "pre_boot_id": "b63bc996-f7e9-4b58-a814-99a6d3c82ca7",
+  "production_activation": false,
+  "reboot_count": 1,
+  "recovery_seconds": 141.968,
+  "schema_version": "1.0",
+  "vm": {
+    "id": "/subscriptions/[REDACTED]/resourceGroups/rg-hermes-fleet-prod/providers/Microsoft.Compute/virtualMachines/vm-hermes-fleet-01",
+    "name": "vm-hermes-fleet-01"
+  }
+}
