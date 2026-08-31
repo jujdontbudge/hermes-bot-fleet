@@ -1,0 +1,53 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://fleet.invalid/schema/issue-11-hermes-runtime-evidence-1.0.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "evidence_scope", "observed_at", "boot_id", "passed", "failures", "bots", "network", "scheduler", "external_probes"],
+  "properties": {
+    "schema_version": {"const": "1.0"},
+    "evidence_scope": {"const": "issue-11-hermes-runtime"},
+    "observed_at": {"type": "string", "format": "date-time"},
+    "boot_id": {"type": "string", "format": "uuid"},
+    "passed": {"type": "boolean"},
+    "failures": {"type": "array", "items": {"type": "string", "pattern": "^[a-z0-9-]+$"}, "uniqueItems": true},
+    "bots": {"type": "array", "minItems": 2, "maxItems": 2, "items": {"$ref": "#/$defs/bot"}},
+    "network": {
+      "type": "object", "additionalProperties": false,
+      "required": ["api_8642_listener_count", "public_control_listener_count"],
+      "properties": {"api_8642_listener_count": {"const": 0}, "public_control_listener_count": {"const": 0}}
+    },
+    "scheduler": {
+      "type": "object", "additionalProperties": false,
+      "required": ["owner", "standalone_cron_service_count"],
+      "properties": {"owner": {"const": "gateway"}, "standalone_cron_service_count": {"const": 0}}
+    },
+    "external_probes": {
+      "type": "object", "additionalProperties": false,
+      "required": ["target", "ssh_22", "control_443", "prohibited"],
+      "properties": {
+        "target": {"const": "fleet-server.tail2ea909.ts.net"},
+        "ssh_22": {"const": "reachable"},
+        "control_443": {"enum": ["reachable", "not-configured"]},
+        "prohibited": {"type": "object", "additionalProperties": false, "required": ["8642", "8701", "8702", "9222", "9223"], "properties": {"8642": {"const": "denied"}, "8701": {"const": "denied"}, "8702": {"const": "denied"}, "9222": {"const": "denied"}, "9223": {"const": "denied"}}}
+      }
+    }
+  },
+  "$defs": {
+    "bot": {
+      "type": "object", "additionalProperties": false,
+      "required": ["bot", "unix_user", "uid", "hermes_version", "version_probe_match", "model", "provider", "runtime_image_digest", "image_user", "config_sha256", "credential_material_present", "gateway_pid_count", "isolated_serve_pid_count", "gateway_command", "serve_command", "serve_listener_addresses", "database_integrity", "restart_policy"],
+      "properties": {
+        "bot": {"enum": ["chief", "test-worker"]}, "unix_user": {"enum": ["bot-chief", "bot-test-worker"]}, "uid": {"type": "integer", "minimum": 1},
+        "hermes_version": {"type": "string"}, "version_probe_match": {"const": true}, "model": {"const": "gpt-5.6-sol"}, "provider": {"const": "openai-codex"},
+        "runtime_image_digest": {"type": "string", "pattern": "^sha256:[a-f0-9]{64}$"}, "image_user": {"enum": ["0", "root"]},
+        "config_sha256": {"type": "string", "pattern": "^sha256:[a-f0-9]{64}$"}, "credential_material_present": {"type": "boolean"},
+        "gateway_pid_count": {"const": 1}, "isolated_serve_pid_count": {"const": 1},
+        "gateway_command": {"type": "array", "minItems": 5, "items": {"type": "string"}}, "serve_command": {"type": "array", "minItems": 9, "items": {"type": "string"}},
+        "serve_listener_addresses": {"type": "array", "minItems": 1, "items": {"type": "string", "pattern": "^(127\\.0\\.0\\.1|\\[::1\\]):870[12]$"}},
+        "database_integrity": {"enum": ["ok", "not-created"]},
+        "restart_policy": {"type": "object", "additionalProperties": false, "required": ["gateway", "serve"], "properties": {"gateway": {"const": "on-failure"}, "serve": {"const": "on-failure"}}}
+      }
+    }
+  }
+}

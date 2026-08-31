@@ -1,0 +1,112 @@
+{
+  "boot_id": "6a58c245-82b7-40a8-97c0-60866ab400ae",
+  "bots": [
+    {
+      "bot": "chief",
+      "config_sha256": "sha256:21926741860d1b5a79f4578dfff8099839810f09d235446f775a4a5451534025",
+      "credential_material_present": true,
+      "database_integrity": "ok",
+      "gateway_command": [
+        "hermes",
+        "-p",
+        "chief",
+        "gateway",
+        "run"
+      ],
+      "gateway_pid_count": 1,
+      "hermes_version": "0.20.6",
+      "image_user": "root",
+      "isolated_serve_pid_count": 1,
+      "model": "gpt-5.6-sol",
+      "provider": "openai-codex",
+      "restart_policy": {
+        "gateway": "on-failure",
+        "serve": "on-failure"
+      },
+      "runtime_image_digest": "sha256:859d33c223ffa243f5927882b4f41263c5994218baa2197b3deeebbf9782ba72",
+      "serve_command": [
+        "-p",
+        "chief",
+        "serve",
+        "--isolated",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "8701",
+        "--skip-build"
+      ],
+      "serve_listener_addresses": [
+        "127.0.0.1:8701"
+      ],
+      "uid": 1001,
+      "unix_user": "bot-chief",
+      "version_probe_match": true
+    },
+    {
+      "bot": "test-worker",
+      "config_sha256": "sha256:43b2ea567bc2eeef60ba9a8b35e646572d7ea965729a3f1a2c7488d700a39821",
+      "credential_material_present": true,
+      "database_integrity": "ok",
+      "gateway_command": [
+        "hermes",
+        "-p",
+        "test-worker",
+        "gateway",
+        "run"
+      ],
+      "gateway_pid_count": 1,
+      "hermes_version": "0.20.6",
+      "image_user": "root",
+      "isolated_serve_pid_count": 1,
+      "model": "gpt-5.6-sol",
+      "provider": "openai-codex",
+      "restart_policy": {
+        "gateway": "on-failure",
+        "serve": "on-failure"
+      },
+      "runtime_image_digest": "sha256:859d33c223ffa243f5927882b4f41263c5994218baa2197b3deeebbf9782ba72",
+      "serve_command": [
+        "-p",
+        "test-worker",
+        "serve",
+        "--isolated",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "8702",
+        "--skip-build"
+      ],
+      "serve_listener_addresses": [
+        "127.0.0.1:8702"
+      ],
+      "uid": 1002,
+      "unix_user": "bot-test-worker",
+      "version_probe_match": true
+    }
+  ],
+  "evidence_scope": "issue-11-hermes-runtime",
+  "external_probes": {
+    "control_443": "not-configured",
+    "prohibited": {
+      "8642": "denied",
+      "8701": "denied",
+      "8702": "denied",
+      "9222": "denied",
+      "9223": "denied"
+    },
+    "ssh_22": "reachable",
+    "target": "fleet-server.tail2ea909.ts.net"
+  },
+  "failures": [],
+  "network": {
+    "api_8642_listener_count": 0,
+    "public_control_listener_count": 0
+  },
+  "observed_at": "2026-08-31T04:04:49Z",
+  "passed": true,
+  "scheduler": {
+    "owner": "gateway",
+    "standalone_cron_service_count": 0
+  },
+  "schema_version": "1.0"
+}

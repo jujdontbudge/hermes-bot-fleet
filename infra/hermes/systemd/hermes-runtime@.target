@@ -1,0 +1,8 @@
+[Unit]
+Description=Hermes persistent runtime for %i
+Requires=hermes-gateway@%i.service hermes-serve@%i.service
+After=network-online.target tailscaled.service
+Wants=network-online.target hermes-health@%i.timer
+
+[Install]
+WantedBy=multi-user.target

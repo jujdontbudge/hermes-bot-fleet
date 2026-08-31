@@ -1,0 +1,21 @@
+{
+  "cross_bot_credential_read_denied": true,
+  "model": "gpt-5.6-sol",
+  "observed_at": "2026-08-31T02:52:16Z",
+  "passed": true,
+  "post_test_runtime_healthy": true,
+  "provider": "openai-codex",
+  "results": [
+    {
+      "bot": "chief",
+      "exact_result": "CHIEF-RUNTIME-OK",
+      "model_query_passed": true
+    },
+    {
+      "bot": "test-worker",
+      "exact_result": "TEST-WORKER-RUNTIME-OK",
+      "model_query_passed": true
+    }
+  ],
+  "schema_version": "1.0"
+}

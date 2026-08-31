@@ -1,0 +1,33 @@
+[Unit]
+Description=Hermes isolated Desktop backend for %i
+Wants=hermes-gateway@%i.service
+BindsTo=hermes-gateway@%i.service
+After=hermes-gateway@%i.service
+StartLimitIntervalSec=300
+StartLimitBurst=5
+
+[Service]
+Type=simple
+User=bot-%i
+Group=bot-%i
+EnvironmentFile=/etc/hermes-fleet/%i/runtime.env
+ExecStartPre=/usr/local/libexec/hermes-fleet-preflight %i serve
+ExecStartPre=/usr/local/libexec/hermes-fleet-wait-health %i gateway 180
+ExecStart=/usr/local/libexec/hermes-fleet-run %i serve
+ExecStop=-/usr/bin/podman stop --time 30 hermes-%i-serve
+Restart=on-failure
+RestartSec=5
+TimeoutStartSec=240
+TimeoutStopSec=45
+# Rootless Podman requires the newuidmap/newgidmap setuid helpers when its
+# user namespace is recreated after boot. The container itself enforces
+# no-new-privileges and has no host capabilities.
+PrivateTmp=yes
+UMask=0077
+LimitNOFILE=65536
+CPUQuota=80%
+MemoryMax=3G
+TasksMax=512
+
+[Install]
+WantedBy=hermes-runtime@%i.target

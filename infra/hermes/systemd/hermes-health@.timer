@@ -1,0 +1,12 @@
+[Unit]
+Description=Periodic Hermes runtime health check for %i
+
+[Timer]
+OnBootSec=90s
+OnUnitActiveSec=60s
+AccuracySec=10s
+Persistent=true
+Unit=hermes-health@%i.service
+
+[Install]
+WantedBy=hermes-runtime@%i.target

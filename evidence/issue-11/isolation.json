@@ -1,0 +1,38 @@
+{
+  "schema_version": "1.0",
+  "observed_at": "2026-08-31T03:03:14Z",
+  "passed": true,
+  "bots": [
+    {
+      "bot": "chief",
+      "unix_user": "bot-chief",
+      "uid": 1001,
+      "state_root_mode": "0700",
+      "workspace_mode": "0700",
+      "credential_mode": "0600",
+      "credential_owner": "bot-chief"
+    },
+    {
+      "bot": "test-worker",
+      "unix_user": "bot-test-worker",
+      "uid": 1002,
+      "state_root_mode": "0700",
+      "workspace_mode": "0700",
+      "credential_mode": "0600",
+      "credential_owner": "bot-test-worker"
+    }
+  ],
+  "chief_read_of_test_worker_credential": "denied",
+  "test_worker_read_of_chief_credential": "denied",
+  "shared_host_container_socket": false,
+  "host_root_mounted": false,
+  "gateway_effective_capabilities": [
+    "CAP_CHOWN",
+    "CAP_DAC_OVERRIDE",
+    "CAP_FOWNER",
+    "CAP_SETGID",
+    "CAP_SETUID"
+  ],
+  "serve_effective_capabilities": [],
+  "capability_drop_verified_live": true
+}
