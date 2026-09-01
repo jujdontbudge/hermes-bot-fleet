@@ -44,19 +44,20 @@ assert terminal.get("home_mode") == "profile"
 assert cfg.get("security", {}).get("redact_secrets") is True
 PY
 
-actual_digest=$(podman image inspect "$HERMES_RUNTIME_IMAGE" --format '{{.Digest}}')
-[[ "$actual_digest" == "$HERMES_RUNTIME_DIGEST" ]] || {
+repo_digests=$(podman image inspect "$HERMES_RUNTIME_IMAGE" --format '{{range .RepoDigests}}{{println .}}{{end}}')
+matched=false
+while IFS= read -r repo_digest; do
+  [[ ${repo_digest##*@} == "$HERMES_RUNTIME_DIGEST" ]] && matched=true
+done <<<"$repo_digests"
+[[ $matched == true ]] || {
   echo "runtime image digest mismatch" >&2; exit 78;
 }
 image_user=$(podman image inspect "$HERMES_RUNTIME_IMAGE" --format '{{.Config.User}}')
 # The official image starts s6 as container root and drops service privileges.
 # Rootless Podman maps that identity away from host root.
 [[ "$image_user" == root || "$image_user" == 0 ]]
-version_output=$(podman run --rm --network=none --tmpfs /opt/data:rw,size=128m \
-  "$HERMES_RUNTIME_IMAGE" hermes --version 2>&1)
-grep -F -- "$HERMES_VERSION" <<<"$version_output" >/dev/null || {
-  echo "Hermes executable version does not match approved manifest" >&2; exit 78;
-}
+image_revision=$(podman image inspect "$HERMES_RUNTIME_IMAGE" --format '{{index .Config.Labels "org.opencontainers.image.revision"}}')
+[[ "$image_revision" == "$HERMES_IMAGE_REVISION" ]] || { echo "runtime image revision mismatch" >&2; exit 78; }
 
 # runtime-run removes a stale same-name container before starting. This is
 # required after a hard kill of the Podman client, where conmon may leave the

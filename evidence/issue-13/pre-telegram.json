@@ -1,0 +1,75 @@
+{
+  "schema_version": "1.0",
+  "observed_at": "2026-09-01T03:02:04Z",
+  "status": "human_checkpoint",
+  "runtime": {
+    "version": "0.21.0",
+    "upstream_revision": "f98f5e74e00e54c36088fa2e78171e2a408ba7c9",
+    "image": "docker.io/nousresearch/hermes-agent@sha256:62b451ba2e2cfcfc834ed35eb4f28a174325b03e8800c97e7ea2e6402b5ef2c9",
+    "chief_healthy": true,
+    "test_worker_healthy": true
+  },
+  "desktop": {
+    "installed_path": "/Applications/Hermes.app",
+    "release_commit": "29112bef099274229cadff79cdff7bf7b99c4b77",
+    "headless_build_passed": true,
+    "code_signature_valid": true,
+    "launched": false
+  },
+  "bots": {
+    "chief": {
+      "title": "Chief",
+      "canonical_chat": true,
+      "model": "gpt-5.6-sol",
+      "provider": "openai-codex",
+      "default_profile_hidden": true,
+      "routine_id": "126350fa1fa0",
+      "routine_completed": true,
+      "routine_delivered_to_bot_chat": true
+    },
+    "test-worker": {
+      "title": "Test Worker",
+      "canonical_chat": true,
+      "model": "gpt-5.6-sol",
+      "provider": "openai-codex",
+      "default_profile_hidden": true,
+      "routine_id": "d830bb92a029",
+      "routine_completed": true,
+      "routine_delivered_to_bot_chat": true
+    },
+    "laptop-worker": {
+      "projected": true,
+      "runtime": "mac-laptop",
+      "live_connection_deferred_to_issue_14": true
+    }
+  },
+  "relay": {
+    "roster_sync_count_per_gateway": 1,
+    "message_agent_envelope_created": true,
+    "target_reply": "RELAY_OVERRIDE_OK",
+    "chief_canonical_marker_rows": 1,
+    "test_worker_canonical_marker_rows": 2,
+    "gateway_approval_mode": "smart",
+    "fixed_shape_waiter_override": true,
+    "override_sha256": "84034a2132a4a165fcbaeb700354eb87d92562354312c6553c543440aa36f811",
+    "waiter_sha256": "e7f1944ee21beb57dc114553f7015401d9b5cef12a591c1c9c6fd718b19569bd"
+  },
+  "room": {
+    "authority_install_id": "install:34d8bcd236074dbdba7da7261d3d3113",
+    "peer_install_id": "install:13e8cc18c705491bbcafcd91945620bc",
+    "peer_endpoint_status": "not_configured",
+    "blocked_on_tailnet_https": true
+  },
+  "telegram": {
+    "chief_token_present": false,
+    "test_worker_token_present": false,
+    "blocked_on_botfather": true,
+    "public_listener": false
+  },
+  "tests": {
+    "control_plane_tests": 6,
+    "hermes_runtime_tests": 12,
+    "passed": true
+  },
+  "secrets_observed": false
+}

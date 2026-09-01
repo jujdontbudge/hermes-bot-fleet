@@ -2,8 +2,10 @@
 import json
 import re
 import subprocess
+import tempfile
 import unittest
 from pathlib import Path
+import yaml
 
 ROOT = Path(__file__).resolve().parents[2]
 HERMES = ROOT / "infra/hermes"
@@ -29,6 +31,15 @@ class HermesRuntimeArtifactsTest(unittest.TestCase):
         self.assertNotIn("anthropic", all_runtime.lower())
         self.assertNotIn("fallback", all_runtime.lower())
 
+    def test_config_upgrade_preserves_bot_dashboard_and_channel_metadata(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            cfg=Path(tmp)/"config.yaml"
+            cfg.write_text(yaml.safe_dump({"model":{"default":"old","custom":"keep"},"dashboard":{"basic_auth":{"password_hash":"opaque","secret":"opaque"}},"gateway":{"platforms":{"telegram":{"extra":{"require_mention":True}}}},"bot_mode":{"title":"Keep Me"}}))
+            subprocess.run([str(SCRIPTS/"merge-profile-config.py"),"--config",str(cfg),"--template",str(HERMES/"config/profile-config.json.tmpl"),"--workspace","/workspaces/chief"],check=True)
+            merged=yaml.safe_load(cfg.read_text())
+            self.assertEqual(merged["model"]["default"],"gpt-5.6-sol"); self.assertEqual(merged["model"]["custom"],"keep")
+            self.assertIn("dashboard",merged); self.assertIn("telegram",merged["gateway"]["platforms"]); self.assertEqual(merged["bot_mode"]["title"],"Keep Me")
+
     def test_manifest_requires_immutable_digest_and_exact_topology(self):
         schema = json.loads((HERMES / "runtime-manifest.schema.json").read_text())
         manifest = json.loads((HERMES / "runtime-manifest.json").read_text())
@@ -39,8 +50,9 @@ class HermesRuntimeArtifactsTest(unittest.TestCase):
             self.assertNotRegex(text, r"(?i)(?:image|container).*(?:latest|:[A-Za-z0-9_.-]+)(?:['\" ]|$)")
         self.assertIn("('bot-chief',8701,'/workspaces/chief')", self.install)
         self.assertIn("('bot-test-worker',8702,'/workspaces/test-worker')", self.install)
-        self.assertEqual(manifest["hermes_version"], "0.20.6")
-        self.assertEqual(manifest["runtime_image_digest"], "sha256:859d33c223ffa243f5927882b4f41263c5994218baa2197b3deeebbf9782ba72")
+        self.assertEqual(manifest["hermes_version"], "0.21.0")
+        self.assertEqual(manifest["runtime_image_digest"], "sha256:62b451ba2e2cfcfc834ed35eb4f28a174325b03e8800c97e7ea2e6402b5ef2c9")
+        self.assertEqual(manifest["runtime_image_revision"], "f98f5e74e00e54c36088fa2e78171e2a408ba7c9")
         self.assertTrue(manifest["runtime_image"].endswith("@" + manifest["runtime_image_digest"]))
 
     def test_exact_official_process_commands(self):
@@ -133,7 +145,7 @@ class HermesRuntimeArtifactsTest(unittest.TestCase):
         runbook = (ROOT / "docs/runbooks/hermes-runtime.md").read_text()
         self.assertIn("does not deploy browser/noVNC", runbook)
         self.assertIn("not deploy", runbook)
-        self.assertIn('"hermes_version": "0.20.6"', runbook)
+        self.assertIn('"hermes_version": "0.21.0"', runbook)
         self.assertIn("TCP 443 may be `not-configured`", runbook)
         self.assertIn("gateway is the sole ticker", runbook)
 

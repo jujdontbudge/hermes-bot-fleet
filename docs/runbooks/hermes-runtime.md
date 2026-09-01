@@ -6,7 +6,7 @@ This runbook installs the two server Bot runtimes only: `chief` and `test-worker
 
 ## Invariants
 
-- The reviewed deployment manifest is committed at `infra/hermes/runtime-manifest.json`. It pins Hermes `0.20.6` / upstream `52e5e7c0` as `docker.io/nousresearch/hermes-agent@sha256:859d33c223ffa243f5927882b4f41263c5994218baa2197b3deeebbf9782ba72`; floating tags are rejected.
+- The reviewed deployment manifest is committed at `infra/hermes/runtime-manifest.json`. It pins Hermes `0.21.0` / OCI revision `f98f5e74` as `docker.io/nousresearch/hermes-agent@sha256:62b451ba2e2cfcfc834ed35eb4f28a174325b03e8800c97e7ea2e6402b5ef2c9`; floating tags are rejected.
 - The official image intentionally reports OCI `Config.User=root` because s6 performs startup reconciliation before dropping to its `hermes` user. The host launches it through each Bot's rootless Podman namespace, maps that Bot to container UID/GID 1000, publishes loopback only, and provides no host/container-engine socket or host capabilities.
 - `bot-chief` and `bot-test-worker` own separate installation roots, profiles, workspaces, credentials, Podman storage, and containers.
 - Model/provider are exactly `gpt-5.6-sol` through `openai-codex`, with no configured fallback.
@@ -23,9 +23,9 @@ The approved manifest is committed and contains no credentials:
 ```json
 {
   "schema_version": "1.0",
-  "hermes_version": "0.20.6",
-  "runtime_image": "docker.io/nousresearch/hermes-agent@sha256:859d33c223ffa243f5927882b4f41263c5994218baa2197b3deeebbf9782ba72",
-  "runtime_image_digest": "sha256:859d33c223ffa243f5927882b4f41263c5994218baa2197b3deeebbf9782ba72",
+  "hermes_version": "0.21.0",
+  "runtime_image": "docker.io/nousresearch/hermes-agent@sha256:62b451ba2e2cfcfc834ed35eb4f28a174325b03e8800c97e7ea2e6402b5ef2c9",
+  "runtime_image_digest": "sha256:62b451ba2e2cfcfc834ed35eb4f28a174325b03e8800c97e7ea2e6402b5ef2c9",
   "model": "gpt-5.6-sol",
   "provider": "openai-codex",
   "bots": {
@@ -35,7 +35,7 @@ The approved manifest is committed and contains no credentials:
 }
 ```
 
-The deployed image was independently probed as `Hermes Agent v0.20.6 (2026.8.27) · upstream 52e5e7c0`. Do not replace the digest with a floating tag.
+The pinned image was independently probed as package version `0.21.0` with OCI revision `f98f5e74e00e54c36088fa2e78171e2a408ba7c9`. Do not replace the digest with a floating tag.
 
 ## 2. Install without activation
 

@@ -16,11 +16,12 @@ done
 python3 - "$manifest" <<'PY'
 import json,re,sys
 m=json.load(open(sys.argv[1]))
-assert set(m)=={'schema_version','hermes_version','runtime_image','runtime_image_digest','model','provider','bots'}
+assert set(m)=={'schema_version','hermes_version','runtime_image','runtime_image_digest','runtime_image_revision','model','provider','bots'}
 assert m['schema_version']=='1.0' and m['model']=='gpt-5.6-sol' and m['provider']=='openai-codex'
 assert re.fullmatch(r'[0-9]+\.[0-9]+\.[0-9]+(?:[+-][A-Za-z0-9.-]+)?',m['hermes_version'])
 match=re.fullmatch(r'[A-Za-z0-9._/:~-]+@(sha256:[a-f0-9]{64})',m['runtime_image'])
 assert match and match.group(1)==m['runtime_image_digest']
+assert re.fullmatch(r'[a-f0-9]{40}',m['runtime_image_revision'])
 expected={'chief':('bot-chief',8701,'/workspaces/chief'),'test-worker':('bot-test-worker',8702,'/workspaces/test-worker')}
 assert set(m['bots'])==set(expected)
 for bot, values in expected.items():
@@ -28,12 +29,15 @@ for bot, values in expected.items():
     assert set(b)=={'unix_user','serve_port','workspace'} and tuple(b.values())==values
 PY
 
-install -d -m 0755 /etc/hermes-fleet /usr/local/libexec
+install -d -m 0755 /etc/hermes-fleet /usr/local/libexec /usr/local/share/hermes-fleet/overrides
+install -m 0644 "$ROOT/infra/hermes/overrides/tools/bot_relay.py" /usr/local/share/hermes-fleet/overrides/bot_relay.py
+install -m 0555 "$ROOT/infra/hermes/overrides/tools/bot_relay_waiter.py" /usr/local/share/hermes-fleet/overrides/bot_relay_waiter.py
 install -m 0755 "$ROOT/scripts/hermes/runtime-preflight.sh" /usr/local/libexec/hermes-fleet-preflight
 install -m 0755 "$ROOT/scripts/hermes/runtime-run.sh" /usr/local/libexec/hermes-fleet-run
 install -m 0755 "$ROOT/scripts/hermes/runtime-health.sh" /usr/local/libexec/hermes-fleet-health
 install -m 0755 "$ROOT/scripts/hermes/wait-health.sh" /usr/local/libexec/hermes-fleet-wait-health
 install -m 0755 "$ROOT/scripts/hermes/configure-dashboard-auth.sh" /usr/local/libexec/hermes-fleet-dashboard-auth
+install -m 0755 "$ROOT/scripts/hermes/merge-profile-config.py" /usr/local/libexec/hermes-fleet-merge-config
 install -m 0755 "$ROOT/scripts/hermes/verify-runtime.sh" /usr/local/libexec/hermes-fleet-verify
 install -m 0644 "$ROOT"/infra/hermes/systemd/* /etc/systemd/system/
 command -v sqlite3 >/dev/null || { apt-get update -y; apt-get install -y --no-install-recommends sqlite3; }
@@ -43,6 +47,7 @@ sysctl --system >/dev/null
 image=$(jq -r .runtime_image "$manifest")
 digest=$(jq -r .runtime_image_digest "$manifest")
 version=$(jq -r .hermes_version "$manifest")
+revision=$(jq -r .runtime_image_revision "$manifest")
 # The staging tree may be under fleetadmin's private home. Rootless Podman must
 # start from an accessible cwd when run under each Bot identity.
 cd /
@@ -57,13 +62,13 @@ for bot in test-worker chief; do
   find "$root/hermes-install/profiles" -mindepth 1 -maxdepth 1 -type d ! -name "$bot" -print -quit | grep -q . && {
     echo "unexpected profile under $bot installation root" >&2; exit 78;
   }
-  sed "s|__WORKSPACE__|$workspace|g" "$ROOT/infra/hermes/config/profile-config.json.tmpl" >"$profile/config.yaml.new"
-  chown "$user:$user" "$profile/config.yaml.new"; chmod 0600 "$profile/config.yaml.new"
-  mv "$profile/config.yaml.new" "$profile/config.yaml"
+  /usr/local/libexec/hermes-fleet-merge-config --config "$profile/config.yaml" --template "$ROOT/infra/hermes/config/profile-config.json.tmpl" --workspace "$workspace"
+  chown "$user:$user" "$profile/config.yaml"; chmod 0600 "$profile/config.yaml"
   install -d -m 0750 -o root -g "$user" "/etc/hermes-fleet/$bot"
   cat >"/etc/hermes-fleet/$bot/runtime.env" <<EOF
 HERMES_RUNTIME_IMAGE=$image
 HERMES_RUNTIME_DIGEST=$digest
+HERMES_IMAGE_REVISION=$revision
 HERMES_VERSION=$version
 HERMES_MODEL=gpt-5.6-sol
 HERMES_PROVIDER=openai-codex
@@ -76,9 +81,12 @@ EOF
   loginctl enable-linger "$user" >/dev/null
   uid=$(id -u "$user"); install -d -m 0700 -o "$user" -g "$user" "/run/user/$uid"
   runuser -u "$user" -- env XDG_RUNTIME_DIR="/run/user/$uid" TMPDIR="$root/tmp" podman pull "$image"
-  actual=$(runuser -u "$user" -- env XDG_RUNTIME_DIR="/run/user/$uid" TMPDIR="$root/tmp" podman image inspect "$image" --format '{{.Digest}}')
-  [[ "$actual" == "$digest" ]] || { echo "pulled image digest mismatch" >&2; exit 78; }
-  /usr/local/libexec/hermes-fleet-dashboard-auth "$bot"
+  repo_digests=$(runuser -u "$user" -- env XDG_RUNTIME_DIR="/run/user/$uid" TMPDIR="$root/tmp" podman image inspect "$image" --format '{{range .RepoDigests}}{{println .}}{{end}}')
+  matched=false
+  while IFS= read -r repo_digest; do
+    [[ ${repo_digest##*@} == "$digest" ]] && matched=true
+  done <<<"$repo_digests"
+  [[ $matched == true ]] || { echo "pulled image digest mismatch" >&2; exit 78; }
 done
 systemctl daemon-reload
 if [[ $start == true ]]; then
@@ -99,6 +107,7 @@ if [[ $start == true ]]; then
     for f in "$profile/auth.json" "$profile/.env"; do [[ ! -e "$f" || "$(stat -c %a "$f")" == 600 ]] || { echo "unsafe credential mode" >&2; exit 78; }; done
     systemctl enable --now "hermes-gateway@$bot.service"
     wait_health "$bot" gateway
+    /usr/local/libexec/hermes-fleet-dashboard-auth "$bot"
     systemctl enable --now "hermes-serve@$bot.service" "hermes-health@$bot.timer" "hermes-runtime@$bot.target"
     wait_health "$bot" all
   done

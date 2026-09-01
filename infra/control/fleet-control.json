@@ -1,0 +1,59 @@
+{
+  "schema_version": "1.0",
+  "hermes_version": "0.21.0",
+  "desktop_release_commit": "29112bef099274229cadff79cdff7bf7b99c4b77",
+  "model": "gpt-5.6-sol",
+  "provider": "openai-codex",
+  "bots": {
+    "chief": {
+      "title": "Chief",
+      "runtime": "azure-server",
+      "profile": "chief",
+      "unix_user": "bot-chief",
+      "browser_profile": "chief",
+      "credential_handle": "secret://chief/telegram/gateway",
+      "capabilities": ["coordination", "delegation", "terminal", "file", "web", "browser", "cron", "memory", "skills"]
+    },
+    "test-worker": {
+      "title": "Test Worker",
+      "runtime": "azure-server",
+      "profile": "test-worker",
+      "unix_user": "bot-test-worker",
+      "browser_profile": "test-worker",
+      "credential_handle": "secret://test-worker/telegram/gateway",
+      "capabilities": ["disposable-testing", "terminal", "file", "web", "browser", "cron", "memory"]
+    },
+    "laptop-worker": {
+      "title": "Laptop Worker",
+      "runtime": "mac-laptop",
+      "profile": "laptop-worker",
+      "unix_user": null,
+      "browser_profile": null,
+      "credential_handle": "secret://laptop-worker/telegram/gateway",
+      "capabilities": ["approved-root-read", "mac-local-gated-mutation", "laptop-unavailable"]
+    }
+  },
+  "room": {
+    "room_id": "fleet-ops",
+    "name": "Fleet Ops",
+    "authority_bot": "chief",
+    "members": ["chief", "test-worker", "laptop-worker"],
+    "max_rounds": 3,
+    "max_messages_per_send": 10,
+    "requires_private_https_peer_links": true
+  },
+  "channels": {
+    "telegram": {
+      "polling_only": true,
+      "public_listener": false,
+      "unique_token_per_profile": true,
+      "require_mention_in_groups": true,
+      "exclusive_bot_mentions": true,
+      "pairing_or_numeric_allowlist_required": true
+    }
+  },
+  "routines": {
+    "chief": {"job_id": "126350fa1fa0", "name": "[bot:chief] Daily fleet check", "schedule": "0 7 * * *", "deliver": "bot-chat"},
+    "test-worker": {"job_id": "d830bb92a029", "name": "[bot:test-worker] Daily test check", "schedule": "0 8 * * *", "deliver": "bot-chat"}
+  }
+}

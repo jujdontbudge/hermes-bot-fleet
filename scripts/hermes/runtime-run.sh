@@ -27,6 +27,8 @@ common=(
   -v "/var/lib/hermes-bots/$bot/hermes-install:/opt/data:rw,Z"
   -v "/var/lib/hermes-bots/$bot/workspace:$HERMES_WORKSPACE:rw,Z"
   -v "/var/lib/hermes-bots/$bot/downloads/released:/downloads/released:ro,Z"
+  -v "/usr/local/share/hermes-fleet/overrides/bot_relay.py:/opt/hermes/tools/bot_relay.py:ro"
+  -v "/usr/local/share/hermes-fleet/overrides/bot_relay_waiter.py:/opt/hermes/tools/bot_relay_waiter.py:ro"
   "$HERMES_RUNTIME_IMAGE"
 )
 if [[ "$component" == gateway ]]; then
