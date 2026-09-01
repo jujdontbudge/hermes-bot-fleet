@@ -13,23 +13,15 @@ chmod 0700 "$XDG_RUNTIME_DIR"
 
 name="hermes-$bot-$component"
 podman rm -f "$name" >/dev/null 2>&1 || true
-if [[ "$component" == gateway ]]; then
-  # A SIGKILL of the Podman client can strand conmon/network-namespace state.
-  # BindsTo stops the Bot's serve unit first; wait for its container to leave,
-  # then rebuild the rootless pause namespace before launching the gateway.
-  for _ in $(seq 1 30); do
-    [[ -z $(podman ps -q) ]] && break
-    sleep 1
-  done
-  [[ -z $(podman ps -q) ]] || { echo "Bot containers did not quiesce" >&2; exit 75; }
-  podman system migrate
-fi
+browser_ip=$(podman inspect --format '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' "hermes-$bot-browser")
+[[ $browser_ip =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "invalid browser address" >&2; exit 78; }
 common=(
   run --rm --name "$name" --replace
   --label "com.hermes-fleet.bot=$bot" --label "com.hermes-fleet.component=$component"
   --userns=keep-id:uid=1000,gid=1000
   --cap-drop=all --security-opt=no-new-privileges --pids-limit=512
-  --memory=3g --cpus=0.8 --network=slirp4netns:allow_host_loopback=false
+  --memory=3g --cpus=0.8 --network "hermes-$bot"
+  --add-host "browser:$browser_ip"
   -e PUID=1000 -e PGID=1000
   -e "HOME=/opt/data/profiles/$bot/home"
   -v "/var/lib/hermes-bots/$bot/hermes-install:/opt/data:rw,Z"

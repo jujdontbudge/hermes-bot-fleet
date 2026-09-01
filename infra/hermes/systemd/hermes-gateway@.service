@@ -1,6 +1,9 @@
 [Unit]
 Description=Hermes gateway and cron owner for %i
 After=network-online.target tailscaled.service
+After=hermes-browser@%i.service
+Wants=hermes-browser@%i.service
+
 Wants=network-online.target
 Upholds=hermes-serve@%i.service
 StartLimitIntervalSec=300

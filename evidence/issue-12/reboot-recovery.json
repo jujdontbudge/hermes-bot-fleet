@@ -1,0 +1,23 @@
+{
+  "schema_version": "1.0",
+  "observed_at": "2026-09-01T00:23:38Z",
+  "vm": {
+    "id": "/subscriptions/[REDACTED]/resourceGroups/rg-hermes-fleet-prod/providers/Microsoft.Compute/virtualMachines/vm-hermes-fleet-01",
+    "post_reboot_boot_id": "b74cab03-0fd2-4f65-8cdb-f1f8402cc8fc"
+  },
+  "checks": {
+    "browser_services_active_after_reboot": true,
+    "gateway_services_active_after_browser_start": true,
+    "automatic_rootless_network_repair": true,
+    "chief_restarted_in_recovering": true,
+    "test_worker_restarted_in_recovering": true,
+    "automation_denied_before_explicit_recovery": true,
+    "human_gate_denied_before_explicit_recovery": true,
+    "explicit_recovery_passed": true,
+    "chief_profile_marker_persisted": true,
+    "test_worker_profile_marker_persisted": true,
+    "cross_profile_marker_leakage": false,
+    "browser_restart_does_not_restart_gateway": true
+  },
+  "passed": true
+}
