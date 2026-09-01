@@ -1,0 +1,295 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Sanitized browser takeover evidence",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "observed_at",
+    "source_target_bot",
+    "test_data_scope",
+    "production_data_read_count",
+    "production_data_mutation_count",
+    "production_credential_count",
+    "authority",
+    "exclusive_lease",
+    "bootstrap",
+    "visual_artifact",
+    "visual_sha256",
+    "passed",
+    "authoritative_observation"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string"
+    },
+    "observed_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "source_target_bot": {
+      "type": "string"
+    },
+    "test_data_scope": {
+      "type": "string"
+    },
+    "production_data_read_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "production_data_mutation_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "production_credential_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "authority": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "ed25519_root_certified_signer",
+        "private_keys_persisted",
+        "exact_manifest_bound",
+        "automation_nonce_bound",
+        "profile_fingerprint_bound",
+        "human_identity_bound",
+        "device_identity_bound",
+        "single_use_durable_consumption",
+        "replay_denied",
+        "locked_top_level_grant_shape",
+        "rfc8785_canonicalization",
+        "domain_separator",
+        "signature_prefix",
+        "digest_prefix",
+        "grant_lifetime_seconds",
+        "grant_lifetime_ceiling_seconds",
+        "authority_context_nested",
+        "revocation_effective_interval_validation",
+        "root_cross_certification_validation",
+        "wall_clock_rollback_guard",
+        "raw_nonce_length_bytes",
+        "retained_predecessor_certificate_verified"
+      ],
+      "properties": {
+        "ed25519_root_certified_signer": {
+          "type": "boolean"
+        },
+        "private_keys_persisted": {
+          "type": "boolean"
+        },
+        "exact_manifest_bound": {
+          "type": "boolean"
+        },
+        "automation_nonce_bound": {
+          "type": "boolean"
+        },
+        "profile_fingerprint_bound": {
+          "type": "boolean"
+        },
+        "human_identity_bound": {
+          "type": "boolean"
+        },
+        "device_identity_bound": {
+          "type": "boolean"
+        },
+        "single_use_durable_consumption": {
+          "type": "boolean"
+        },
+        "replay_denied": {
+          "type": "boolean"
+        },
+        "locked_top_level_grant_shape": {
+          "type": "boolean"
+        },
+        "rfc8785_canonicalization": {
+          "type": "boolean"
+        },
+        "domain_separator": {
+          "type": "string"
+        },
+        "signature_prefix": {
+          "type": "string"
+        },
+        "digest_prefix": {
+          "type": "string"
+        },
+        "grant_lifetime_seconds": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "grant_lifetime_ceiling_seconds": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "authority_context_nested": {
+          "type": "boolean"
+        },
+        "revocation_effective_interval_validation": {
+          "type": "boolean"
+        },
+        "root_cross_certification_validation": {
+          "type": "boolean"
+        },
+        "wall_clock_rollback_guard": {
+          "type": "boolean"
+        },
+        "raw_nonce_length_bytes": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "retained_predecessor_certificate_verified": {
+          "type": "boolean"
+        }
+      }
+    },
+    "exclusive_lease": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "cdp_client_count_before_human",
+        "authenticated_human_session_count",
+        "duration_seconds_observed",
+        "duration_ceiling_seconds",
+        "concurrent_cdp_human_samples",
+        "disconnect_enters_recovering",
+        "restart_enters_recovering",
+        "monotonic_timeout_enters_recovering",
+        "concurrent_claim_enters_recovering",
+        "stale_or_invalid_signature_enters_recovering",
+        "wrong_bootstrap_enters_recovering"
+      ],
+      "properties": {
+        "cdp_client_count_before_human": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "authenticated_human_session_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "duration_seconds_observed": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "duration_ceiling_seconds": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "concurrent_cdp_human_samples": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "disconnect_enters_recovering": {
+          "type": "boolean"
+        },
+        "restart_enters_recovering": {
+          "type": "boolean"
+        },
+        "monotonic_timeout_enters_recovering": {
+          "type": "boolean"
+        },
+        "concurrent_claim_enters_recovering": {
+          "type": "boolean"
+        },
+        "stale_or_invalid_signature_enters_recovering": {
+          "type": "boolean"
+        },
+        "wrong_bootstrap_enters_recovering": {
+          "type": "boolean"
+        }
+      }
+    },
+    "bootstrap": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "cache_control_no_store",
+        "credential_in_url",
+        "credential_file_consumed",
+        "session_cookie_http_only",
+        "session_cookie_secure",
+        "authenticated_websocket_status",
+        "secret_values_printed"
+      ],
+      "properties": {
+        "status": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "cache_control_no_store": {
+          "type": "boolean"
+        },
+        "credential_in_url": {
+          "type": "boolean"
+        },
+        "credential_file_consumed": {
+          "type": "boolean"
+        },
+        "session_cookie_http_only": {
+          "type": "boolean"
+        },
+        "session_cookie_secure": {
+          "type": "boolean"
+        },
+        "authenticated_websocket_status": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "secret_values_printed": {
+          "type": "boolean"
+        }
+      }
+    },
+    "visual_artifact": {
+      "type": "string"
+    },
+    "visual_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "passed": {
+      "type": "boolean"
+    },
+    "authoritative_observation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "deployed_supervisor_sha256",
+        "reviewed_supervisor_sha256",
+        "lease_audit_sha256",
+        "consumed_grant_record_count",
+        "consumed_grant_aggregate_sha256",
+        "approval_consumption_audit_sha256"
+      ],
+      "properties": {
+        "deployed_supervisor_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "reviewed_supervisor_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "lease_audit_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "consumed_grant_record_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "consumed_grant_aggregate_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "approval_consumption_audit_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      }
+    }
+  }
+}

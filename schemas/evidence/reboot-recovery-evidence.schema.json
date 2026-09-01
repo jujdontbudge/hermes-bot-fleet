@@ -1,0 +1,97 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Sanitized browser reboot evidence",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "observed_at",
+    "vm",
+    "checks",
+    "passed"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string"
+    },
+    "observed_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "vm": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "post_reboot_boot_id"
+      ],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "post_reboot_boot_id": {
+          "type": "string"
+        }
+      }
+    },
+    "checks": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "browser_services_active_after_reboot",
+        "gateway_services_active_after_browser_start",
+        "automatic_rootless_network_repair",
+        "chief_restarted_in_recovering",
+        "test_worker_restarted_in_recovering",
+        "automation_denied_before_explicit_recovery",
+        "human_gate_denied_before_explicit_recovery",
+        "explicit_recovery_passed",
+        "chief_profile_marker_persisted",
+        "test_worker_profile_marker_persisted",
+        "cross_profile_marker_leakage",
+        "browser_restart_does_not_restart_gateway"
+      ],
+      "properties": {
+        "browser_services_active_after_reboot": {
+          "type": "boolean"
+        },
+        "gateway_services_active_after_browser_start": {
+          "type": "boolean"
+        },
+        "automatic_rootless_network_repair": {
+          "type": "boolean"
+        },
+        "chief_restarted_in_recovering": {
+          "type": "boolean"
+        },
+        "test_worker_restarted_in_recovering": {
+          "type": "boolean"
+        },
+        "automation_denied_before_explicit_recovery": {
+          "type": "boolean"
+        },
+        "human_gate_denied_before_explicit_recovery": {
+          "type": "boolean"
+        },
+        "explicit_recovery_passed": {
+          "type": "boolean"
+        },
+        "chief_profile_marker_persisted": {
+          "type": "boolean"
+        },
+        "test_worker_profile_marker_persisted": {
+          "type": "boolean"
+        },
+        "cross_profile_marker_leakage": {
+          "type": "boolean"
+        },
+        "browser_restart_does_not_restart_gateway": {
+          "type": "boolean"
+        }
+      }
+    },
+    "passed": {
+      "type": "boolean"
+    }
+  }
+}

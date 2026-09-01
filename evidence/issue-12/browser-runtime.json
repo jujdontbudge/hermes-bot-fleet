@@ -1,0 +1,56 @@
+{
+  "schema_version": "1.0",
+  "observed_at": "2026-09-01T00:23:38Z",
+  "vm": {
+    "id": "/subscriptions/[REDACTED]/resourceGroups/rg-hermes-fleet-prod/providers/Microsoft.Compute/virtualMachines/vm-hermes-fleet-01",
+    "boot_id": "b74cab03-0fd2-4f65-8cdb-f1f8402cc8fc"
+  },
+  "image": "docker.io/selenium/standalone-chromium@sha256:1d3d834a2ce93f26cc0d0ae3c61abd189755b32649f5c356c6c5cf9502aa397e",
+  "container_seccomp": "unconfined so nested Chromium user namespaces can initialize; Chromium renderer Seccomp-BPF=2 is mandatory live evidence",
+  "bots": [
+    {
+      "bot": "chief",
+      "unix_user": "bot-chief",
+      "service_active": true,
+      "ownership_state": "AUTOMATION",
+      "headed_browser": true,
+      "raw_cdp_loopback_only": true,
+      "gated_cdp_passed": true,
+      "profile_marker_present": true,
+      "foreign_profile_marker_present": false
+    },
+    {
+      "bot": "test-worker",
+      "unix_user": "bot-test-worker",
+      "service_active": true,
+      "ownership_state": "AUTOMATION",
+      "headed_browser": true,
+      "raw_cdp_loopback_only": true,
+      "gated_cdp_passed": true,
+      "profile_marker_present": true,
+      "foreign_profile_marker_present": false
+    }
+  ],
+  "host_listeners": {
+    "raw_cdp_count": 0,
+    "vnc_public_count": 0,
+    "loopback_visual_gate_count": 2,
+    "loopback_internal_web_count": 2
+  },
+  "sandbox": {
+    "container_user": "1200:1201",
+    "read_only_root": true,
+    "effective_capability_count": 0,
+    "container_no_new_privileges": true,
+    "no_sandbox_flag_absent": true,
+    "renderer_count_observed": 3,
+    "renderer_seccomp_filter": true,
+    "renderer_no_new_privileges": true
+  },
+  "isolation": {
+    "reciprocal_profile_read_denial": true,
+    "profile_mount_absent_from_hermes_containers": true,
+    "simultaneous_profiles": true
+  },
+  "passed": true
+}

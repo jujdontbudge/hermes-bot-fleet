@@ -1,0 +1,15 @@
+{
+  "schema_version": "1.0",
+  "image": "docker.io/selenium/standalone-chromium@sha256:1d3d834a2ce93f26cc0d0ae3c61abd189755b32649f5c356c6c5cf9502aa397e",
+  "platform_image_digest": "sha256:65660e91e805967c4a90279e7518bf24b7a9a98faf37156072f694831c0256a5",
+  "cdp_gate_image": "docker.io/nousresearch/hermes-agent@sha256:859d33c223ffa243f5927882b4f41263c5994218baa2197b3deeebbf9782ba72",
+  "browser_profile_container_path": "/browser-profile",
+  "display_backend": "Xvfb :99, fluxbox, x11vnc loopback :5900, websockify/noVNC :6080",
+  "container_seccomp": "unconfined so nested Chromium user namespaces can initialize; Chromium renderer Seccomp-BPF=2 is mandatory live evidence",
+  "raw_cdp": "127.0.0.1:9222 inside each Chromium container; never host-published",
+  "gated_cdp": "browser:9223 on the private per-Bot automation network, enforced by the lease-aware in-container Python relay",
+  "bots": {
+    "chief": {"display": 99, "novnc_port": 6081},
+    "test-worker": {"display": 99, "novnc_port": 6082}
+  }
+}

@@ -1,0 +1,7 @@
+[Unit]
+Description=Hermes browser plane for %i
+Requires=hermes-browser@%i.service
+After=hermes-browser@%i.service
+
+[Install]
+WantedBy=multi-user.target

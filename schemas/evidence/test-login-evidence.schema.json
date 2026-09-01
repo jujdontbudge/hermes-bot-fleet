@@ -1,0 +1,68 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Sanitized disposable login evidence",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "observed_at",
+    "bot",
+    "fixture_scope",
+    "credential_value_used",
+    "session_value_observed",
+    "authenticated_before_restart",
+    "browser_restart_performed",
+    "gateway_pid_unchanged",
+    "authenticated_after_restart",
+    "logout_performed",
+    "unauthenticated_after_logout",
+    "production_data_read_count",
+    "passed"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string"
+    },
+    "observed_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "bot": {
+      "type": "string"
+    },
+    "fixture_scope": {
+      "type": "string"
+    },
+    "credential_value_used": {
+      "type": "boolean"
+    },
+    "session_value_observed": {
+      "type": "boolean"
+    },
+    "authenticated_before_restart": {
+      "type": "boolean"
+    },
+    "browser_restart_performed": {
+      "type": "boolean"
+    },
+    "gateway_pid_unchanged": {
+      "type": "boolean"
+    },
+    "authenticated_after_restart": {
+      "type": "boolean"
+    },
+    "logout_performed": {
+      "type": "boolean"
+    },
+    "unauthenticated_after_logout": {
+      "type": "boolean"
+    },
+    "production_data_read_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "passed": {
+      "type": "boolean"
+    }
+  }
+}

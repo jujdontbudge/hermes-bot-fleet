@@ -1,0 +1,80 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Sanitized Hermes browser runtime evidence",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "observed_at", "vm", "image", "container_seccomp", "bots", "host_listeners", "sandbox", "isolation", "passed"],
+  "properties": {
+    "schema_version": {"const": "1.0"},
+    "observed_at": {"type": "string", "format": "date-time"},
+    "vm": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "boot_id"],
+      "properties": {
+        "id": {"type": "string"},
+        "boot_id": {"type": "string", "pattern": "^[0-9a-f-]{36}$"}
+      }
+    },
+    "image": {"type": "string", "pattern": "@sha256:[0-9a-f]{64}$"},
+    "container_seccomp": {"type": "string"},
+    "bots": {
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 2,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["bot", "unix_user", "service_active", "ownership_state", "headed_browser", "raw_cdp_loopback_only", "gated_cdp_passed", "profile_marker_present", "foreign_profile_marker_present"],
+        "properties": {
+          "bot": {"enum": ["chief", "test-worker"]},
+          "unix_user": {"enum": ["bot-chief", "bot-test-worker"]},
+          "service_active": {"type": "boolean"},
+          "ownership_state": {"enum": ["AUTOMATION", "DRAINING", "HUMAN", "RECOVERING"]},
+          "headed_browser": {"type": "boolean"},
+          "raw_cdp_loopback_only": {"type": "boolean"},
+          "gated_cdp_passed": {"type": "boolean"},
+          "profile_marker_present": {"type": "boolean"},
+          "foreign_profile_marker_present": {"type": "boolean"}
+        }
+      }
+    },
+    "host_listeners": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["raw_cdp_count", "vnc_public_count", "loopback_visual_gate_count", "loopback_internal_web_count"],
+      "properties": {
+        "raw_cdp_count": {"type": "integer", "minimum": 0},
+        "vnc_public_count": {"type": "integer", "minimum": 0},
+        "loopback_visual_gate_count": {"type": "integer", "minimum": 0},
+        "loopback_internal_web_count": {"type": "integer", "minimum": 0}
+      }
+    },
+    "sandbox": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["container_user", "read_only_root", "effective_capability_count", "container_no_new_privileges", "no_sandbox_flag_absent", "renderer_count_observed", "renderer_seccomp_filter", "renderer_no_new_privileges"],
+      "properties": {
+        "container_user": {"const": "1200:1201"},
+        "read_only_root": {"type": "boolean"},
+        "effective_capability_count": {"const": 0},
+        "container_no_new_privileges": {"type": "boolean"},
+        "no_sandbox_flag_absent": {"type": "boolean"},
+        "renderer_count_observed": {"type": "integer", "minimum": 1},
+        "renderer_seccomp_filter": {"type": "boolean"},
+        "renderer_no_new_privileges": {"type": "boolean"}
+      }
+    },
+    "isolation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["reciprocal_profile_read_denial", "profile_mount_absent_from_hermes_containers", "simultaneous_profiles"],
+      "properties": {
+        "reciprocal_profile_read_denial": {"type": "boolean"},
+        "profile_mount_absent_from_hermes_containers": {"type": "boolean"},
+        "simultaneous_profiles": {"type": "boolean"}
+      }
+    },
+    "passed": {"type": "boolean"}
+  }
+}

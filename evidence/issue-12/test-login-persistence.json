@@ -1,0 +1,16 @@
+{
+  "schema_version": "1.0",
+  "observed_at": "2026-09-01T00:23:38Z",
+  "bot": "test-worker",
+  "fixture_scope": "disposable-test-owned",
+  "credential_value_used": false,
+  "session_value_observed": false,
+  "authenticated_before_restart": true,
+  "browser_restart_performed": true,
+  "gateway_pid_unchanged": true,
+  "authenticated_after_restart": true,
+  "logout_performed": true,
+  "unauthenticated_after_logout": true,
+  "production_data_read_count": 0,
+  "passed": true
+}
